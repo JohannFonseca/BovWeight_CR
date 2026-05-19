@@ -24,7 +24,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content :fullscreen="true" class="dashboard-content">
+    <ion-content class="dashboard-content">
       <div class="dashboard-layout">
         <!-- Sidebar (Visible solo en desktop) -->
         <aside class="sidebar desktop-only">
@@ -50,19 +50,34 @@
 
         <!-- Main Content -->
         <main class="main-content">
+          <!-- NAVEGACIÓN MÓVIL (Segment) -->
+          <div class="mobile-nav mobile-only">
+            <ion-segment :value="activeTab" @ionChange="e => activeTab = e.detail.value as string">
+              <ion-segment-button value="panel">
+                <ion-label>Finca</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="usuarios">
+                <ion-label>Personal</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="roles">
+                <ion-label>Accesos</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+          </div>
+
           <!-- HEADER DE PAGINA GENERAL -->
           <div class="page-header">
             <div v-if="activeTab === 'panel'">
-              <h1 class="page-title">Resumen del Sistema</h1>
-              <p class="page-subtitle">Monitoreo general y seguridad de BovWeight CR</p>
+              <h1 class="page-title">Resumen de Ganadería</h1>
+              <p class="page-subtitle">Indicadores principales de tu finca</p>
             </div>
             <div v-if="activeTab === 'usuarios'">
-              <h1 class="page-title">Gestión de Usuarios</h1>
-              <p class="page-subtitle">Administra los accesos al sistema. (No hay auto-registro)</p>
+              <h1 class="page-title">Personal de la Finca</h1>
+              <p class="page-subtitle">Administra a los trabajadores de tu ganadería</p>
             </div>
             <div v-if="activeTab === 'roles'">
-              <h1 class="page-title">Roles del Sistema</h1>
-              <p class="page-subtitle">Catálogo de perfiles de acceso</p>
+              <h1 class="page-title">Control de Accesos</h1>
+              <p class="page-subtitle">Permisos y estado del personal</p>
             </div>
             
             <ion-button v-if="activeTab === 'usuarios'" class="primary-btn" @click="mostrarModal = true">
@@ -81,12 +96,12 @@
                 <ion-icon :icon="peopleOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">1,248</span>
-                <span class="stat-label">Usuarios Activos</span>
+                <span class="stat-value">{{ stats.personalActivo }}</span>
+                <span class="stat-label">Personal Activo</span>
               </div>
               <div class="stat-trend positive">
                 <ion-icon :icon="trendingUpOutline"></ion-icon>
-                <span>+12%</span>
+                <span>+1</span>
               </div>
             </div>
 
@@ -95,12 +110,12 @@
                 <ion-icon :icon="leafOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">845</span>
-                <span class="stat-label">Ganaderos</span>
+                <span class="stat-value">{{ stats.bovinos }}</span>
+                <span class="stat-label">Bovinos Registrados</span>
               </div>
               <div class="stat-trend positive">
                 <ion-icon :icon="trendingUpOutline"></ion-icon>
-                <span>+5%</span>
+                <span>+12</span>
               </div>
             </div>
 
@@ -109,12 +124,12 @@
                 <ion-icon :icon="medkitOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">156</span>
-                <span class="stat-label">Veterinarios</span>
+                <span class="stat-value">{{ stats.alertas }}</span>
+                <span class="stat-label">Alertas Médicas</span>
               </div>
               <div class="stat-trend neutral">
                 <ion-icon :icon="removeOutline"></ion-icon>
-                <span>0%</span>
+                <span>0</span>
               </div>
             </div>
 
@@ -123,8 +138,8 @@
                 <ion-icon :icon="pulseOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">8,492</span>
-                <span class="stat-label">Pesajes IA Hoy</span>
+                <span class="stat-value">{{ stats.pesajes }}</span>
+                <span class="stat-label">Pesajes este Mes</span>
               </div>
               <div class="stat-trend positive">
                 <ion-icon :icon="trendingUpOutline"></ion-icon>
@@ -138,7 +153,7 @@
             <!-- Chart Section -->
             <div class="panel-card chart-panel">
               <div class="panel-header">
-                <h3>Crecimiento de Usuarios</h3>
+                <h3>Pesajes y Nacimientos</h3>
                 <ion-button fill="clear" size="small">Ver reporte</ion-button>
               </div>
               <div class="panel-body">
@@ -164,10 +179,10 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td><div class="cell-user"><div class="mini-avatar">G</div> ganadero@test.com</div></td>
-                        <td>Estimación de peso IA (#4512)</td>
-                        <td><span class="status-badge success">Éxito</span></td>
-                        <td>Hace 5 min</td>
+                        <td data-label="Usuario"><div class="cell-user"><div class="mini-avatar">G</div> ganadero@test.com</div></td>
+                        <td data-label="Acción">Estimación de peso IA (#4512)</td>
+                        <td data-label="Resultado"><span class="status-badge success">Éxito</span></td>
+                        <td data-label="Fecha">Hace 5 min</td>
                       </tr>
                     </tbody>
                   </table>
@@ -180,7 +195,7 @@
           <!-- PESTAÑA: GESTIÓN DE USUARIOS -->
           <div v-if="activeTab === 'usuarios'" class="panel-card">
             <div class="panel-header">
-              <h3>Listado Oficial de Usuarios</h3>
+              <h3>Listado del Personal</h3>
               <ion-button fill="clear" size="small" @click="cargarUsuarios">Actualizar</ion-button>
             </div>
             <div class="panel-body no-padding">
@@ -189,31 +204,34 @@
                   <thead>
                     <tr>
                       <th>Nombre</th>
-                      <th>Correo</th>
+                      <th class="hide-on-mobile">Correo</th>
                       <th>Rol Asignado</th>
-                      <th>Estado</th>
-                      <th>Registro</th>
-                      <th>Acciones</th>
+                      <th class="hide-on-mobile">Estado</th>
+                      <th class="hide-on-mobile">Registro</th>
+                      <th class="hide-on-mobile">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="user in usuariosList" :key="user.id">
-                      <td>
+                    <tr v-for="user in usuariosList" :key="user.id" @click="abrirDetalles(user)" class="clickable-row">
+                      <td data-label="Nombre">
                         <div class="cell-user">
                           <div class="mini-avatar">{{ user.nombre_completo ? user.nombre_completo.charAt(0).toUpperCase() : 'U' }}</div>
-                          {{ user.nombre_completo }}
+                          <div class="user-main-info">
+                            <span class="user-name">{{ user.nombre_completo }}</span>
+                            <span class="user-role mobile-only">{{ user.rol_nombre || 'Desconocido' }}</span>
+                          </div>
                         </div>
                       </td>
-                      <td>{{ user.correo }}</td>
-                      <td>
+                      <td data-label="Correo" class="hide-on-mobile">{{ user.correo }}</td>
+                      <td data-label="Rol Asignado">
                         <span class="role-badge" :class="user.rol_nombre">{{ user.rol_nombre || 'Desconocido' }}</span>
                       </td>
-                      <td>
+                      <td data-label="Estado" class="hide-on-mobile">
                         <span class="status-badge" :class="user.activo ? 'success' : 'error'">{{ user.activo ? 'activo' : 'inactivo' }}</span>
                       </td>
-                      <td>{{ user.creado_en }}</td>
-                      <td>
-                        <ion-button fill="clear" size="small" color="danger" @click="eliminarUsuario(user.id)">
+                      <td data-label="Registro" class="hide-on-mobile">{{ user.creado_en }}</td>
+                      <td data-label="Acciones" class="hide-on-mobile">
+                        <ion-button fill="clear" size="small" color="danger" @click.stop="eliminarUsuario(user.id)">
                           <ion-icon :icon="trashOutline"></ion-icon>
                         </ion-button>
                       </td>
@@ -230,7 +248,7 @@
           <!-- PESTAÑA: ROLES Y PERMISOS -->
           <div v-if="activeTab === 'roles'" class="panel-card">
              <div class="panel-header">
-              <h3>Permisos y Bloqueos de Usuarios</h3>
+              <h3>Bloqueos de Personal</h3>
               <ion-button fill="clear" size="small" @click="cargarUsuarios">Actualizar</ion-button>
             </div>
             <div class="panel-body no-padding">
@@ -240,24 +258,33 @@
                     <tr>
                       <th>Usuario</th>
                       <th>Rol en el Sistema</th>
-                      <th>Estado de Acceso</th>
-                      <th>Acción</th>
+                      <th class="hide-on-mobile">Estado de Acceso</th>
+                      <th class="hide-on-mobile">Acción</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="user in usuariosList" :key="'rol-'+user.id">
-                      <td>{{ user.nombre_completo }} <br><small style="color: #888;">{{ user.correo }}</small></td>
-                      <td><span class="role-badge" :class="user.rol_nombre">{{ user.rol_nombre }}</span></td>
-                      <td>
+                    <tr v-for="user in usuariosList" :key="'rol-'+user.id" @click="abrirDetalles(user)" class="clickable-row">
+                      <td data-label="Usuario">
+                        <div class="cell-user">
+                          <div class="mini-avatar">{{ user.nombre_completo ? user.nombre_completo.charAt(0).toUpperCase() : 'U' }}</div>
+                          <div class="user-main-info">
+                            <span class="user-name">{{ user.nombre_completo }}</span>
+                            <small class="user-email desktop-only" style="color: #888;">{{ user.correo }}</small>
+                            <span class="user-role mobile-only">{{ user.rol_nombre || 'Desconocido' }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Rol en el Sistema"><span class="role-badge" :class="user.rol_nombre">{{ user.rol_nombre }}</span></td>
+                      <td data-label="Estado de Acceso" class="hide-on-mobile">
                         <span class="status-badge" :class="user.activo ? 'success' : 'error'">
                           {{ user.activo ? 'Permitido' : 'Bloqueado' }}
                         </span>
                       </td>
-                      <td>
-                        <ion-button v-if="user.activo" fill="clear" size="small" color="warning" @click="cambiarEstadoUsuario(user.id, false)">
+                      <td data-label="Acción" class="hide-on-mobile">
+                        <ion-button v-if="user.activo" fill="clear" size="small" color="warning" @click.stop="cambiarEstadoUsuario(user.id, false)">
                           Bloquear Acceso
                         </ion-button>
-                        <ion-button v-else fill="clear" size="small" color="success" @click="cambiarEstadoUsuario(user.id, true)">
+                        <ion-button v-else fill="clear" size="small" color="success" @click.stop="cambiarEstadoUsuario(user.id, true)">
                           Reactivar Acceso
                         </ion-button>
                       </td>
@@ -309,6 +336,60 @@
           </div>
         </ion-content>
       </ion-modal>
+
+      <!-- MODAL DETALLES DE USUARIO (BOTTOM SHEET) -->
+      <ion-modal :is-open="mostrarModalDetalles" @didDismiss="mostrarModalDetalles = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.8]" class="bottom-sheet-modal">
+        <ion-content class="ion-padding">
+          <div v-if="usuarioSeleccionado" class="details-container">
+            <div class="details-header">
+              <div class="avatar-large">{{ usuarioSeleccionado.nombre_completo ? usuarioSeleccionado.nombre_completo.charAt(0).toUpperCase() : 'U' }}</div>
+              <h2>{{ usuarioSeleccionado.nombre_completo }}</h2>
+              <span class="role-badge" :class="usuarioSeleccionado.rol_nombre">{{ usuarioSeleccionado.rol_nombre || 'Desconocido' }}</span>
+            </div>
+            
+            <div class="details-body">
+              <div class="detail-item">
+                <ion-icon :icon="mailOutline"></ion-icon>
+                <div class="detail-text">
+                  <small>Correo</small>
+                  <p>{{ usuarioSeleccionado.correo }}</p>
+                </div>
+              </div>
+              <div class="detail-item">
+                <ion-icon :icon="shieldCheckmarkOutline"></ion-icon>
+                <div class="detail-text">
+                  <small>Estado</small>
+                  <p>
+                    <span class="status-badge" :class="usuarioSeleccionado.activo ? 'success' : 'error'">
+                      {{ usuarioSeleccionado.activo ? 'Activo / Permitido' : 'Inactivo / Bloqueado' }}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div class="detail-item">
+                <ion-icon :icon="calendarOutline"></ion-icon>
+                <div class="detail-text">
+                  <small>Fecha de Registro</small>
+                  <p>{{ usuarioSeleccionado.creado_en || 'No disponible' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="details-actions">
+              <ion-button v-if="usuarioSeleccionado.activo" expand="block" color="warning" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, false); mostrarModalDetalles = false">
+                Bloquear Acceso
+              </ion-button>
+              <ion-button v-else expand="block" color="success" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, true); mostrarModalDetalles = false">
+                Reactivar Acceso
+              </ion-button>
+              
+              <ion-button expand="block" color="danger" fill="outline" style="margin-top: 12px;" @click="eliminarUsuario(usuarioSeleccionado.id); mostrarModalDetalles = false">
+                Eliminar Permanentemente
+              </ion-button>
+            </div>
+          </div>
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
@@ -318,12 +399,13 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons,
-  IonModal, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption
+  IonModal, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption,
+  IonSegment, IonSegmentButton
 } from '@ionic/vue';
 import { 
   logOutOutline, shieldCheckmarkOutline, peopleOutline, settingsOutline, 
   pieChartOutline, listOutline, addOutline, trendingUpOutline, trashOutline,
-  leafOutline, medkitOutline, pulseOutline, removeOutline 
+  leafOutline, medkitOutline, pulseOutline, removeOutline, mailOutline, calendarOutline
 } from 'ionicons/icons';
 
 import { adminService, type UsuarioInfo, type Rol } from '../services/admin.service';
@@ -341,6 +423,14 @@ const router = useRouter();
 const activeTab = ref('usuarios'); // Empezamos en usuarios para probar la funcionalidad
 const mostrarModal = ref(false);
 const guardando = ref(false);
+
+const usuarioSeleccionado = ref<UsuarioInfo | null>(null);
+const mostrarModalDetalles = ref(false);
+
+const abrirDetalles = (user: UsuarioInfo) => {
+  usuarioSeleccionado.value = user;
+  mostrarModalDetalles.value = true;
+};
 
 const usuariosList = ref<UsuarioInfo[]>([]);
 const rolesList = ref<Rol[]>([]);
@@ -410,14 +500,45 @@ const cambiarEstadoUsuario = async (id: number, nuevoEstado: boolean) => {
 onMounted(() => {
   cargarUsuarios();
   cargarRoles();
+  cargarDatosReales();
 });
+
+const stats = ref({
+  personalActivo: 0,
+  bovinos: 0,
+  pesajes: 0,
+  alertas: 0
+});
+
+const cargarDatosReales = async () => {
+  try {
+    const [nuevosStats, grafica] = await Promise.all([
+      adminService.getDashboardStats(),
+      adminService.getChartData()
+    ]);
+    
+    stats.value = nuevosStats;
+    
+    // Forzamos actualización de la gráfica reasignando el objeto completo
+    chartData.value = {
+      ...chartData.value,
+      labels: grafica.labels,
+      datasets: [
+        { ...chartData.value.datasets[0], data: grafica.pesajes },
+        { ...chartData.value.datasets[1], data: grafica.nacimientos }
+      ]
+    };
+  } catch (error) {
+    console.error("Error al cargar datos reales:", error);
+  }
+};
 
 // Configuración de gráfica
 const chartData = ref({
   labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
   datasets: [
     {
-      label: 'Ganaderos',
+      label: 'Pesajes Exitosos',
       backgroundColor: 'rgba(46, 125, 50, 0.1)',
       borderColor: '#2E7D32',
       borderWidth: 2,
@@ -426,11 +547,11 @@ const chartData = ref({
       pointBorderWidth: 2,
       pointRadius: 4,
       fill: true,
-      data: [150, 220, 310, 480, 650, 845],
+      data: [0, 0, 0, 0, 0, 0],
       tension: 0.4
     },
     {
-      label: 'Veterinarios',
+      label: 'Nacimientos',
       backgroundColor: 'rgba(13, 71, 161, 0.1)',
       borderColor: '#0D47A1',
       borderWidth: 2,
@@ -439,7 +560,7 @@ const chartData = ref({
       pointBorderWidth: 2,
       pointRadius: 4,
       fill: true,
-      data: [30, 45, 60, 95, 120, 156],
+      data: [0, 0, 0, 0, 0, 0],
       tension: 0.4
     }
   ]
@@ -471,66 +592,79 @@ const chartOptions = ref({
 </script>
 
 <style scoped>
-/* ====== VARIABLES GLOBALES DEL TEMA ====== */
+/* 
+ * ==========================================
+ * VARIABLES GLOBALES DEL TEMA (Rústico/Beige)
+ * ==========================================
+ * Comentario para el equipo:
+ * Se utilizan variables CSS para mantener la consistencia del tema 
+ * en toda la aplicación. Elegimos una paleta basada en tonos cálidos
+ * (beige) y acentos en verde natural para alinearnos a la temática ganadera.
+ */
 .dashboard-content {
-  --background: #F4F7F6;
+  --background: #f4f1ea; /* Fondo beige cálido principal */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* ====== HEADER ====== */
 .header-toolbar {
-  --background: #FFFFFF;
+  --background: rgba(255, 255, 255, 0.85); /* Fondo semitransparente */
   --min-height: 70px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  /* Efecto Glassmorphism para darle un aspecto premium moderno */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 0 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .logo-icon {
-  font-size: 28px;
-  filter: drop-shadow(0 2px 4px rgba(46, 125, 50, 0.2));
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(85, 107, 47, 0.2));
 }
 
 .app-logo {
   font-weight: 800;
-  color: #1B5E20;
+  color: #2c3e2d; /* Verde bosque oscuro */
   letter-spacing: -0.5px;
   font-size: 20px;
 }
 
 .badge-admin {
-  background: #0D47A1;
+  background: linear-gradient(135deg, #2c3e2d, #1a241a);
   color: white;
   font-size: 10px;
   font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
   letter-spacing: 0.5px;
+  box-shadow: 0 4px 6px -1px rgba(44, 62, 45, 0.3);
 }
 
 .user-profile {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-right: 16px;
+  margin-right: 12px;
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
-  background: #0D47A1;
+  width: 38px;
+  height: 38px;
+  background: #2c3e2d; /* Color consistente con el rol */
   color: white;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .user-info {
@@ -541,30 +675,39 @@ const chartOptions = ref({
 
 .user-info .name {
   font-size: 14px;
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  color: #2c3e2d;
 }
 
 .user-info .role {
   font-size: 12px;
-  color: #777;
+  color: #5c6e58;
+  font-weight: 500;
 }
 
 .logout-btn {
-  --color: #555;
+  --color: #5c6e58;
 }
 
-/* ====== LAYOUT ====== */
+/* 
+ * ==========================================
+ * LAYOUT PRINCIPAL (Flexbox)
+ * ==========================================
+ * Comentario para el equipo:
+ * Se usa flexbox para distribuir el menú lateral (sidebar)
+ * y el contenido principal. En móviles, el sidebar desaparece
+ * y el main-content ocupa todo el 100% de la pantalla.
+ */
 .dashboard-layout {
   display: flex;
-  min-height: 100%;
+  height: 100%; /* Corregido: asegurar que ocupe todo el alto disponible en Ionic */
 }
 
 /* SIDEBAR */
 .sidebar {
   width: 260px;
   background: #FFFFFF;
-  border-right: 1px solid #EAEBEF;
+  border-right: 1px solid #e2dcd0;
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -579,28 +722,27 @@ const chartOptions = ref({
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
   text-decoration: none;
-  color: #555;
-  font-weight: 500;
+  color: #5c6e58;
+  font-weight: 600;
   transition: all 0.2s ease;
 }
 
 .nav-item:hover {
-  background: #F4F7F6;
-  color: #1B5E20;
+  background: #f4f1ea;
+  color: #2c3e2d;
 }
 
 .nav-item.active {
-  background: #E8F5E9;
-  color: #2E7D32;
-  font-weight: 600;
+  background: #eaf0e6;
+  color: #3e4f24;
 }
 
 .nav-item ion-icon {
-  font-size: 20px;
+  font-size: 22px;
 }
 
 /* MAIN CONTENT */
@@ -608,6 +750,7 @@ const chartOptions = ref({
   flex: 1;
   padding: 32px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Permite scroll fluido en iOS */
 }
 
 .page-header {
@@ -618,66 +761,74 @@ const chartOptions = ref({
 }
 
 .page-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
-  color: #111;
-  margin: 0 0 8px;
-  letter-spacing: -0.5px;
+  color: #2c3e2d;
+  margin: 0 0 6px;
+  letter-spacing: -1px;
 }
 
 .page-subtitle {
-  font-size: 14px;
-  color: #666;
+  font-size: 15px;
+  color: #5c6e58;
   margin: 0;
+  font-weight: 500;
 }
 
 .primary-btn {
-  --background: #0D47A1;
-  --background-hover: #1565C0;
-  --border-radius: 10px;
-  --box-shadow: 0 4px 12px rgba(13, 71, 161, 0.2);
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  --background: linear-gradient(135deg, #556b2f, #3e4f24);
+  --border-radius: 14px;
+  --box-shadow: 0 10px 20px -10px rgba(85, 107, 47, 0.6);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  height: 48px;
 }
 
-/* ====== STATS GRID ====== */
+/* 
+ * ==========================================
+ * GRID DE ESTADÍSTICAS Y TARJETAS
+ * ==========================================
+ * Comentario para el equipo:
+ * Se utiliza CSS Grid para hacer que las tarjetas se ajusten
+ * automáticamente al ancho de la pantalla (responsive).
+ */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 24px;
+  gap: 20px;
   margin-bottom: 32px;
 }
 
 .stat-card {
   background: #FFFFFF;
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-  border: 1px solid #F0F0F0;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.02);
   position: relative;
   transition: transform 0.2s ease;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+.stat-card:active {
+  transform: scale(0.98);
 }
 
 .stat-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 26px;
   margin-bottom: 16px;
 }
 
-.stat-icon-wrapper.blue { background: #E3F2FD; color: #1976D2; }
-.stat-icon-wrapper.green { background: #E8F5E9; color: #388E3C; }
-.stat-icon-wrapper.teal { background: #E0F2F1; color: #00897B; }
-.stat-icon-wrapper.orange { background: #FFF3E0; color: #F57C00; }
+/* Colores de íconos adaptados al tema natural */
+.stat-icon-wrapper.blue { background: #f0f4f8; color: #475569; }
+.stat-icon-wrapper.green { background: #eaf0e6; color: #556b2f; }
+.stat-icon-wrapper.teal { background: #fdfbf7; color: #6b8e23; }
+.stat-icon-wrapper.orange { background: #fff7ed; color: #d97706; }
 
 .stat-details {
   display: flex;
@@ -687,14 +838,14 @@ const chartOptions = ref({
 .stat-value {
   font-size: 28px;
   font-weight: 800;
-  color: #222;
+  color: #2c3e2d;
   line-height: 1.2;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #777;
-  font-weight: 500;
+  color: #5c6e58;
+  font-weight: 600;
   margin-top: 4px;
 }
 
@@ -711,9 +862,9 @@ const chartOptions = ref({
   border-radius: 20px;
 }
 
-.stat-trend.positive { background: #E8F5E9; color: #2E7D32; }
-.stat-trend.neutral { background: #F5F5F5; color: #757575; }
-.stat-trend.negative { background: #FFEBEE; color: #C62828; }
+.stat-trend.positive { background: #eaf0e6; color: #3e4f24; }
+.stat-trend.neutral { background: #f4f1ea; color: #5c6e58; }
+.stat-trend.negative { background: #fce8e8; color: #b71c1c; }
 
 /* ====== PANELS GRID ====== */
 .content-grid {
@@ -724,17 +875,18 @@ const chartOptions = ref({
 
 .panel-card {
   background: #FFFFFF;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-  border: 1px solid #F0F0F0;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.02);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  margin-bottom: 24px; /* Margen inferior para móviles */
 }
 
 .panel-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #F0F0F0;
+  padding: 24px;
+  border-bottom: 1px solid #f4f1ea;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -742,9 +894,9 @@ const chartOptions = ref({
 
 .panel-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111;
+  font-size: 18px;
+  font-weight: 800;
+  color: #2c3e2d;
 }
 
 .panel-body {
@@ -757,37 +909,47 @@ const chartOptions = ref({
 }
 
 .chart-container {
-  height: 250px;
+  height: 260px;
   width: 100%;
 }
 
-/* ====== SAAS TABLE ====== */
+/* 
+ * ==========================================
+ * TABLAS DE DATOS
+ * ==========================================
+ * Comentario para el equipo:
+ * En .table-responsive aplicamos un overflow-x para que en pantallas 
+ * pequeñas la tabla no rompa el diseño y permita hacer scroll horizontal.
+ */
 .table-responsive {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .saas-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  min-width: 600px; /* Asegura que no se aplaste el contenido */
 }
 
 .saas-table th {
   padding: 16px 24px;
   font-size: 12px;
   text-transform: uppercase;
-  color: #888;
-  font-weight: 600;
+  color: #5c6e58;
+  font-weight: 700;
   letter-spacing: 0.5px;
-  background: #FAFAFA;
-  border-bottom: 1px solid #F0F0F0;
+  background: #fdfbf7;
+  border-bottom: 1px solid #f4f1ea;
 }
 
 .saas-table td {
   padding: 16px 24px;
   font-size: 14px;
-  color: #444;
-  border-bottom: 1px solid #F0F0F0;
+  color: #2c3e2d;
+  border-bottom: 1px solid #f4f1ea;
   vertical-align: middle;
 }
 
@@ -796,52 +958,73 @@ const chartOptions = ref({
 }
 
 .saas-table tbody tr:hover {
-  background: #FAFAFA;
+  background: #fdfbf7;
 }
 
 .cell-user {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-weight: 500;
-  color: #222;
+  font-weight: 600;
+  color: #2c3e2d;
+}
+
+.user-main-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.user-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c3e2d;
+}
+
+.user-role {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8ba888;
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
 .mini-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: #EAEBEF;
-  color: #555;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #f4f1ea;
+  color: #3e4f24;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .status-badge {
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.status-badge.success { background: #E8F5E9; color: #2E7D32; }
-.status-badge.error { background: #FFEBEE; color: #C62828; }
+.status-badge.success { background: #eaf0e6; color: #3e4f24; }
+.status-badge.error { background: #fce8e8; color: #b71c1c; }
 
 .role-badge {
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  background: #EAEBEF;
-  color: #555;
+  background: #f4f1ea;
+  color: #5c6e58;
 }
-.role-badge.admin { background: #E3F2FD; color: #0D47A1; }
-.role-badge.ganadero { background: #E8F5E9; color: #1B5E20; }
-.role-badge.veterinario { background: #E0F2F1; color: #00897B; }
+
+.role-badge.admin { background: #f0f4f8; color: #334155; }
+.role-badge.ganadero { background: #eaf0e6; color: #556b2f; }
+.role-badge.veterinario { background: #fdfbf7; color: #6b8e23; }
 
 .form-container {
   padding: 16px;
@@ -853,16 +1036,126 @@ const chartOptions = ref({
   margin-top: 24px;
 }
 
-/* ====== RESPONSIVE ====== */
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.clickable-row:active {
+  background: #f4f1ea;
+}
+
+/* Modal Bottom Sheet Styles */
+.details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px 0;
+}
+.details-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+.avatar-large {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: #f4f1ea;
+  color: #3e4f24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.details-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #2c3e2d;
+}
+.details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fdfbf7;
+  border-radius: 16px;
+  padding: 16px;
+}
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.detail-item ion-icon {
+  font-size: 24px;
+  color: #5c6e58;
+}
+.detail-text {
+  display: flex;
+  flex-direction: column;
+}
+.detail-text small {
+  font-size: 12px;
+  color: #8ba888;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.detail-text p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: #2c3e2d;
+  font-weight: 600;
+}
+
+/* 
+ * ==========================================
+ * RESPONSIVE MEDIA QUERIES (Optimización Móvil)
+ * ==========================================
+ * Comentario para el equipo:
+ * Esta sección es crítica para que la aplicación se vea bien en celulares.
+ * Cambiamos los paddings, ocultamos elementos innecesarios y convertimos 
+ * las grillas de 2 columnas en 1 sola columna.
+ */
 @media (max-width: 992px) {
   .content-grid {
     grid-template-columns: 1fr;
   }
 }
 
+.mobile-only {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .desktop-only {
     display: none;
+  }
+  
+  .mobile-only {
+    display: block !important;
+  }
+  
+  .mobile-nav {
+    margin-bottom: 24px;
+    background: #FFFFFF;
+    padding: 4px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+  }
+  
+  /* Ajuste visual para IonSegment en tema beige/verde */
+  ion-segment {
+    --background: transparent;
+  }
+  ion-segment-button {
+    --indicator-color: #f4f1ea;
+    --color: #5c6e58;
+    --color-checked: #2c3e2d;
+    font-weight: 700;
   }
   
   .main-content {
@@ -873,10 +1166,119 @@ const chartOptions = ref({
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .stats-grid {
+    gap: 16px;
+    margin-bottom: 24px;
   }
   
   .user-info {
-    display: none; /* Hide email on mobile to save space */
+    display: none; /* Ocultar el correo en móvil para salvar espacio */
+  }
+
+  /* Ajustes en tarjetas para que no se peguen a los bordes */
+  .panel-card {
+    border-radius: 16px;
+  }
+
+  /* 
+   * Comentario para el equipo:
+   * Transformamos las tablas estándar en un diseño de "tarjetas" (cards)
+   * apiladas para móviles. Esto evita el scroll horizontal y hace que
+   * la información sea fácil de leer en pantallas pequeñas.
+   */
+  .saas-table, .saas-table tbody, .saas-table tr, .saas-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .saas-table thead {
+    display: none; /* Ocultamos el encabezado original */
+  }
+
+  .saas-table tr {
+    margin-bottom: 16px;
+    border: 1px solid #e2dcd0;
+    border-radius: 12px;
+    padding: 12px;
+    background: #FFFFFF;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+
+  .saas-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f4f1ea;
+    padding: 12px 8px;
+    text-align: right;
+  }
+  
+  .saas-table td:last-child {
+    border-bottom: none;
+  }
+
+  /* 
+   * Simplificamos la lista para usabilidad de adultos mayores:
+   * Solo mostramos el nombre y rol, ocultando etiquetas complicadas 
+   * y añadiendo un ícono de flecha (chevron) para indicar interacción.
+   */
+  .table-responsive {
+    overflow-x: hidden;
+  }
+  
+  .saas-table {
+    min-width: 0; /* Removemos el min-width que causaba scroll */
+  }
+
+  .saas-table td:not(:first-child), .saas-table th:not(:first-child) {
+    display: none !important; /* Ocultar todo menos la primera celda */
+  }
+
+  .saas-table td:first-child {
+    padding: 16px;
+    border-bottom: none;
+  }
+
+  .saas-table td::before {
+    display: none; /* Quitamos las etiquetas */
+  }
+
+  .saas-table tr {
+    padding: 0;
+    position: relative;
+  }
+
+  .saas-table tr::after {
+    content: '›';
+    font-size: 32px;
+    color: #8ba888;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .cell-user {
+    justify-content: flex-start;
+    text-align: left;
+  }
+  
+  .cell-user .mini-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
   }
 }
 </style>

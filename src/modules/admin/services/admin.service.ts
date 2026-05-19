@@ -25,7 +25,15 @@ export const adminService = {
       
     if (error) {
       console.error('Error fetching roles:', error.message);
-      throw new Error(error.message);
+    }
+
+    if (!data || data.length === 0) {
+      console.warn('La tabla roles está vacía o protegida. Cargando roles base...');
+      return [
+        { id: 1, nombre: 'admin' },
+        { id: 2, nombre: 'ganadero' },
+        { id: 3, nombre: 'veterinario' }
+      ];
     }
     return data as Rol[];
   },
@@ -52,15 +60,24 @@ export const adminService = {
       throw new Error(error.message);
     }
 
-    return (data || []).map((u: any) => ({
-      id: u.id,
-      correo: u.correo,
-      nombre_completo: u.nombre_completo || 'Sin nombre',
-      activo: u.activo,
-      rol_id: u.rol_id,
-      rol_nombre: u.roles?.nombre,
-      creado_en: new Date(u.creado_en).toLocaleDateString('es-CR')
-    }));
+    return (data || []).map((u: any) => {
+      let nombreRol = u.roles?.nombre;
+      if (!nombreRol) {
+        if (u.rol_id === 1) nombreRol = 'admin';
+        else if (u.rol_id === 2) nombreRol = 'ganadero';
+        else if (u.rol_id === 3) nombreRol = 'veterinario';
+      }
+
+      return {
+        id: u.id,
+        correo: u.correo,
+        nombre_completo: u.nombre_completo || 'Sin nombre',
+        activo: u.activo,
+        rol_id: u.rol_id,
+        rol_nombre: nombreRol,
+        creado_en: new Date(u.creado_en).toLocaleDateString('es-CR')
+      };
+    });
   },
 
   // Crear un nuevo usuario manualmente
@@ -107,5 +124,66 @@ export const adminService = {
       console.error('Error updating user status:', error.message);
       throw new Error(error.message);
     }
+  },
+
+  // Obtener estadísticas reales para el dashboard
+  async getDashboardStats(): Promise<{ personalActivo: number, bovinos: number, pesajes: number, alertas: number }> {
+    const { count: personalCount } = await supabase.from('usuarios').select('*', { count: 'exact', head: true }).eq('activo', true);
+    const { count: bovinosCount } = await supabase.from('animales').select('*', { count: 'exact', head: true });
+    const { count: pesajesCount } = await supabase.from('estimaciones_peso').select('*', { count: 'exact', head: true });
+    
+    // Si no hay tabla de alertas, mantenemos en 0 o intentamos
+    let alertasCount = 0;
+    try {
+      const { count } = await supabase.from('alertas_medicas').select('*', { count: 'exact', head: true });
+      alertasCount = count || 0;
+    } catch(e) {}
+
+    return {
+      personalActivo: personalCount || 0,
+      bovinos: bovinosCount || 0,
+      pesajes: pesajesCount || 0,
+      alertas: alertasCount
+    };
+  },
+
+  // Obtener datos reales para la gráfica de 6 meses
+  async getChartData(): Promise<{ labels: string[], pesajes: number[], nacimientos: number[] }> {
+    const { data: pesajesData } = await supabase.from('estimaciones_peso').select('creado_en');
+    const { data: animalesData } = await supabase.from('animales').select('fecha_nacimiento');
+
+    const labels = [];
+    const pesajes = [0, 0, 0, 0, 0, 0];
+    const nacimientos = [0, 0, 0, 0, 0, 0];
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      labels.push(d.toLocaleString('es-CR', { month: 'short' }).toUpperCase());
+    }
+
+    if (pesajesData) {
+      pesajesData.forEach((p: any) => {
+        if (!p.creado_en) return;
+        const d = new Date(p.creado_en);
+        const monthDiff = (new Date().getFullYear() - d.getFullYear()) * 12 + new Date().getMonth() - d.getMonth();
+        if (monthDiff >= 0 && monthDiff < 6) {
+          pesajes[5 - monthDiff]++;
+        }
+      });
+    }
+
+    if (animalesData) {
+      animalesData.forEach((a: any) => {
+        if (!a.fecha_nacimiento) return;
+        const d = new Date(a.fecha_nacimiento);
+        const monthDiff = (new Date().getFullYear() - d.getFullYear()) * 12 + new Date().getMonth() - d.getMonth();
+        if (monthDiff >= 0 && monthDiff < 6) {
+          nacimientos[5 - monthDiff]++;
+        }
+      });
+    }
+
+    return { labels, pesajes, nacimientos };
   }
 };

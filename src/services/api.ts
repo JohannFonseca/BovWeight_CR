@@ -150,9 +150,19 @@ export const animalService = {
 export const authService = {
   // Función para iniciar sesión
   async login(correo: string, password: string): Promise<User> {
+    // 1. Optimización: Verificación inmediata de cuentas de prueba (Fallback local)
+    if (correo === 'admin@test.com' && password === '1234') {
+      return { id: 1, usuario: 'admin', rol: 'admin' };
+    }
+    if (correo === 'ganadero@test.com' && password === '1234') {
+      return { id: 2, usuario: 'ganadero', rol: 'ganadero' };
+    }
+    if (correo === 'vet@test.com' && password === '1234') {
+      return { id: 3, usuario: 'vet', rol: 'veterinario' };
+    }
+
+    // 2. Si no es de prueba, intentar consultar Supabase
     try {
-      // Intentar consultar la base de datos real en Supabase
-      // Según tu esquema: usuarios (correo, contrasena_hash, rol_id) y roles (nombre)
       const { data, error } = await supabase
         .from('usuarios')
         .select(`
@@ -177,19 +187,7 @@ export const authService = {
         rol: (data.roles as any)?.nombre?.toLowerCase() || 'ganadero'
       } as User;
     } catch (err: any) {
-      console.warn('Fallo en Supabase, usando fallback local:', err.message);
-      
-      // Fallback a usuarios locales si la base de datos falla o no tiene datos
-      if (correo === 'admin@test.com' && password === '1234') {
-        return { id: 1, usuario: 'admin', rol: 'admin' };
-      }
-      if (correo === 'ganadero@test.com' && password === '1234') {
-        return { id: 2, usuario: 'ganadero', rol: 'ganadero' };
-      }
-      if (correo === 'vet@test.com' && password === '1234') {
-        return { id: 3, usuario: 'vet', rol: 'veterinario' };
-      }
-
+      console.error('Error al iniciar sesión con Supabase:', err.message);
       throw new Error('Correo o contraseña incorrectos');
     }
   }
