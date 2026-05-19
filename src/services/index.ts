@@ -1,12 +1,18 @@
-/**
- * Exportación unificada de servicios.
- * Ahora usamos únicamente el servicio real de Supabase (hemos eliminado los mock data).
- */
+import { createAnimalRepository } from './repository-factory';
+import { SupabaseAuthRepository } from './supabase-auth-repository';
 import { animalService, authService } from './api';
+import type {
+  Animal,
+  WeightRecord,
+  User,
+  IAnimalRepository,
+  IAuthRepository
+} from './interfaces';
 
-// Exportamos 'dataService' para que el resto de componentes (App, HomePage) lo sigan usando sin romperse.
-export const dataService = animalService;
+export const animalRepository: IAnimalRepository = createAnimalRepository();
+export const authRepository: IAuthRepository = new SupabaseAuthRepository();
+export const dataService = animalRepository;
 
-export { authService };
-
-export type { Animal, WeightRecord, User } from './api';
+// Compatibilidad con código existente
+export { animalService, authService };
+export type { Animal, WeightRecord, User, IAnimalRepository, IAuthRepository };

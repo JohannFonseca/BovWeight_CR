@@ -172,7 +172,7 @@ import {
   gridOutline, cameraOutline, barChartOutline, scaleOutline
 } from 'ionicons/icons';
 
-import { dataService, type Animal } from '@/services';
+import { animalRepository, type Animal } from '@/services';
 
 // Chart.js imports
 import { Line as LineChart } from 'vue-chartjs';
@@ -196,7 +196,7 @@ async function load() {
   loading.value = true;
   error.value = null;
   try {
-    animals.value = await dataService.getAllAnimals();
+    animals.value = await animalRepository.getAllAnimals();
   } catch (err: any) {
     error.value = err.message || 'Error al cargar animales';
   } finally {

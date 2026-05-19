@@ -156,7 +156,8 @@ import {
 } from 'ionicons/icons';
 
 import WeightChart from '@/components/WeightChart.vue';
-import { dataService, type Animal } from '@/services';
+import { animalRepository, type Animal } from '@/services';
+import { useWeightStatus } from '@/composables/useWeightStatus';
 
 // ── Ruta ──
 const route = useRoute();
@@ -173,7 +174,7 @@ async function loadAnimal() {
 
   try {
     const id = Number(route.params.id) || 1;
-    animal.value = await dataService.getAnimalById(id);
+    animal.value = await animalRepository.getAnimalById(id);
   } catch (err: any) {
     error.value = err.message || 'Error al cargar los datos del animal';
     animal.value = null;
@@ -184,47 +185,13 @@ async function loadAnimal() {
 
 onMounted(loadAnimal);
 
-// ── Diferencia de peso ──
-const weightDiff = computed(() => {
-  if (!animal.value || animal.value.historialPeso.length < 2) return 0;
-  const history = animal.value.historialPeso;
-  return history[history.length - 1].peso - history[history.length - 2].peso;
-});
+const { weightDiff, diffIcon, diffText, statusMessage } = useWeightStatus(animal);
 
 const diffClass = computed(() => ({
   gain: weightDiff.value > 0,
   loss: weightDiff.value < 0,
   stable: weightDiff.value === 0,
 }));
-
-const diffIcon = computed(() => {
-  if (weightDiff.value > 0) return arrowUpOutline;
-  if (weightDiff.value < 0) return arrowDownOutline;
-  return removeOutline;
-});
-
-const diffText = computed(() => {
-  const sign = weightDiff.value > 0 ? '+' : '';
-  return `${sign}${weightDiff.value} kg`;
-});
-
-// ── Mensaje de estado ──
-const statusMessage = computed(() => {
-  if (!animal.value || animal.value.historialPeso.length < 2) {
-    return 'Sin datos suficientes para evaluar';
-  }
-
-  const history = animal.value.historialPeso;
-  const avgChange =
-    (history[history.length - 1].peso - history[0].peso) / (history.length - 1);
-
-  if (avgChange > 25) return '🚀 Ganancia acelerada';
-  if (avgChange > 15) return '📈 Crecimiento estable';
-  if (avgChange > 5) return '✅ Crecimiento moderado';
-  if (avgChange > 0) return '⚠️ Crecimiento lento';
-  if (avgChange === 0) return '➡️ Peso estable';
-  return '🔻 Pérdida de peso — revisar';
-});
 </script>
 
 <style scoped>

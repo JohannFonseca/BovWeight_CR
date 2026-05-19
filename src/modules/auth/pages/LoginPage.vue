@@ -71,7 +71,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { IonPage, IonContent, IonIcon } from '@ionic/vue';
 import { personOutline, lockClosedOutline, alertCircleOutline } from 'ionicons/icons';
-import { authService } from '@/services/api';
+import { authRepository } from '@/services';
 
 const router = useRouter();
 const usuario = ref('');
@@ -89,7 +89,7 @@ const login = async () => {
   error.value = '';
 
   try {
-    const user = await authService.login(usuario.value, password.value);
+    const user = await authRepository.login(usuario.value, password.value);
     
     // Redireccionar basado en el rol
     if (user.rol === 'admin') {
