@@ -21,6 +21,7 @@
     "axios": "^1.14.0",
     "chart.js": "^4.5.1",
     "ionicons": "^7.0.0",
+    "pinia": "^3.0.4",
     "vue": "^3.3.0",
     "vue-chartjs": "^5.3.3",
     "vue-router": "^4.2.0"

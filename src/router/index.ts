@@ -1,21 +1,41 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import HomePage from '../views/HomePage.vue';
 
+// Usaremos lazy loading para mejorar la escalabilidad y tiempos de carga
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/home',
+    redirect: '/login',
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../modules/auth/pages/LoginPage.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/admin',
+    name: 'AdminDashboard',
+    component: () => import('../modules/admin/pages/AdminDashboard.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['admin'] }
+  },
+  {
+    path: '/veterinario',
+    name: 'VeterinarioDashboard',
+    component: () => import('../modules/veterinario/pages/VeterinarioDashboard.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['veterinario'] }
   },
   {
     path: '/home',
     name: 'Home',
-    component: HomePage,
+    component: () => import('../modules/ganado/pages/HomePage.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
   },
   {
     path: '/animal/:id',
     name: 'AnimalDetail',
-    component: () => import('../views/AnimalDetailPage.vue'),
+    component: () => import('../modules/ganado/pages/AnimalDetailPage.vue'),
+    meta: { requiresAuth: true }
   },
 ];
 
