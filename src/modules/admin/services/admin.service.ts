@@ -9,36 +9,9 @@
  * base de datos (Supabase) para crear, leer, actualizar y
  * eliminar datos (operaciones CRUD).
  * 
- * ¿Por qué existe?
- * Separamos la lógica de datos de la lógica visual (Vue).
- * Así, el componente AdminDashboard.vue solo se preocupa por
- * mostrar cosas en pantalla, y este archivo se encarga de
- * hablar con Supabase. Esto se llama "separación de responsabilidades".
- * 
- * ¿Cómo se usa?
- * Desde cualquier componente Vue se importa así:
- *   import { adminService } from '../services/admin.service';
- *   const usuarios = await adminService.getUsuarios();
- * 
- * Tablas de Supabase que usamos aquí:
- *   - usuarios: los empleados/administradores del sistema
- *   - roles: los tipos de usuario (admin, ganadero, veterinario)
- *   - fincas: las propiedades ganaderas
- *   - animales: el ganado registrado
- *   - razas: catálogo de razas bovinas
- *   - estimaciones_peso: los pesajes de cada animal
- */
-
 // Importamos el cliente de Supabase que ya está configurado con la URL y la API Key.
 // El '@/supabase' es un alias que apunta a src/supabase/index.ts
-import { supabase } from '@/supabase';
-
-// ============================================================
-// INTERFACES (TypeScript)
-// ============================================================
-// Las interfaces definen la "forma" de nuestros datos.
-// TypeScript nos ayuda a evitar errores porque si intentamos
-// usar un campo que no existe, nos avisa antes de ejecutar.
+//import { supabase } from '@/supabase';
 
 /**
  * Rol — Representa un tipo de usuario en el sistema.
@@ -52,10 +25,6 @@ export interface Rol {
 
 /**
  * UsuarioInfo — Toda la info de un usuario que mostramos en la tabla.
- * Ejemplo: { id: 1, correo: 'admin@test.com', nombre_completo: 'Juan', ... }
- * 
- * El signo "?" después del nombre (como rol_nombre?) significa que
- * ese campo es OPCIONAL, puede existir o no.
  */
 export interface UsuarioInfo {
   id: number;
@@ -132,12 +101,6 @@ export interface AnalisisPesos {
  * Es una política de seguridad de Supabase que controla QUIÉN puede
  * hacer CADA operación en CADA tabla. Si no tienes permiso, Supabase
  * te responde con error código 42501.
- * 
- * Esta función traduce ese error técnico a un mensaje amigable
- * para que el admin sepa qué hacer.
- * 
- * La palabra "never" como tipo de retorno significa que esta función
- * SIEMPRE lanza un error, nunca retorna normalmente.
  */
 function handleRLSError(error: any, operacion: string): never {
   if (error.code === '42501' || error.message?.includes('row-level security')) {
@@ -156,11 +119,6 @@ function handleRLSError(error: any, operacion: string): never {
 // ============================================================
 /**
  * adminService — Es un objeto que agrupa TODAS las funciones del admin.
- * 
- * ¿Por qué un objeto y no funciones sueltas?
- * Porque así las organizamos mejor y las podemos importar todas juntas:
- *   adminService.getUsuarios()
- *   adminService.crearFinca(...)
  * 
  * Todas las funciones son "async" porque hablan con Supabase,
  * que es una operación que toma tiempo (va por internet a la base de datos).
@@ -188,7 +146,7 @@ export const adminService = {
       .from('roles')
       .select('id, nombre')
       .order('id');
-      
+
     if (error) {
       console.error('Error fetching roles:', error.message);
     }
@@ -219,7 +177,7 @@ export const adminService = {
       .from('razas')
       .select('id, nombre, descripcion')
       .order('nombre'); // Orden alfabético para que sea más fácil encontrar la raza
-      
+
     if (error) {
       console.error('Error fetching razas:', error.message);
       return []; // Retornamos array vacío en vez de lanzar error
@@ -241,7 +199,7 @@ export const adminService = {
       .insert([{ nombre, descripcion: descripcion || null }])
       .select()
       .single();
-      
+
     if (error) handleRLSError(error, 'crear raza');
     return data as Raza;
   },
@@ -341,15 +299,15 @@ export const adminService = {
     const { error } = await supabase
       .from('usuarios')
       .insert([
-        { 
-          correo: usuario.correo, 
+        {
+          correo: usuario.correo,
           contrasena_hash: usuario.contrasena, // En producción esto debería ser un hash
           rol_id: usuario.rol_id,
           nombre_completo: usuario.nombre_completo,
           activo: true // El usuario nuevo empieza activo por defecto
         }
       ]);
-      
+
     if (error) handleRLSError(error, 'crear usuario');
   },
 
@@ -367,7 +325,7 @@ export const adminService = {
       .from('usuarios')
       .delete()
       .eq('id', id);
-      
+
     if (error) handleRLSError(error, 'eliminar usuario');
   },
 
@@ -384,7 +342,7 @@ export const adminService = {
       .from('usuarios')
       .update({ activo: nuevoEstado })
       .eq('id', id);
-      
+
     if (error) handleRLSError(error, 'actualizar estado del usuario');
   },
 
@@ -411,9 +369,9 @@ export const adminService = {
         .from('fincas')
         .select('*')       // Todas las columnas
         .order('nombre');   // Orden alfabético
-        
+
       if (error) throw error;
-      
+
       // Si no hay fincas, retornamos array vacío (sin datos inventados)
       if (!fincas || fincas.length === 0) {
         return [];
@@ -487,7 +445,7 @@ export const adminService = {
         ubicacion: finca.ubicacion.trim(),
         propietario_id: finca.propietario_id
       }]);
-      
+
     // Si hay error (especialmente de permisos RLS), lo manejamos
     if (error) handleRLSError(error, 'crear finca');
   },
@@ -516,7 +474,7 @@ export const adminService = {
       .from('fincas')
       .delete()
       .eq('id', id);
-      
+
     if (error) handleRLSError(error, 'eliminar finca');
   },
 
@@ -566,9 +524,9 @@ export const adminService = {
             creado_en
           )
         `);
-        
+
       if (error) throw error;
-      
+
       // Si no hay animales registrados, retornamos array vacío
       if (!data || data.length === 0) {
         return [];
@@ -580,13 +538,13 @@ export const adminService = {
         // del más reciente al más antiguo para tomar el último
         const weights = a.estimaciones_peso || [];
         weights.sort((x: any, y: any) => new Date(y.creado_en).getTime() - new Date(x.creado_en).getTime());
-        
+
         // El peso actual es el pesaje más reciente
         // Usamos peso_corregido_kg si existe, si no, peso_estimado_kg
         const latestWeight = weights.length > 0
           ? (weights[0].peso_corregido_kg || weights[0].peso_estimado_kg || 0)
           : 0;
-          
+
         return {
           id: a.id,
           nombre: a.nombre || 'Sin nombre',
@@ -667,7 +625,7 @@ export const adminService = {
     const { error } = await supabase
       .from('animales')
       .insert([insertData]);
-      
+
     if (error) handleRLSError(error, 'crear animal');
   },
 
@@ -680,7 +638,7 @@ export const adminService = {
       .from('animales')
       .delete()
       .eq('id', id);
-      
+
     if (error) handleRLSError(error, 'eliminar animal');
   },
 
@@ -756,9 +714,9 @@ export const adminService = {
             creado_en
           )
         `);
-        
+
       if (error) throw error;
-      
+
       // Si no hay animales, retornamos datos vacíos (todo en 0)
       if (!animales || animales.length === 0) {
         return {
@@ -769,7 +727,7 @@ export const adminService = {
           bovinoMasPesado: null
         };
       }
-      
+
       // Paso 3: Estructuras para acumular datos
       // pesosPorMes es un diccionario donde cada índice (0-5) representa un mes
       // y el valor es un array de todos los pesos registrados en ese mes
@@ -778,22 +736,22 @@ export const adminService = {
       let countPesosActuales = 0;  // Cantidad de animales con peso registrado
       let maxPeso = 0;             // El peso más alto encontrado
       let heaviestBovino: any = null; // Info del animal más pesado
-      
+
       // Paso 4: Recorremos cada animal para procesar sus pesajes
       animales.forEach((a: any) => {
         const weights = a.estimaciones_peso || [];
         if (weights.length === 0) return; // Si no tiene pesajes, lo saltamos
-        
+
         // Ordenamos pesajes del más antiguo al más reciente
         weights.sort((x: any, y: any) => new Date(x.creado_en).getTime() - new Date(y.creado_en).getTime());
-        
+
         // El peso más reciente es el último del array (ya que ordenamos ascendente)
         const latestWeight = weights[weights.length - 1].peso_corregido_kg || weights[weights.length - 1].peso_estimado_kg || 0;
-        
+
         if (latestWeight > 0) {
           totalPesoActual += latestWeight;
           countPesosActuales++;
-          
+
           // ¿Es este el animal más pesado hasta ahora?
           if (latestWeight > maxPeso) {
             maxPeso = latestWeight;
@@ -804,16 +762,16 @@ export const adminService = {
             };
           }
         }
-        
+
         // Clasificamos cada pesaje en su mes correspondiente
         weights.forEach((w: any) => {
           const date = new Date(w.creado_en);
           const pesoVal = w.peso_corregido_kg || w.peso_estimado_kg || 0;
           if (pesoVal <= 0) return;
-          
+
           // Calculamos cuántos meses de diferencia hay entre el pesaje y hoy
           const monthDiff = (hoy.getFullYear() - date.getFullYear()) * 12 + hoy.getMonth() - date.getMonth();
-          
+
           // Solo nos interesan los últimos 6 meses (índice 0 a 5)
           if (monthDiff >= 0 && monthDiff < 6) {
             // 5 - monthDiff: convierte "meses atrás" a "índice del array"
@@ -823,10 +781,10 @@ export const adminService = {
           }
         });
       });
-      
+
       // Paso 5: Calcular el promedio de peso para cada mes
       const pesosPromedio: number[] = [0, 0, 0, 0, 0, 0];
-      
+
       for (let i = 0; i < 6; i++) {
         const arr = pesosPorMes[i];
         if (arr && arr.length > 0) {
@@ -836,7 +794,7 @@ export const adminService = {
         }
         // Si no hay datos para ese mes, queda en 0
       }
-      
+
       // Paso 6: Calcular la tasa de crecimiento mensual
       // Comparamos el mes actual (índice 5) con el mes anterior (índice 4)
       const pesoUltimo = pesosPromedio[5];     // Promedio del mes actual
@@ -844,10 +802,10 @@ export const adminService = {
       const dif = pesoUltimo - pesoPenultimo;  // Diferencia en kg
       // Fórmula: (diferencia / valor anterior) * 100 = porcentaje de cambio
       const crecimientoMensual = pesoPenultimo > 0 ? Number(((dif / pesoPenultimo) * 100).toFixed(1)) : 0;
-      
+
       // Peso promedio general = suma de pesos actuales / cantidad de animales con peso
       const pesoPromedioGeneral = countPesosActuales > 0 ? Number((totalPesoActual / countPesosActuales).toFixed(1)) : 0;
-      
+
       return {
         labels,
         pesosPromedio,
