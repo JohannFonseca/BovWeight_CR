@@ -1,7 +1,14 @@
+/**
+ * @file index.ts (Router)
+ * @description Configuración del sistema de rutas del lado del cliente (Vue/Ionic Router).
+ * Define las vistas disponibles, aplica carga perezosa (lazy-loading) y establece políticas
+ * de seguridad y control de acceso según el estado de autenticación y los roles del usuario.
+ */
+
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 
-// Usaremos lazy loading para mejorar la escalabilidad y tiempos de carga
+// Definición de las rutas de la aplicación con metadatos de acceso y roles permitidos
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
@@ -39,11 +46,17 @@ const routes: Array<RouteRecordRaw> = [
   },
 ];
 
+// Instanciación del enrutador con historial basado en la API de navegación del navegador
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
 
+/**
+ * Guardián de navegación global (Navigation Guard).
+ * Valida los permisos de acceso de cada ruta en base a la sesión del usuario guardada en localStorage
+ * y redirige automáticamente al login o a la pantalla principal respectiva si no tiene permisos.
+ */
 router.beforeEach((to, from, next) => {
   const sessionStr = localStorage.getItem('usuario_sesion');
   let userSession: any = null;
