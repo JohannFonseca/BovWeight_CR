@@ -11,10 +11,12 @@
         </ion-title>
         <ion-buttons slot="end">
           <div class="user-profile">
-            <div class="avatar ganadero">G</div>
+            <div class="avatar ganadero">
+              {{ usuarioSesion?.nombre_completo ? usuarioSesion.nombre_completo.charAt(0).toUpperCase() : 'G' }}
+            </div>
             <div class="user-info">
-              <span class="name">Pedro Ganadero</span>
-              <span class="role">Finca "El Rosario"</span>
+              <span class="name">{{ usuarioSesion?.nombre_completo || 'Pedro Ganadero' }}</span>
+              <span class="role">{{ usuarioSesion?.usuario || 'Finca "El Rosario"' }}</span>
             </div>
           </div>
           <ion-button @click="logout" class="logout-btn">
@@ -78,7 +80,7 @@
                 <ion-icon :icon="scaleOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">420 <small>kg</small></span>
+                <span class="stat-value">{{ pesoPromedio }} <small>kg</small></span>
                 <span class="stat-label">Peso Promedio</span>
               </div>
             </div>
@@ -88,8 +90,8 @@
                 <ion-icon :icon="cameraOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">12</span>
-                <span class="stat-label">Pesajes Hoy</span>
+                <span class="stat-value">{{ pesajesHoy }}</span>
+                <span class="stat-label">Pesajes del Rebaño</span>
               </div>
             </div>
           </div>
@@ -161,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, 
@@ -188,7 +190,29 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const router = useRouter();
 
+const usuarioSesion = ref<any>(null);
+const sessionStr = localStorage.getItem('usuario_sesion');
+if (sessionStr) {
+  try {
+    usuarioSesion.value = JSON.parse(sessionStr);
+  } catch (e) {
+    console.error('Error parseando usuario_sesion:', e);
+  }
+}
+
+const pesoPromedio = computed(() => {
+  const animalsWithWeight = animals.value.filter(a => a.pesoActual > 0);
+  if (animalsWithWeight.length === 0) return 0;
+  const total = animalsWithWeight.reduce((acc, curr) => acc + curr.pesoActual, 0);
+  return Math.round(total / animalsWithWeight.length);
+});
+
+const pesajesHoy = computed(() => {
+  return animals.value.reduce((acc, curr) => acc + (curr.historialPeso?.length || 0), 0);
+});
+
 const logout = () => {
+  localStorage.removeItem('usuario_sesion');
   router.push('/login');
 };
 
@@ -206,23 +230,60 @@ async function load() {
 
 onMounted(load);
 
-// Chart Data Dummy
-const chartData = ref({
-  labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
-  datasets: [
-    {
-      label: 'Peso Promedio (kg)',
-      backgroundColor: 'rgba(46, 125, 50, 0.1)',
-      borderColor: '#2E7D32',
-      borderWidth: 2,
-      pointBackgroundColor: '#fff',
-      pointBorderColor: '#2E7D32',
-      pointRadius: 4,
-      fill: true,
-      data: [380, 395, 410, 420],
-      tension: 0.4
-    }
-  ]
+const chartData = computed(() => {
+  const recordsByDate: { [key: string]: { total: number; count: number } } = {};
+  
+  animals.value.forEach(animal => {
+    (animal.historialPeso || []).forEach(record => {
+      const dateStr = record.fecha;
+      if (!recordsByDate[dateStr]) {
+        recordsByDate[dateStr] = { total: 0, count: 0 };
+      }
+      recordsByDate[dateStr].total += record.peso;
+      recordsByDate[dateStr].count += 1;
+    });
+  });
+
+  const uniqueDates = Object.keys(recordsByDate).sort((a, b) => {
+    const partsA = a.split('/');
+    const partsB = b.split('/');
+    const dateA = partsA.length === 3 ? new Date(parseInt(partsA[2]), parseInt(partsA[1]) - 1, parseInt(partsA[0])) : new Date(a);
+    const dateB = partsB.length === 3 ? new Date(parseInt(partsB[2]), parseInt(partsB[1]) - 1, parseInt(partsB[0])) : new Date(b);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  let labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
+  let data = [0, 0, 0, 0];
+
+  if (uniqueDates.length > 0) {
+    labels = uniqueDates.map(d => {
+      const parts = d.split('/');
+      if (parts.length === 3) {
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        return `${parts[0]} ${months[parseInt(parts[1]) - 1]}`;
+      }
+      return d;
+    });
+    data = uniqueDates.map(d => Math.round(recordsByDate[d].total / recordsByDate[d].count));
+  }
+
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Peso Promedio (kg)',
+        backgroundColor: 'rgba(46, 125, 50, 0.1)',
+        borderColor: '#2E7D32',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#2E7D32',
+        pointRadius: 4,
+        fill: true,
+        data,
+        tension: 0.4
+      }
+    ]
+  };
 });
 
 const chartOptions = ref({

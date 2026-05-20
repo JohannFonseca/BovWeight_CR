@@ -91,6 +91,9 @@ const login = async () => {
   try {
     const user = await authRepository.login(usuario.value, password.value);
     
+    // Guardar la sesión del usuario
+    localStorage.setItem('usuario_sesion', JSON.stringify(user));
+    
     // Redireccionar basado en el rol
     if (user.rol === 'admin') {
       router.push('/admin');

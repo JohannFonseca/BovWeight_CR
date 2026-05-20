@@ -11,10 +11,12 @@
         </ion-title>
         <ion-buttons slot="end">
           <div class="user-profile">
-            <div class="avatar vet">V</div>
+            <div class="avatar vet">
+              {{ usuarioSesion?.nombre_completo ? usuarioSesion.nombre_completo.charAt(0).toUpperCase() : 'V' }}
+            </div>
             <div class="user-info">
-              <span class="name">Ana Veterinaria</span>
-              <span class="role">Lic. 15482</span>
+              <span class="name">{{ usuarioSesion?.nombre_completo || 'Ana Veterinaria' }}</span>
+              <span class="role">{{ usuarioSesion?.usuario || 'veterinario@test.com' }}</span>
             </div>
           </div>
           <ion-button @click="logout" class="logout-btn">
@@ -168,8 +170,18 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 const router = useRouter();
+const usuarioSesion = ref<any>(null);
+const sessionStr = localStorage.getItem('usuario_sesion');
+if (sessionStr) {
+  try {
+    usuarioSesion.value = JSON.parse(sessionStr);
+  } catch (e) {
+    console.error('Error parseando usuario_sesion:', e);
+  }
+}
 
 const logout = () => {
+  localStorage.removeItem('usuario_sesion');
   router.push('/login');
 };
 

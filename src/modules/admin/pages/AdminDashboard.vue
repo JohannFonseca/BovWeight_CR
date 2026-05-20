@@ -11,10 +11,12 @@
         </ion-title>
         <ion-buttons slot="end">
           <div class="user-profile">
-            <div class="avatar">A</div>
+            <div class="avatar">
+              {{ usuarioSesion?.nombre_completo ? usuarioSesion.nombre_completo.charAt(0).toUpperCase() : 'A' }}
+            </div>
             <div class="user-info">
-              <span class="name">Administrador</span>
-              <span class="role">admin@test.com</span>
+              <span class="name">{{ usuarioSesion?.nombre_completo || 'Administrador' }}</span>
+              <span class="role">{{ usuarioSesion?.usuario || 'admin@test.com' }}</span>
             </div>
           </div>
           <ion-button @click="logout" class="logout-btn">
@@ -54,7 +56,7 @@
           <div class="mobile-nav mobile-only">
             <ion-segment :value="activeTab" @ionChange="e => activeTab = e.detail.value as string">
               <ion-segment-button value="panel">
-                <ion-label>Finca</ion-label>
+                <ion-label>Inicio</ion-label>
               </ion-segment-button>
               <ion-segment-button value="usuarios">
                 <ion-label>Personal</ion-label>
@@ -62,14 +64,17 @@
               <ion-segment-button value="roles">
                 <ion-label>Accesos</ion-label>
               </ion-segment-button>
+              <ion-segment-button value="logs">
+                <ion-label>Logs</ion-label>
+              </ion-segment-button>
             </ion-segment>
           </div>
 
           <!-- HEADER DE PAGINA GENERAL -->
           <div class="page-header">
             <div v-if="activeTab === 'panel'">
-              <h1 class="page-title">Resumen de Ganadería</h1>
-              <p class="page-subtitle">Indicadores principales de tu finca</p>
+              <h1 class="page-title">Panel de Control de Seguridad</h1>
+              <p class="page-subtitle">Monitoreo de accesos y actividad del sistema</p>
             </div>
             <div v-if="activeTab === 'usuarios'">
               <h1 class="page-title">Personal de la Finca</h1>
@@ -78,6 +83,10 @@
             <div v-if="activeTab === 'roles'">
               <h1 class="page-title">Control de Accesos</h1>
               <p class="page-subtitle">Permisos y estado del personal</p>
+            </div>
+            <div v-if="activeTab === 'logs'">
+              <h1 class="page-title">Logs del Sistema</h1>
+              <p class="page-subtitle">Historial de inicios de sesión de los usuarios</p>
             </div>
             
             <ion-button v-if="activeTab === 'usuarios'" class="primary-btn" @click="mostrarModal = true">
@@ -96,54 +105,50 @@
                 <ion-icon :icon="peopleOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">{{ stats.personalActivo }}</span>
-                <span class="stat-label">Personal Activo</span>
+                <span class="stat-value">{{ statsPersonalRegistrado }}</span>
+                <span class="stat-label">Personal Registrado</span>
               </div>
-              <div class="stat-trend positive">
-                <ion-icon :icon="trendingUpOutline"></ion-icon>
-                <span>+1</span>
+              <div class="stat-trend neutral">
+                <span>Cuentas</span>
               </div>
             </div>
 
             <div class="stat-card">
               <div class="stat-icon-wrapper green">
-                <ion-icon :icon="leafOutline"></ion-icon>
+                <ion-icon :icon="shieldCheckmarkOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">{{ stats.bovinos }}</span>
-                <span class="stat-label">Bovinos Registrados</span>
+                <span class="stat-value">{{ statsAccesosActivos }}</span>
+                <span class="stat-label">Accesos Activos</span>
               </div>
               <div class="stat-trend positive">
-                <ion-icon :icon="trendingUpOutline"></ion-icon>
-                <span>+12</span>
+                <span>En regla</span>
+              </div>
+            </div>
+
+            <div class="stat-card font-error-card">
+              <div class="stat-icon-wrapper red-bg">
+                <ion-icon :icon="removeOutline"></ion-icon>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value">{{ statsAccesosBloqueados }}</span>
+                <span class="stat-label">Accesos Bloqueados</span>
+              </div>
+              <div class="stat-trend negative">
+                <span>Sin acceso</span>
               </div>
             </div>
 
             <div class="stat-card">
               <div class="stat-icon-wrapper teal">
-                <ion-icon :icon="medkitOutline"></ion-icon>
+                <ion-icon :icon="listOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">{{ stats.alertas }}</span>
-                <span class="stat-label">Alertas Médicas</span>
+                <span class="stat-value">{{ statsTotalLogs }}</span>
+                <span class="stat-label">Actividad del Sistema</span>
               </div>
               <div class="stat-trend neutral">
-                <ion-icon :icon="removeOutline"></ion-icon>
-                <span>0</span>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-icon-wrapper orange">
-                <ion-icon :icon="pulseOutline"></ion-icon>
-              </div>
-              <div class="stat-details">
-                <span class="stat-value">{{ stats.pesajes }}</span>
-                <span class="stat-label">Pesajes este Mes</span>
-              </div>
-              <div class="stat-trend positive">
-                <ion-icon :icon="trendingUpOutline"></ion-icon>
-                <span>+24%</span>
+                <span>Logs</span>
               </div>
             </div>
           </div>
@@ -153,18 +158,18 @@
             <!-- Chart Section -->
             <div class="panel-card chart-panel">
               <div class="panel-header">
-                <h3>Pesajes y Nacimientos</h3>
-                <ion-button fill="clear" size="small">Ver reporte</ion-button>
+                <h3>Actividad de Inicios de Sesión</h3>
+                <ion-button fill="clear" size="small" @click="activeTab = 'logs'">Ver todos los logs</ion-button>
               </div>
               <div class="panel-body">
-                <LineChart :data="chartData" :options="chartOptions" class="chart-container" />
+                <LineChart :data="adminChartData" :options="chartOptions" class="chart-container" />
               </div>
             </div>
 
             <!-- Recent Activity Table -->
             <div class="panel-card">
               <div class="panel-header">
-                <h3>Logs Recientes del Sistema</h3>
+                <h3>Últimos Accesos al Sistema</h3>
               </div>
               <div class="panel-body no-padding">
                 <div class="table-responsive">
@@ -172,17 +177,33 @@
                     <thead>
                       <tr>
                         <th>Usuario</th>
-                        <th>Acción</th>
+                        <th>Rol</th>
                         <th>Resultado</th>
-                        <th>Fecha</th>
+                        <th>Fecha y Hora</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td data-label="Usuario"><div class="cell-user"><div class="mini-avatar">G</div> ganadero@test.com</div></td>
-                        <td data-label="Acción">Estimación de peso IA (#4512)</td>
-                        <td data-label="Resultado"><span class="status-badge success">Éxito</span></td>
-                        <td data-label="Fecha">Hace 5 min</td>
+                      <tr v-for="log in topRecentLogs" :key="log.id">
+                        <td data-label="Usuario">
+                          <div class="cell-user">
+                            <div class="mini-avatar">{{ log.usuario_correo ? log.usuario_correo.charAt(0).toUpperCase() : 'U' }}</div>
+                            <div class="user-main-info">
+                              <span class="user-name">{{ log.usuario_correo }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td data-label="Rol">
+                          <span class="role-badge" :class="log.rol.toLowerCase()">{{ log.rol }}</span>
+                        </td>
+                        <td data-label="Resultado">
+                          <span class="status-badge success">Éxito</span>
+                        </td>
+                        <td data-label="Fecha y Hora">
+                          <span class="log-date">{{ formatDateTime(log.creado_en) }}</span>
+                        </td>
+                      </tr>
+                      <tr v-if="topRecentLogs.length === 0">
+                        <td colspan="4" style="text-align: center; padding: 24px;">No hay inicios de sesión registrados en el sistema.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -295,6 +316,69 @@
             </div>
           </div>
 
+          <!-- PESTAÑA: LOGS DEL SISTEMA -->
+          <div v-if="activeTab === 'logs'" class="panel-card">
+            <div class="panel-header logs-header">
+              <h3>Historial de Inicios de Sesión</h3>
+              <div class="logs-actions">
+                <div class="search-box">
+                  <input 
+                    type="text" 
+                    v-model="searchQuery" 
+                    placeholder="Buscar por correo..." 
+                    class="search-input"
+                  />
+                </div>
+                <ion-button fill="clear" size="small" @click="cargarLogs">Actualizar</ion-button>
+              </div>
+            </div>
+            <div class="panel-body no-padding">
+              <div class="table-responsive">
+                <table class="saas-table">
+                  <thead>
+                    <tr>
+                      <th>Usuario</th>
+                      <th>Rol</th>
+                      <th>Acción</th>
+                      <th>Fecha y Hora</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="log in filteredLogs" :key="log.id || log.creado_en">
+                      <td data-label="Usuario">
+                        <div class="cell-user">
+                          <div class="mini-avatar">{{ log.usuario_correo.charAt(0).toUpperCase() }}</div>
+                          <div class="user-main-info">
+                            <span class="user-name">{{ log.usuario_correo }}</span>
+                            <span class="user-role mobile-only">{{ log.rol }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Rol">
+                        <span class="role-badge" :class="log.rol.toLowerCase()">{{ log.rol }}</span>
+                      </td>
+                      <td data-label="Acción">
+                        <span class="status-badge success">Inicio de sesión exitoso</span>
+                      </td>
+                      <td data-label="Fecha y Hora">
+                        {{ formatDateTime(log.creado_en) }}
+                      </td>
+                    </tr>
+                    <tr v-if="filteredLogs.length === 0">
+                      <td colspan="4" style="text-align: center; padding: 32px; color: #5c6e58;">
+                        <div class="empty-state">
+                          <span style="font-size: 40px; display: block; margin-bottom: 12px;">📋</span>
+                          <p style="margin: 0; font-weight: 600;">No se encontraron logs de inicio de sesión</p>
+                          <small style="color: #8ba888;">Intenta con otra búsqueda o realiza un inicio de sesión</small>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
         </main>
       </div>
 
@@ -395,7 +479,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons,
@@ -408,7 +492,7 @@ import {
   leafOutline, medkitOutline, pulseOutline, removeOutline, mailOutline, calendarOutline
 } from 'ionicons/icons';
 
-import { adminService, type UsuarioInfo, type Rol } from '../services/admin.service';
+import { adminService, type UsuarioInfo, type Rol, type LogSistema } from '../services/admin.service';
 
 // Chart.js imports
 import { Line as LineChart } from 'vue-chartjs';
@@ -420,7 +504,16 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 const router = useRouter();
-const activeTab = ref('usuarios'); // Empezamos en usuarios para probar la funcionalidad
+const usuarioSesion = ref<any>(null);
+const sessionStr = localStorage.getItem('usuario_sesion');
+if (sessionStr) {
+  try {
+    usuarioSesion.value = JSON.parse(sessionStr);
+  } catch (e) {
+    console.error('Error parseando usuario_sesion:', e);
+  }
+}
+const activeTab = ref('panel'); // Empezamos en el Panel Principal
 const mostrarModal = ref(false);
 const guardando = ref(false);
 
@@ -435,6 +528,92 @@ const abrirDetalles = (user: UsuarioInfo) => {
 const usuariosList = ref<UsuarioInfo[]>([]);
 const rolesList = ref<Rol[]>([]);
 
+const logsList = ref<LogSistema[]>([]);
+
+// Computed properties para las estadísticas de seguridad
+const statsPersonalRegistrado = computed(() => usuariosList.value.length);
+const statsAccesosActivos = computed(() => usuariosList.value.filter(u => u.activo).length);
+const statsAccesosBloqueados = computed(() => usuariosList.value.filter(u => !u.activo).length);
+const statsTotalLogs = computed(() => logsList.value.length);
+
+const topRecentLogs = computed(() => {
+  return logsList.value.slice(0, 5);
+});
+
+const adminChartData = computed(() => {
+  const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const labels: string[] = [];
+  const counts: number[] = [0, 0, 0, 0, 0, 0, 0];
+  
+  const hoy = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(hoy.getDate() - i);
+    labels.push(daysOfWeek[d.getDay()]);
+  }
+  
+  logsList.value.forEach(log => {
+    if (!log.creado_en) return;
+    const logDate = new Date(log.creado_en);
+    const timeDiff = hoy.getTime() - logDate.getTime();
+    const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+    if (dayDiff >= 0 && dayDiff < 7) {
+      counts[6 - dayDiff]++;
+    }
+  });
+
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Inicios de Sesión',
+        backgroundColor: 'rgba(85, 107, 47, 0.1)',
+        borderColor: '#556b2f',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#556b2f',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        fill: true,
+        data: counts,
+        tension: 0.4
+      }
+    ]
+  };
+});
+const searchQuery = ref('');
+
+const cargarLogs = async () => {
+  try {
+    logsList.value = await adminService.getLogsSistema();
+  } catch (error: any) {
+    console.error("Error al cargar logs del sistema:", error);
+  }
+};
+
+const filteredLogs = computed(() => {
+  if (!searchQuery.value || searchQuery.value.trim() === '') {
+    return logsList.value;
+  }
+  const query = searchQuery.value.toLowerCase().trim();
+  return logsList.value.filter(log => 
+    log.usuario_correo.toLowerCase().includes(query) || 
+    log.rol.toLowerCase().includes(query)
+  );
+});
+
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return 'N/A';
+  try {
+    const d = new Date(dateStr);
+    const fecha = d.toLocaleDateString('es-CR', { day: 'numeric', month: 'short' });
+    const hora = d.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return `${fecha}, ${hora}`;
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 const nuevoUsuario = ref({
   nombre_completo: '',
   correo: '',
@@ -443,6 +622,7 @@ const nuevoUsuario = ref({
 });
 
 const logout = () => {
+  localStorage.removeItem('usuario_sesion');
   router.push('/login');
 };
 
@@ -525,6 +705,7 @@ onMounted(() => {
   cargarUsuarios();
   cargarRoles();
   cargarDatosReales();
+  cargarLogs();
 });
 
 const stats = ref({
@@ -853,6 +1034,7 @@ const chartOptions = ref({
 .stat-icon-wrapper.green { background: #eaf0e6; color: #556b2f; }
 .stat-icon-wrapper.teal { background: #fdfbf7; color: #6b8e23; }
 .stat-icon-wrapper.orange { background: #fff7ed; color: #d97706; }
+.stat-icon-wrapper.red-bg { background: #fce8e8; color: #b71c1c; }
 
 .stat-details {
   display: flex;
@@ -1304,5 +1486,50 @@ const chartOptions = ref({
   .hide-on-mobile {
     display: none !important;
   }
+}
+
+/* Estilos de Logs */
+.logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.logs-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-input {
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 168, 136, 0.4);
+  background: #fdfbf7;
+  font-size: 14px;
+  color: #2c3e2d;
+  outline: none;
+  transition: all 0.3s ease;
+  width: 200px;
+}
+
+.search-input:focus {
+  border-color: #556b2f;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(85, 107, 47, 0.1);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 </style>

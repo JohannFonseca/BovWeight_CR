@@ -59,11 +59,7 @@ export class SupabaseAnimalRepository implements IAnimalRepository {
 
     return (data || []).map((raw: any) => {
       const history = raw.estimaciones_peso || [];
-      const animal = adaptAnimalRecord(raw, history);
-      return {
-        ...animal,
-        historialPeso: []
-      };
+      return adaptAnimalRecord(raw, history);
     }) as Animal[];
   }
 }

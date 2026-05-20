@@ -44,4 +44,48 @@ const router = createRouter({
   routes,
 });
 
+router.beforeEach((to, from, next) => {
+  const sessionStr = localStorage.getItem('usuario_sesion');
+  let userSession: any = null;
+  if (sessionStr) {
+    try {
+      userSession = JSON.parse(sessionStr);
+    } catch (e) {
+      localStorage.removeItem('usuario_sesion');
+    }
+  }
+
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false);
+  const allowedRoles = to.meta.allowedRoles as string[] | undefined;
+
+  if (requiresAuth) {
+    if (!userSession) {
+      next({ name: 'Login' });
+    } else if (allowedRoles && !allowedRoles.includes(userSession.rol)) {
+      if (userSession.rol === 'admin') {
+        next({ name: 'AdminDashboard' });
+      } else if (userSession.rol === 'veterinario') {
+        next({ name: 'VeterinarioDashboard' });
+      } else {
+        next({ name: 'Home' });
+      }
+    } else {
+      next();
+    }
+  } else {
+    if (to.name === 'Login' && userSession) {
+      if (userSession.rol === 'admin') {
+        next({ name: 'AdminDashboard' });
+      } else if (userSession.rol === 'veterinario') {
+        next({ name: 'VeterinarioDashboard' });
+      } else {
+        next({ name: 'Home' });
+      }
+    } else {
+      next();
+    }
+  }
+});
+
 export default router;
+

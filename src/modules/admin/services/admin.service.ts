@@ -15,7 +15,73 @@ export interface UsuarioInfo {
   creado_en?: string;
 }
 
+export interface LogSistema {
+  id: number;
+  usuario_id: number | null;
+  usuario_correo: string;
+  rol: string;
+  creado_en: string;
+}
+
 export const adminService = {
+  // Registrar inicio de sesión en el log
+  async registrarLogin(usuarioId: number | null, correo: string, rol: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('logs_sistema')
+        .insert([
+          {
+            usuario_id: usuarioId,
+            usuario_correo: correo,
+            rol: rol,
+            creado_en: new Date().toISOString()
+          }
+        ]);
+      if (error) throw error;
+    } catch (err: any) {
+      console.warn('⚠️ Advertencia: No se pudo insertar en la tabla "logs_sistema" (Supabase). Detalles:', err.message);
+      // Fallback local: guardamos un registro temporal en localStorage
+      try {
+        const localLogs = JSON.parse(localStorage.getItem('logs_sistema_fallback') || '[]');
+        localLogs.unshift({
+          id: Date.now(),
+          usuario_id: usuarioId,
+          usuario_correo: correo,
+          rol: rol,
+          creado_en: new Date().toISOString()
+        });
+        localStorage.setItem('logs_sistema_fallback', JSON.stringify(localLogs.slice(0, 100)));
+      } catch (storageErr) {
+        console.error('Error al guardar log en localStorage:', storageErr);
+      }
+    }
+  },
+
+  // Obtener logs del sistema
+  async getLogsSistema(): Promise<LogSistema[]> {
+    try {
+      const { data, error } = await supabase
+        .from('logs_sistema')
+        .select('*')
+        .order('creado_en', { ascending: false });
+
+      if (error) throw error;
+      
+      const localLogsStr = localStorage.getItem('logs_sistema_fallback') || '[]';
+      const localLogs: LogSistema[] = JSON.parse(localLogsStr);
+      const dbLogs = (data || []) as LogSistema[];
+      
+      const allLogs = [...localLogs, ...dbLogs];
+      allLogs.sort((a, b) => new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime());
+      
+      return allLogs;
+    } catch (err: any) {
+      console.warn('⚠️ No se pudo obtener logs de Supabase, cargando desde localStorage:', err.message);
+      const localLogsStr = localStorage.getItem('logs_sistema_fallback') || '[]';
+      return JSON.parse(localLogsStr) as LogSistema[];
+    }
+  },
+
   // Obtener todos los roles
   async getRoles(): Promise<Rol[]> {
     const { data, error } = await supabase

@@ -19,7 +19,7 @@ const mockAnimals: Animal[] = [
 
 export class MockAnimalRepository implements IAnimalRepository {
   async getAllAnimals(): Promise<Animal[]> {
-    return mockAnimals.map((animal) => ({ ...animal, historialPeso: [] }));
+    return mockAnimals.map((animal) => ({ ...animal }));
   }
 
   async getAnimalById(id: number): Promise<Animal> {

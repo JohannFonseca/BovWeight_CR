@@ -18,6 +18,7 @@ export interface User {
   id: number;
   usuario: string;
   rol: 'admin' | 'ganadero' | 'veterinario';
+  nombre_completo?: string;
 }
 
 export interface IAnimalRepository {
