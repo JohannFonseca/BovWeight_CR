@@ -448,9 +448,13 @@ const logout = () => {
 
 const cargarUsuarios = async () => {
   try {
+    console.log('🔍 DEBUG - Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+    console.log('🔍 DEBUG - Cargando usuarios...');
     usuariosList.value = await adminService.getUsuarios();
-  } catch (error) {
-    console.error("No se pudieron cargar los usuarios.");
+    console.log('✅ DEBUG - Usuarios cargados:', usuariosList.value.length, usuariosList.value);
+  } catch (error: any) {
+    console.error("❌ DEBUG - Error cargando usuarios:", error?.message, error);
+    alert(`❌ Error cargando usuarios:\n\n${error?.message}\n\nURL Supabase: ${import.meta.env.VITE_SUPABASE_URL}`);
   }
 };
 
@@ -463,7 +467,24 @@ const cargarRoles = async () => {
 };
 
 const guardarUsuario = async () => {
-  if (!nuevoUsuario.value.correo || !nuevoUsuario.value.rol_id) return;
+  // Validaciones del formulario
+  if (!nuevoUsuario.value.nombre_completo || nuevoUsuario.value.nombre_completo.trim().length === 0) {
+    alert('Por favor ingresa el nombre completo.');
+    return;
+  }
+  if (!nuevoUsuario.value.correo || !nuevoUsuario.value.correo.includes('@')) {
+    alert('Por favor ingresa un correo electrónico válido.');
+    return;
+  }
+  if (!nuevoUsuario.value.contrasena || nuevoUsuario.value.contrasena.length < 4) {
+    alert('La contraseña debe tener al menos 4 caracteres.');
+    return;
+  }
+  if (!nuevoUsuario.value.rol_id) {
+    alert('Por favor selecciona un rol para el usuario.');
+    return;
+  }
+
   guardando.value = true;
   try {
     await adminService.crearUsuario({
@@ -472,14 +493,14 @@ const guardarUsuario = async () => {
       contrasena: nuevoUsuario.value.contrasena,
       rol_id: nuevoUsuario.value.rol_id
     });
+    alert('✅ Usuario creado exitosamente.');
     mostrarModal.value = false;
     nuevoUsuario.value = { nombre_completo: '', correo: '', contrasena: '', rol_id: null };
     await cargarUsuarios();
-  } catch (error) {
-    // Mostrar mensaje de error más útil al usuario y registrar detalles
-    console.error('Error al crear usuario (admin UI):', error);
-    const msg = (error as any)?.message || JSON.stringify(error) || 'Error desconocido al crear usuario. Verifica la BD.';
-    alert(`Error al crear el usuario: ${msg}`);
+  } catch (error: any) {
+    const mensaje = error?.message || 'Error desconocido al crear el usuario.';
+    alert(`❌ Error al crear usuario:\n\n${mensaje}`);
+    console.error('Error completo:', error);
   } finally {
     guardando.value = false;
   }

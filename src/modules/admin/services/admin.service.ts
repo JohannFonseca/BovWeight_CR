@@ -82,12 +82,34 @@ export const adminService = {
 
   // Crear un nuevo usuario manualmente
   async crearUsuario(usuario: { correo: string; contrasena: string; rol_id: number; nombre_completo: string }): Promise<void> {
+    // Validaciones básicas antes de insertar
+    if (!usuario.correo || !usuario.correo.includes('@')) {
+      throw new Error('El correo electrónico no es válido.');
+    }
+    if (!usuario.contrasena || usuario.contrasena.length < 4) {
+      throw new Error('La contraseña debe tener al menos 4 caracteres.');
+    }
+    if (!usuario.nombre_completo || usuario.nombre_completo.trim().length === 0) {
+      throw new Error('El nombre completo es requerido.');
+    }
+
+    // Verificar si el correo ya existe
+    const { data: existente } = await supabase
+      .from('usuarios')
+      .select('id')
+      .eq('correo', usuario.correo)
+      .maybeSingle();
+
+    if (existente) {
+      throw new Error(`Ya existe un usuario con el correo: ${usuario.correo}`);
+    }
+
     const { error } = await supabase
       .from('usuarios')
       .insert([
         { 
           correo: usuario.correo, 
-          contrasena_hash: usuario.contrasena, // Usando contrasena cruda en hash temporalmente por la tabla
+          contrasena_hash: usuario.contrasena,
           rol_id: usuario.rol_id,
           nombre_completo: usuario.nombre_completo,
           activo: true
@@ -95,8 +117,18 @@ export const adminService = {
       ]);
       
     if (error) {
-      console.error('Error creating user:', error.message);
-      throw new Error(error.message);
+      console.error('Error creating user:', error.message, error.details, error.hint, error.code);
+      // Mensajes amigables para errores comunes de Supabase
+      if (error.code === '42501' || error.message.includes('row-level security')) {
+        throw new Error('Permiso denegado: Las políticas de seguridad (RLS) de Supabase bloquean esta operación. Debes agregar una política INSERT en la tabla "usuarios" desde el panel de Supabase.');
+      }
+      if (error.code === '23505') {
+        throw new Error('Ya existe un usuario con ese correo electrónico.');
+      }
+      if (error.code === '23502') {
+        throw new Error(`Falta un campo requerido en la tabla: ${error.message}`);
+      }
+      throw new Error(`Error de Supabase: ${error.message}`);
     }
   },
 
