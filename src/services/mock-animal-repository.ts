@@ -1,21 +1,6 @@
 /**
- * =================================================================================
- * REPOSITORIO MOCK/SIMULADO (REPOSITORY PATTERN) - BOVWEIGHT CR
- * =================================================================================
- * 
- * APLICACIÓN DE PATRONES DE DISEÑO Y SOLID:
- * 
- * 1. PATRÓN DE DISEÑO: REPOSITORIO SIMULADO (Mock Repository / In-Memory Store)
- *    Esta clase representa un almacén simulado en memoria. Es fundamental durante las
- *    primeras etapas de desarrollo, desarrollo offline o la ejecución de pruebas unitarias.
- *    Evita tener que conectarse a Supabase y previene el consumo de cuota de peticiones.
- * 
- * 2. PRINCIPIO SOLID: SUSTITUCIÓN DE LISKOV (LSP - Liskov Substitution Principle):
- *    Este archivo es el ejemplo perfecto de LSP. El sistema puede sustituir la clase
- *    `SupabaseAnimalRepository` por `MockAnimalRepository` de forma 100% transparente para
- *    la interfaz gráfica de la aplicación. Ambas clases son subtipos del contrato
- *    `IAnimalRepository` y pueden intercambiarse sin alterar la corrección del programa ni 
- *    introducir comportamientos inesperados en las pantallas del usuario.
+ * @file mock-animal-repository.ts
+ * @description Repositorio simulado en memoria para pruebas y desarrollo local (Repository Pattern y LSP).
  */
 
 import type { Animal, WeightRecord, IAnimalRepository } from './interfaces';

@@ -1,25 +1,6 @@
 /**
- * =================================================================================
- * REPOSITORIO SUPABASE PARA ANIMALES (REPOSITORY PATTERN) - BOVWEIGHT CR
- * =================================================================================
- * 
- * APLICACIÓN DE PATRONES DE DISEÑO Y SOLID:
- * 
- * 1. PATRÓN DE DISEÑO: REPOSITORIO (Repository Pattern)
- *    Esta clase encapsula por completo el acceso a los datos físicos de producción en Supabase.
- *    Centraliza las consultas SQL / API (`.select()`, `.eq()`, `.from()`) aislando al cliente 
- *    web de las complejidades de la conexión, estados de red o sintaxis propia del ORM/SDK de Supabase.
- * 
- * 2. PRINCIPIO SOLID: INVERSIÓN DE DEPENDENCIAS (DIP - Dependency Inversion Principle):
- *    `SupabaseAnimalRepository` implementa formalmente la interfaz `IAnimalRepository`. 
- *    Esto garantiza que el enrutador y las vistas de ganado dependan de la abstracción del contrato
- *    y no de este archivo concreto. Esto permite alternar entre bases de datos en memoria o físicas
- *    según el entorno.
- * 
- * 3. PRINCIPIO SOLID: RESPONSABILIDAD ÚNICA (SRP - Single Responsibility Principle):
- *    La única responsabilidad de esta clase es interactuar directamente con el SDK de Supabase 
- *    para obtener la información cruda de los animales y estimaciones de peso, delegando la
- *    transformación de datos en el adaptador (`data-adapter.ts`).
+ * @file supabase-animal-repository.ts
+ * @description Repositorio de animales para Supabase (Repository Pattern, DIP y SRP).
  */
 
 import { supabase } from '../supabase';
@@ -27,7 +8,7 @@ import { adaptAnimalRecord, adaptWeightHistory } from './data-adapter';
 import type { Animal, WeightRecord, IAnimalRepository } from './interfaces';
 
 /**
- * Implementación de persistencia real utilizando la API y SDK oficial de Supabase.
+ * Implementación de persistencia real utilizando Supabase.
  */
 export class SupabaseAnimalRepository implements IAnimalRepository {
   

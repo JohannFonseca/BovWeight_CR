@@ -40,30 +40,6 @@ export interface Animal {
 
 
 /**
- * SERVICIO REAL USANDO SUPABASE
- * ==========================================
- * Este servicio reemplaza a axios y a los datos falsos (mockData).
- * Conecta directamente la app a tu base de datos de Supabase.
- * 
- * Para que esto funcione, necesitas tener creadas las siguientes tablas en Supabase:
- * 
- * 1. Tabla: animales
- *    - id (int8, primary key)
- *    - nombre (text)
- *    - raza (text)
- *    - edad (text)
- *    - arete (text)
- *    - imagen (text)
- *    - pesoActual (numeric o int4)
- * 
- * 2. Tabla: historial_peso
- *    - id (int8, primary key)
- *    - animal_id (int8, foreign key a animales.id)
- *    - fecha (date o text)
- *    - peso (numeric o int4)
- */
-
-/**
  * Servicio heredado para la gestión de datos de animales directamente con Supabase.
  * Proporciona métodos para obtener un animal por ID, su historial de pesos y la lista de todos los animales.
  */

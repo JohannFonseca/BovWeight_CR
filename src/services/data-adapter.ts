@@ -1,22 +1,6 @@
 /**
- * =================================================================================
- * ADAPTADOR DE DATOS (ADAPTER PATTERN) - BOVWEIGHT CR
- * =================================================================================
- * 
- * APLICACIÓN DE PATRONES DE DISEÑO Y SOLID:
- * 
- * 1. PATRÓN DE DISEÑO: ADAPTADOR (Adapter Pattern)
- *    Las bases de datos externas (como Supabase) frecuentemente retornan datos en formatos
- *    físicos (ej. columnas con nombres snake_case como `numero_arete`, `contrasena_hash` o 
- *    fechas crudas ISO). La interfaz web de la aplicación necesita trabajar con objetos 
- *    limpios e independientes en formato camelCase (ej. `arete`, `historialPeso`, `pesoActual`).
- *    Este módulo actúa como el "Traductor" o "Adaptador" entre el esquema físico de la 
- *    base de datos y el modelo lógico de dominio requerido por la interfaz gráfica.
- * 
- * 2. PRINCIPIO SOLID: RESPONSABILIDAD ÚNICA (SRP - Single Responsibility Principle):
- *    Este archivo tiene una única y clara razón de existir: formatear, limpiar y transformar 
- *    estructuras de datos crudas en objetos de dominio fuertemente tipados. No realiza
- *    peticiones HTTP, no se conecta a bases de datos y no maneja lógica de enrutamiento web.
+ * @file data-adapter.ts
+ * @description Adaptador para transformar formatos físicos de base de datos (Supabase) al modelo de negocio de Vue (Pattern Adapter y SRP).
  */
 
 import type { Animal, WeightRecord } from './interfaces';

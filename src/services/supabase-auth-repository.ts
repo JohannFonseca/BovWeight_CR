@@ -1,31 +1,13 @@
 /**
- * =================================================================================
- * REPOSITORIO DE AUTENTICACIÓN EN SUPABASE (REPOSITORY PATTERN) - BOVWEIGHT CR
- * =================================================================================
- * 
- * APLICACIÓN DE PATRONES DE DISEÑO Y SOLID:
- * 
- * 1. PATRÓN DE DISEÑO: REPOSITORIO DE AUTENTICACIÓN (Auth Repository Pattern)
- *    Centraliza y aisla todas las llamadas de inicio de sesión física, verificación 
- *    de credenciales, manejo de hashes o tokens remotos. Previene que la pantalla de
- *    Login dependa directamente del cliente de Supabase.
- * 
- * 2. PRINCIPIO SOLID: RESPONSABILIDAD ÚNICA (SRP - Single Responsibility Principle):
- *    Esta clase tiene la única y exclusiva misión de autenticar las credenciales del usuario 
- *    (correo/contraseña). Al validarse de forma exitosa, opcionalmente dispara la auditoría 
- *    (registro de logs) pero delega por completo la gestión del estado visual al enrutador de Vue.
- * 
- * 3. PRINCIPIO SOLID: INVERSIÓN DE DEPENDENCIAS (DIP - Dependency Inversion Principle):
- *    Implementa el contrato `IAuthRepository` de forma que los componentes web interactúen 
- *    únicamente con la abstracción. Esto facilita añadir pruebas unitarias con mockeo 
- *    de accesos de forma rápida y limpia.
+ * @file supabase-auth-repository.ts
+ * @description Repositorio de autenticación de Supabase (Repository Pattern, SRP y DIP).
  */
 
 import { supabase } from '../supabase';
 import type { IAuthRepository, User } from './interfaces';
 
 /**
- * Proveedor de servicios de autenticación y control de accesos real sobre Supabase.
+ * Proveedor de autenticación sobre Supabase con soporte para cuentas de fallback.
  */
 export class SupabaseAuthRepository implements IAuthRepository {
   
