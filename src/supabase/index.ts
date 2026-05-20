@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @description Inicialización y configuración del cliente de Supabase.
+ * Se encarga de leer las credenciales del entorno y exportar la instancia global para interactuar con la base de datos.
+ */
+
 import { createClient } from '@supabase/supabase-js';
 
 let supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -13,4 +19,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase URL or Anon Key. Please check your .env file.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Instancia global de Supabase para realizar consultas y mutaciones en la base de datos
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

@@ -1,16 +1,32 @@
+/**
+ * @file api.ts
+ * @description Servicios y definiciones de tipos heredados (legacy) para la comunicación directa con Supabase.
+ * Proporciona compatibilidad con las vistas existentes que aún no se han migrado por completo al patrón de Repositorio.
+ */
+
 import { supabase } from '../supabase';
 
+/**
+ * Representa un usuario en el sistema.
+ * Contiene el identificador, nombre de usuario (correo) y el rol asignado.
+ */
 export interface User {
   id: number;
   usuario: string;
   rol: 'admin' | 'ganadero' | 'veterinario';
 }
 
+/**
+ * Representa un registro de peso individual de un animal con su fecha respectiva.
+ */
 export interface WeightRecord {
   fecha: string;
   peso: number;
 }
 
+/**
+ * Representa la información completa de un animal, incluyendo su historial de peso.
+ */
 export interface Animal {
   id: number;
   nombre: string;
@@ -21,6 +37,7 @@ export interface Animal {
   pesoActual: number;
   historialPeso: WeightRecord[];
 }
+
 
 /**
  * SERVICIO REAL USANDO SUPABASE
@@ -46,8 +63,12 @@ export interface Animal {
  *    - peso (numeric o int4)
  */
 
+/**
+ * Servicio heredado para la gestión de datos de animales directamente con Supabase.
+ * Proporciona métodos para obtener un animal por ID, su historial de pesos y la lista de todos los animales.
+ */
 export const animalService = {
-  // Obtener un animal específico por su ID junto con su historial
+  // Obtener un animal específico por su ID junto con su historial de peso estimado y corregido.
   async getAnimalById(id: number): Promise<Animal> {
     const { data: animal, error: animalError } = await supabase
       .from('animales')
@@ -91,7 +112,7 @@ export const animalService = {
     } as Animal;
   },
 
-  // Obtener únicamente el historial de peso de un animal
+  // Obtener únicamente el historial de peso de un animal específico.
   async getWeightHistory(animalId: number): Promise<WeightRecord[]> {
     const { data, error } = await supabase
       .from('estimaciones_peso')
@@ -110,7 +131,7 @@ export const animalService = {
     })) as WeightRecord[];
   },
 
-  // Obtener la lista de todos los animales (para mostrar en el dashboard)
+  // Obtener la lista de todos los animales (para mostrar en el panel principal).
   async getAllAnimals(): Promise<Animal[]> {
     const { data, error } = await supabase
       .from('animales')
@@ -147,6 +168,11 @@ export const animalService = {
   },
 };
 
+/**
+ * Servicio heredado para la autenticación de usuarios.
+ * Permite iniciar sesión consultando directamente la tabla de usuarios en Supabase
+ * o utilizando credenciales de prueba predefinidas como mecanismo de respaldo.
+ */
 export const authService = {
   // Función para iniciar sesión
   async login(correo: string, password: string): Promise<User> {

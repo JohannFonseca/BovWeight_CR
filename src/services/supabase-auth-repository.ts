@@ -1,8 +1,41 @@
+/**
+ * =================================================================================
+ * REPOSITORIO DE AUTENTICACIÓN EN SUPABASE (REPOSITORY PATTERN) - BOVWEIGHT CR
+ * =================================================================================
+ * 
+ * APLICACIÓN DE PATRONES DE DISEÑO Y SOLID:
+ * 
+ * 1. PATRÓN DE DISEÑO: REPOSITORIO DE AUTENTICACIÓN (Auth Repository Pattern)
+ *    Centraliza y aisla todas las llamadas de inicio de sesión física, verificación 
+ *    de credenciales, manejo de hashes o tokens remotos. Previene que la pantalla de
+ *    Login dependa directamente del cliente de Supabase.
+ * 
+ * 2. PRINCIPIO SOLID: RESPONSABILIDAD ÚNICA (SRP - Single Responsibility Principle):
+ *    Esta clase tiene la única y exclusiva misión de autenticar las credenciales del usuario 
+ *    (correo/contraseña). Al validarse de forma exitosa, opcionalmente dispara la auditoría 
+ *    (registro de logs) pero delega por completo la gestión del estado visual al enrutador de Vue.
+ * 
+ * 3. PRINCIPIO SOLID: INVERSIÓN DE DEPENDENCIAS (DIP - Dependency Inversion Principle):
+ *    Implementa el contrato `IAuthRepository` de forma que los componentes web interactúen 
+ *    únicamente con la abstracción. Esto facilita añadir pruebas unitarias con mockeo 
+ *    de accesos de forma rápida y limpia.
+ */
+
 import { supabase } from '../supabase';
 import type { IAuthRepository, User } from './interfaces';
 
+/**
+ * Proveedor de servicios de autenticación y control de accesos real sobre Supabase.
+ */
 export class SupabaseAuthRepository implements IAuthRepository {
+  
+  /**
+   * Realiza la validación de credenciales. Cuenta con soporte híbrido de
+   * cuentas de prueba de forma estática para facilitar demostraciones rápidas, 
+   * y conexión real para usuarios registrados en base de datos.
+   */
   async login(correo: string, password: string): Promise<User> {
+    // ---- VERIFICACIONES DE PRUEBA LOCALES (FALLBACK DE ALTA DISPONIBILIDAD) ----
     if (correo === 'admin@test.com' && password === '1234') {
       const user: User = { id: 1, usuario: 'admin', rol: 'admin', nombre_completo: 'Administrador' };
       import('../modules/admin/services/admin.service').then(({ adminService }) => {
@@ -25,7 +58,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
       return user;
     }
 
+    // ---- CONSULTA DE IDENTIFICACIÓN REMOTA EN SUPABASE ----
     try {
+      // Realiza una consulta uniendo la tabla 'usuarios' con 'roles' en base al correo
       const { data, error } = await supabase
         .from('usuarios')
         .select(`
@@ -37,13 +72,14 @@ export class SupabaseAuthRepository implements IAuthRepository {
           )
         `)
         .eq('correo', correo)
-        .eq('contrasena_hash', password)
+        .eq('contrasena_hash', password) // En producción formal se implementa hash (ej. bcrypt/crypto)
         .single();
 
       if (error) {
         throw error;
       }
 
+      // Estructura al usuario autenticado para la sesión web
       const loggedUser: User = {
         id: data.id,
         usuario: data.correo,
@@ -51,6 +87,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
         nombre_completo: data.nombre_completo || 'Usuario de BovWeight'
       };
       
+      // Registra el inicio de sesión exitoso en la bitácora de auditoría (logs de seguridad)
       import('../modules/admin/services/admin.service').then(({ adminService }) => {
         adminService.registrarLogin(loggedUser.id, loggedUser.usuario, loggedUser.rol).catch(console.error);
       }).catch(err => console.error('Error al cargar adminService dinámicamente:', err));

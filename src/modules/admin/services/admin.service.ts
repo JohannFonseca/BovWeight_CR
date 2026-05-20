@@ -1,10 +1,23 @@
+/**
+ * @file admin.service.ts
+ * @description Servicio encargado de las operaciones administrativas del sistema.
+ * Gestiona el control de usuarios (creación, eliminación, bloqueo), la consulta de roles,
+ * el registro y lectura de bitácoras de auditoría (logs de inicio de sesión) y las métricas del panel administrativo.
+ */
+
 import { supabase } from '@/supabase';
 
+/**
+ * Representa un rol dentro del sistema (ej. admin, ganadero, veterinario).
+ */
 export interface Rol {
   id: number;
   nombre: string;
 }
 
+/**
+ * Representa la información detallada de un usuario en el panel administrativo.
+ */
 export interface UsuarioInfo {
   id: number;
   correo: string;
@@ -15,6 +28,9 @@ export interface UsuarioInfo {
   creado_en?: string;
 }
 
+/**
+ * Representa un registro de auditoría de inicio de sesión (log del sistema).
+ */
 export interface LogSistema {
   id: number;
   usuario_id: number | null;
@@ -23,6 +39,9 @@ export interface LogSistema {
   creado_en: string;
 }
 
+/**
+ * Objeto de servicio que centraliza la lógica de administración.
+ */
 export const adminService = {
   // Registrar inicio de sesión en el log
   async registrarLogin(usuarioId: number | null, correo: string, rol: string): Promise<void> {
