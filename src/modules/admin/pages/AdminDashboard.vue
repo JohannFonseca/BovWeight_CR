@@ -33,65 +33,41 @@
           <nav class="nav-menu">
             <a href="#" class="nav-item" :class="{ active: activeTab === 'panel' }" @click.prevent="activeTab = 'panel'">
               <ion-icon :icon="pieChartOutline"></ion-icon>
-              <span>Panel Principal</span>
+              <span>Inicio</span>
             </a>
-            <a href="#" class="nav-item" :class="{ active: activeTab === 'usuarios' }" @click.prevent="activeTab = 'usuarios'">
-              <ion-icon :icon="peopleOutline"></ion-icon>
-              <span>Gestión de Usuarios</span>
+            <a href="#" class="nav-item" :class="{ active: activeTab === 'analisis' }" @click.prevent="activeTab = 'analisis'">
+              <ion-icon :icon="barChartOutline"></ion-icon>
+              <span>Análisis</span>
             </a>
-            <a href="#" class="nav-item" :class="{ active: activeTab === 'roles' }" @click.prevent="activeTab = 'roles'">
-              <ion-icon :icon="shieldCheckmarkOutline"></ion-icon>
-              <span>Roles y Permisos</span>
-            </a>
-            <a href="#" class="nav-item" :class="{ active: activeTab === 'logs' }" @click.prevent="activeTab = 'logs'">
-              <ion-icon :icon="listOutline"></ion-icon>
-              <span>Logs del Sistema</span>
+            <a href="#" class="nav-item" :class="{ active: activeTab === 'empresa' }" @click.prevent="activeTab = 'empresa'">
+              <ion-icon :icon="businessOutline"></ion-icon>
+              <span>Mi Empresa</span>
             </a>
           </nav>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-          <!-- NAVEGACIÓN MÓVIL (Segment) -->
-          <div class="mobile-nav mobile-only">
-            <ion-segment :value="activeTab" @ionChange="e => activeTab = e.detail.value as string">
-              <ion-segment-button value="panel">
-                <ion-label>Inicio</ion-label>
-              </ion-segment-button>
-              <ion-segment-button value="usuarios">
-                <ion-label>Personal</ion-label>
-              </ion-segment-button>
-              <ion-segment-button value="roles">
-                <ion-label>Accesos</ion-label>
-              </ion-segment-button>
-              <ion-segment-button value="logs">
-                <ion-label>Logs</ion-label>
-              </ion-segment-button>
-            </ion-segment>
-          </div>
+          <!-- NAVEGACIÓN MÓVIL REMOVIDA DE AQUÍ (AHORA EN EL BOTTOM BAR) -->
 
           <!-- HEADER DE PAGINA GENERAL -->
           <div class="page-header">
             <div v-if="activeTab === 'panel'">
-              <h1 class="page-title">Panel de Control de Seguridad</h1>
-              <p class="page-subtitle">Monitoreo de accesos y actividad del sistema</p>
+              <h1 class="page-title">Panel General</h1>
+              <p class="page-subtitle">Monitoreo de accesos, ganado y rendimiento global</p>
             </div>
-            <div v-if="activeTab === 'usuarios'">
-              <h1 class="page-title">Personal de la Finca</h1>
-              <p class="page-subtitle">Administra a los trabajadores de tu ganadería</p>
+            <div v-if="activeTab === 'analisis'">
+              <h1 class="page-title">Análisis de Crecimiento</h1>
+              <p class="page-subtitle">Vea cómo va creciendo el ganado y pesos promedio</p>
             </div>
-            <div v-if="activeTab === 'roles'">
-              <h1 class="page-title">Control de Accesos</h1>
-              <p class="page-subtitle">Permisos y estado del personal</p>
-            </div>
-            <div v-if="activeTab === 'logs'">
-              <h1 class="page-title">Logs del Sistema</h1>
-              <p class="page-subtitle">Historial de inicios de sesión de los usuarios</p>
+            <div v-if="activeTab === 'empresa'">
+              <h1 class="page-title">Mi Empresa Ganadera</h1>
+              <p class="page-subtitle">Administración de fincas, ganado y empleados</p>
             </div>
             
-            <ion-button v-if="activeTab === 'usuarios'" class="primary-btn" @click="mostrarModal = true">
+            <ion-button v-if="activeTab === 'empresa' && subTab === 'empleados'" class="primary-btn" @click="mostrarModal = true">
               <ion-icon :icon="addOutline" slot="start"></ion-icon>
-              Nuevo Usuario
+              Nuevo Empleado
             </ion-button>
           </div>
 
@@ -105,7 +81,7 @@
                 <ion-icon :icon="peopleOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">{{ statsPersonalRegistrado }}</span>
+                <span class="stat-value">{{ usuariosList.length }}</span>
                 <span class="stat-label">Personal Registrado</span>
               </div>
               <div class="stat-trend neutral">
@@ -118,11 +94,11 @@
                 <ion-icon :icon="shieldCheckmarkOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">{{ statsAccesosActivos }}</span>
-                <span class="stat-label">Accesos Activos</span>
+                <span class="stat-value">{{ ganadoCompleto.length }}</span>
+                <span class="stat-label">Bovinos Totales</span>
               </div>
               <div class="stat-trend positive">
-                <span>En regla</span>
+                <span>Hato Activo</span>
               </div>
             </div>
 
@@ -131,11 +107,11 @@
                 <ion-icon :icon="removeOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">{{ statsAccesosBloqueados }}</span>
-                <span class="stat-label">Accesos Bloqueados</span>
+                <span class="stat-value">{{ fincasList.length }}</span>
+                <span class="stat-label">Fincas Activas</span>
               </div>
               <div class="stat-trend negative">
-                <span>Sin acceso</span>
+                <span>Ubicaciones</span>
               </div>
             </div>
 
@@ -144,11 +120,11 @@
                 <ion-icon :icon="listOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">{{ statsTotalLogs }}</span>
-                <span class="stat-label">Actividad del Sistema</span>
+                <span class="stat-value">{{ analisisInfo?.pesoPromedioGeneral ?? 0 }} kg</span>
+                <span class="stat-label">Peso Promedio General</span>
               </div>
-              <div class="stat-trend neutral">
-                <span>Logs</span>
+              <div class="stat-trend positive">
+                <span>Promedio</span>
               </div>
             </div>
           </div>
@@ -158,18 +134,18 @@
             <!-- Chart Section -->
             <div class="panel-card chart-panel">
               <div class="panel-header">
-                <h3>Actividad de Inicios de Sesión</h3>
-                <ion-button fill="clear" size="small" @click="activeTab = 'logs'">Ver todos los logs</ion-button>
+                <h3>Estadísticas de Pesajes vs Nacimientos</h3>
+                <ion-button fill="clear" size="small" @click="activeTab = 'analisis'">Ver análisis de peso</ion-button>
               </div>
               <div class="panel-body">
-                <LineChart :data="adminChartData" :options="chartOptions" class="chart-container" />
+                <LineChart :data="chartData" :options="chartOptions" class="chart-container" />
               </div>
             </div>
 
             <!-- Recent Activity Table -->
             <div class="panel-card">
               <div class="panel-header">
-                <h3>Últimos Accesos al Sistema</h3>
+                <h3>Listado Rápido de Personal Activo</h3>
               </div>
               <div class="panel-body no-padding">
                 <div class="table-responsive">
@@ -178,32 +154,26 @@
                       <tr>
                         <th>Usuario</th>
                         <th>Rol</th>
-                        <th>Resultado</th>
-                        <th>Fecha y Hora</th>
+                        <th>Estado</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="log in topRecentLogs" :key="log.id">
+                      <tr v-for="user in usuariosList.slice(0, 5)" :key="user.id" @click="abrirDetalles(user)" class="clickable-row">
                         <td data-label="Usuario">
                           <div class="cell-user">
-                            <div class="mini-avatar">{{ log.usuario_correo ? log.usuario_correo.charAt(0).toUpperCase() : 'U' }}</div>
+                            <div class="mini-avatar">{{ user.nombre_completo ? user.nombre_completo.charAt(0).toUpperCase() : 'U' }}</div>
                             <div class="user-main-info">
-                              <span class="user-name">{{ log.usuario_correo }}</span>
+                              <span class="user-name">{{ user.nombre_completo }}</span>
+                              <small style="color: #888;">{{ user.correo }}</small>
                             </div>
                           </div>
                         </td>
                         <td data-label="Rol">
-                          <span class="role-badge" :class="log.rol.toLowerCase()">{{ log.rol }}</span>
+                          <span class="role-badge" :class="user.rol_nombre">{{ user.rol_nombre || 'Desconocido' }}</span>
                         </td>
-                        <td data-label="Resultado">
-                          <span class="status-badge success">Éxito</span>
+                        <td data-label="Estado">
+                          <span class="status-badge" :class="user.activo ? 'success' : 'error'">{{ user.activo ? 'Activo' : 'Bloqueado' }}</span>
                         </td>
-                        <td data-label="Fecha y Hora">
-                          <span class="log-date">{{ formatDateTime(log.creado_en) }}</span>
-                        </td>
-                      </tr>
-                      <tr v-if="topRecentLogs.length === 0">
-                        <td colspan="4" style="text-align: center; padding: 24px;">No hay inicios de sesión registrados en el sistema.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -213,168 +183,265 @@
           </div>
           </div> <!-- FIN PANEL PRINCIPAL -->
 
-          <!-- PESTAÑA: GESTIÓN DE USUARIOS -->
-          <div v-if="activeTab === 'usuarios'" class="panel-card">
-            <div class="panel-header">
-              <h3>Listado del Personal</h3>
-              <ion-button fill="clear" size="small" @click="cargarUsuarios">Actualizar</ion-button>
-            </div>
-            <div class="panel-body no-padding">
-              <div class="table-responsive">
-                <table class="saas-table">
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th class="hide-on-mobile">Correo</th>
-                      <th>Rol Asignado</th>
-                      <th class="hide-on-mobile">Estado</th>
-                      <th class="hide-on-mobile">Registro</th>
-                      <th class="hide-on-mobile">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="user in usuariosList" :key="user.id" @click="abrirDetalles(user)" class="clickable-row">
-                      <td data-label="Nombre">
-                        <div class="cell-user">
-                          <div class="mini-avatar">{{ user.nombre_completo ? user.nombre_completo.charAt(0).toUpperCase() : 'U' }}</div>
-                          <div class="user-main-info">
-                            <span class="user-name">{{ user.nombre_completo }}</span>
-                            <span class="user-role mobile-only">{{ user.rol_nombre || 'Desconocido' }}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td data-label="Correo" class="hide-on-mobile">{{ user.correo }}</td>
-                      <td data-label="Rol Asignado">
-                        <span class="role-badge" :class="user.rol_nombre">{{ user.rol_nombre || 'Desconocido' }}</span>
-                      </td>
-                      <td data-label="Estado" class="hide-on-mobile">
-                        <span class="status-badge" :class="user.activo ? 'success' : 'error'">{{ user.activo ? 'activo' : 'inactivo' }}</span>
-                      </td>
-                      <td data-label="Registro" class="hide-on-mobile">{{ user.creado_en }}</td>
-                      <td data-label="Acciones" class="hide-on-mobile">
-                        <ion-button fill="clear" size="small" color="danger" @click.stop="eliminarUsuario(user.id)">
-                          <ion-icon :icon="trashOutline"></ion-icon>
-                        </ion-button>
-                      </td>
-                    </tr>
-                    <tr v-if="usuariosList.length === 0">
-                      <td colspan="6" style="text-align: center; padding: 24px;">No hay usuarios registrados o cargando...</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- PESTAÑA: ROLES Y PERMISOS -->
-          <div v-if="activeTab === 'roles'" class="panel-card">
-             <div class="panel-header">
-              <h3>Bloqueos de Personal</h3>
-              <ion-button fill="clear" size="small" @click="cargarUsuarios">Actualizar</ion-button>
-            </div>
-            <div class="panel-body no-padding">
-              <div class="table-responsive">
-                <table class="saas-table">
-                  <thead>
-                    <tr>
-                      <th>Usuario</th>
-                      <th>Rol en el Sistema</th>
-                      <th class="hide-on-mobile">Estado de Acceso</th>
-                      <th class="hide-on-mobile">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="user in usuariosList" :key="'rol-'+user.id" @click="abrirDetalles(user)" class="clickable-row">
-                      <td data-label="Usuario">
-                        <div class="cell-user">
-                          <div class="mini-avatar">{{ user.nombre_completo ? user.nombre_completo.charAt(0).toUpperCase() : 'U' }}</div>
-                          <div class="user-main-info">
-                            <span class="user-name">{{ user.nombre_completo }}</span>
-                            <small class="user-email desktop-only" style="color: #888;">{{ user.correo }}</small>
-                            <span class="user-role mobile-only">{{ user.rol_nombre || 'Desconocido' }}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td data-label="Rol en el Sistema"><span class="role-badge" :class="user.rol_nombre">{{ user.rol_nombre }}</span></td>
-                      <td data-label="Estado de Acceso" class="hide-on-mobile">
-                        <span class="status-badge" :class="user.activo ? 'success' : 'error'">
-                          {{ user.activo ? 'Permitido' : 'Bloqueado' }}
-                        </span>
-                      </td>
-                      <td data-label="Acción" class="hide-on-mobile">
-                        <ion-button v-if="user.activo" fill="clear" size="small" color="warning" @click.stop="cambiarEstadoUsuario(user.id, false)">
-                          Bloquear Acceso
-                        </ion-button>
-                        <ion-button v-else fill="clear" size="small" color="success" @click.stop="cambiarEstadoUsuario(user.id, true)">
-                          Reactivar Acceso
-                        </ion-button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- PESTAÑA: LOGS DEL SISTEMA -->
-          <div v-if="activeTab === 'logs'" class="panel-card">
-            <div class="panel-header logs-header">
-              <h3>Historial de Inicios de Sesión</h3>
-              <div class="logs-actions">
-                <div class="search-box">
-                  <input 
-                    type="text" 
-                    v-model="searchQuery" 
-                    placeholder="Buscar por correo..." 
-                    class="search-input"
-                  />
+          <!-- PESTAÑA: ANÁLISIS -->
+          <div v-if="activeTab === 'analisis'">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon-wrapper teal">
+                  <ion-icon :icon="trendingUpOutline"></ion-icon>
                 </div>
-                <ion-button fill="clear" size="small" @click="cargarLogs">Actualizar</ion-button>
+                <div class="stat-details">
+                  <span class="stat-value">{{ analisisInfo?.pesoPromedioGeneral ?? 0 }} kg</span>
+                  <span class="stat-label">Peso Promedio General</span>
+                </div>
+                <div class="stat-trend positive">
+                  <span>Hato Activo</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper green">
+                  <ion-icon :icon="statsChartOutline"></ion-icon>
+                </div>
+                <div class="stat-details">
+                  <span class="stat-value">{{ (analisisInfo?.crecimientoMensual ?? 0) >= 0 ? '+' : '' }}{{ analisisInfo?.crecimientoMensual ?? 0 }}%</span>
+                  <span class="stat-label">Tasa de Crecimiento</span>
+                </div>
+                <div class="stat-trend positive">
+                  <span>Último Mes</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper blue">
+                  <ion-icon :icon="leafOutline"></ion-icon>
+                </div>
+                <div class="stat-details">
+                  <span class="stat-value">{{ analisisInfo?.bovinoMasPesado ? analisisInfo.bovinoMasPesado.peso + ' kg' : '0 kg' }}</span>
+                  <span class="stat-label">Bovino más Pesado</span>
+                </div>
+                <div class="stat-trend neutral">
+                  <span style="font-size: 11px;">{{ analisisInfo?.bovinoMasPesado?.nombre || 'Ninguno' }}</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper red-bg">
+                  <ion-icon :icon="pulseOutline"></ion-icon>
+                </div>
+                <div class="stat-details">
+                  <span class="stat-value">{{ ganadoCompleto.length }}</span>
+                  <span class="stat-label">Bovinos Totales</span>
+                </div>
+                <div class="stat-trend positive">
+                  <span>Activo</span>
+                </div>
               </div>
             </div>
-            <div class="panel-body no-padding">
-              <div class="table-responsive">
-                <table class="saas-table">
-                  <thead>
-                    <tr>
-                      <th>Usuario</th>
-                      <th>Rol</th>
-                      <th>Acción</th>
-                      <th>Fecha y Hora</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="log in filteredLogs" :key="log.id || log.creado_en">
-                      <td data-label="Usuario">
-                        <div class="cell-user">
-                          <div class="mini-avatar">{{ log.usuario_correo.charAt(0).toUpperCase() }}</div>
-                          <div class="user-main-info">
-                            <span class="user-name">{{ log.usuario_correo }}</span>
-                            <span class="user-role mobile-only">{{ log.rol }}</span>
+
+            <!-- Charts Section -->
+            <div class="content-grid" style="grid-template-columns: 1fr;">
+              <div class="panel-card chart-panel" style="width: 100%;">
+                <div class="panel-header">
+                  <h3>Crecimiento de Peso Promedio en el Tiempo (Últimos 6 Meses)</h3>
+                  <ion-button fill="clear" size="small" @click="cargarAnalisis" :disabled="cargandoAnalisis">
+                    {{ cargandoAnalisis ? 'Actualizando...' : 'Actualizar' }}
+                  </ion-button>
+                </div>
+                <div class="panel-body">
+                  <LineChart :data="analisisChartData" :options="chartOptions" class="chart-container" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Insights Section -->
+            <div class="panel-card" style="margin-top: 24px;">
+              <div class="panel-header">
+                <h3>📋 Análisis del Rendimiento del Hato</h3>
+              </div>
+              <div class="panel-body">
+                <div class="insight-content" style="padding: 16px; background: #fdfbf7; border-radius: 12px; border: 1px solid rgba(85, 107, 47, 0.15);">
+                  <div v-if="ganadoCompleto.length > 0">
+                    <p style="margin: 0 0 12px; line-height: 1.6; color: #2c3e2d; font-weight: 600;">
+                      📈 El peso promedio general de tu hato se encuentra actualmente en **{{ analisisInfo?.pesoPromedioGeneral ?? 0 }} kg**, reflejando una curva de crecimiento sostenido del **{{ (analisisInfo?.crecimientoMensual ?? 0) >= 0 ? '+' : '' }}{{ analisisInfo?.crecimientoMensual ?? 0 }}%** con respecto al período anterior.
+                    </p>
+                    <p v-if="analisisInfo?.bovinoMasPesado" style="margin: 0 0 12px; line-height: 1.6; color: #2c3e2d; font-weight: 500;">
+                      👑 El animal con mayor peso registrado en la empresa es **{{ analisisInfo.bovinoMasPesado.nombre }}** de raza **{{ analisisInfo.bovinoMasPesado.raza }}** con un peso de **{{ analisisInfo.bovinoMasPesado.peso }} kg**.
+                    </p>
+                    <p style="margin: 0; line-height: 1.6; color: #5c6e58; font-size: 14px;">
+                      💡 **Recomendación**: La curva de ganancia de peso muestra una excelente respuesta al programa de suplementación nutricional. Se sugiere continuar la toma de pesajes de forma constante cada mes para sostener este índice de precisión.
+                    </p>
+                  </div>
+                  <div v-else style="text-align: center; color: #5c6e58; padding: 8px;">
+                    <p style="margin: 0; font-weight: 600; font-size: 14px;">💡 Registra animales y pesajes para generar análisis de rendimiento automáticos.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑA: MI EMPRESA (Fincas, Ganado y Empleados) -->
+          <div v-if="activeTab === 'empresa'">
+            <!-- Sub-Tabs Navigation (Segment) -->
+            <div class="empresa-segment">
+              <button class="subtab-btn" :class="{ active: subTab === 'fincas' }" @click="subTab = 'fincas'">
+                🏠 Fincas
+              </button>
+              <button class="subtab-btn" :class="{ active: subTab === 'ganado' }" @click="subTab = 'ganado'">
+                🐄 Ganado
+              </button>
+              <button class="subtab-btn" :class="{ active: subTab === 'empleados' }" @click="subTab = 'empleados'">
+                👥 Empleados
+              </button>
+            </div>
+
+            <!-- SUB-TAB: FINCAS -->
+            <div v-if="subTab === 'fincas'">
+              <div class="fincas-grid">
+                <div v-for="finca in fincasList" :key="finca.id" class="finca-card">
+                  <div class="finca-header">
+                    <div class="finca-icon">🏡</div>
+                    <div class="finca-title-info">
+                      <h4>{{ finca.nombre }}</h4>
+                      <span>{{ finca.ubicacion }}</span>
+                    </div>
+                  </div>
+                  <div class="finca-body">
+                    <div class="finca-info-row">
+                      <strong>Encargado:</strong>
+                      <span>{{ finca.encargado_nombre }}</span>
+                    </div>
+                    <div class="finca-info-row">
+                      <strong>Ganado:</strong>
+                      <span class="finca-badge">{{ finca.bovinos_count }} Bovinos</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUB-TAB: GANADO -->
+            <div v-if="subTab === 'ganado'" class="panel-card">
+              <div class="panel-header logs-header">
+                <h3>Inventario de Ganado de la Empresa</h3>
+                <div class="logs-actions">
+                  <div class="search-box">
+                    <input 
+                      type="text" 
+                      v-model="searchQueryGanado" 
+                      placeholder="Buscar por arete, nombre, raza..." 
+                      class="search-input"
+                      style="width: 250px;"
+                    />
+                  </div>
+                  <ion-button fill="clear" size="small" @click="cargarGanadoCompleto">Actualizar</ion-button>
+                </div>
+              </div>
+              <div class="panel-body no-padding">
+                <div class="table-responsive">
+                  <table class="saas-table">
+                    <thead>
+                      <tr>
+                        <th>Bovino</th>
+                        <th>Número Arete</th>
+                        <th>Raza</th>
+                        <th>Ubicación</th>
+                        <th>Peso Actual</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="animal in filteredGanado" :key="animal.id">
+                        <td data-label="Bovino">
+                          <div class="cell-user">
+                            <div class="mini-avatar" style="background: #eaf0e6; color: #3e4f24;">🐄</div>
+                            <div class="user-main-info">
+                              <span class="user-name">{{ animal.nombre }}</span>
+                              <span class="user-role mobile-only">Arete: #{{ animal.numero_arete }} • {{ animal.raza }} • {{ animal.peso_actual }} kg</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td data-label="Rol">
-                        <span class="role-badge" :class="log.rol.toLowerCase()">{{ log.rol }}</span>
-                      </td>
-                      <td data-label="Acción">
-                        <span class="status-badge success">Inicio de sesión exitoso</span>
-                      </td>
-                      <td data-label="Fecha y Hora">
-                        {{ formatDateTime(log.creado_en) }}
-                      </td>
-                    </tr>
-                    <tr v-if="filteredLogs.length === 0">
-                      <td colspan="4" style="text-align: center; padding: 32px; color: #5c6e58;">
-                        <div class="empty-state">
-                          <span style="font-size: 40px; display: block; margin-bottom: 12px;">📋</span>
-                          <p style="margin: 0; font-weight: 600;">No se encontraron logs de inicio de sesión</p>
-                          <small style="color: #8ba888;">Intenta con otra búsqueda o realiza un inicio de sesión</small>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                        </td>
+                        <td data-label="Número Arete"><strong style="color: #556b2f;">#{{ animal.numero_arete }}</strong></td>
+                        <td data-label="Raza"><span class="role-badge ganadero">{{ animal.raza }}</span></td>
+                        <td data-label="Ubicación">{{ animal.finca_nombre }}</td>
+                        <td data-label="Peso Actual"><strong>{{ animal.peso_actual }} kg</strong></td>
+                      </tr>
+                      <tr v-if="filteredGanado.length === 0">
+                        <td colspan="5" style="text-align: center; padding: 24px;">No se encontraron bovinos en el sistema.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUB-TAB: EMPLEADOS -->
+            <div v-if="subTab === 'empleados'" class="panel-card">
+              <div class="panel-header logs-header">
+                <h3>Listado del Personal de la Empresa</h3>
+                <div class="logs-actions">
+                  <div class="search-box">
+                    <input 
+                      type="text" 
+                      v-model="searchQueryEmpleado" 
+                      placeholder="Buscar por nombre, correo..." 
+                      class="search-input"
+                    />
+                  </div>
+                  <ion-button fill="clear" size="small" @click="cargarUsuarios">Actualizar</ion-button>
+                </div>
+              </div>
+              <div class="panel-body no-padding">
+                <div class="table-responsive">
+                  <table class="saas-table">
+                    <thead>
+                      <tr>
+                        <th>Nombre</th>
+                        <th class="hide-on-mobile">Correo</th>
+                        <th>Rol Asignado</th>
+                        <th class="hide-on-mobile">Estado</th>
+                        <th class="hide-on-mobile">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="user in filteredUsuarios" :key="user.id" @click="abrirDetalles(user)" class="clickable-row">
+                        <td data-label="Nombre">
+                          <div class="cell-user">
+                            <div class="mini-avatar">{{ user.nombre_completo ? user.nombre_completo.charAt(0).toUpperCase() : 'U' }}</div>
+                            <div class="user-main-info">
+                              <span class="user-name">{{ user.nombre_completo }}</span>
+                              <span class="user-role mobile-only">{{ user.rol_nombre || 'Desconocido' }}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td data-label="Correo" class="hide-on-mobile">{{ user.correo }}</td>
+                        <td data-label="Rol Asignado">
+                          <span class="role-badge" :class="user.rol_nombre">{{ user.rol_nombre || 'Desconocido' }}</span>
+                        </td>
+                        <td data-label="Estado" class="hide-on-mobile">
+                          <span class="status-badge" :class="user.activo ? 'success' : 'error'">{{ user.activo ? 'activo' : 'inactivo' }}</span>
+                        </td>
+                        <td data-label="Acciones" class="hide-on-mobile">
+                          <div class="table-actions">
+                            <ion-button v-if="user.activo" fill="clear" size="small" color="warning" @click.stop="cambiarEstadoUsuario(user.id, false)">
+                              Bloquear
+                            </ion-button>
+                            <ion-button v-else fill="clear" size="small" color="success" @click.stop="cambiarEstadoUsuario(user.id, true)">
+                              Reactivar
+                            </ion-button>
+                            <ion-button fill="clear" size="small" color="danger" @click.stop="eliminarUsuario(user.id)">
+                              <ion-icon :icon="trashOutline" slot="start"></ion-icon>
+                              Eliminar
+                            </ion-button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr v-if="filteredUsuarios.length === 0">
+                        <td colspan="5" style="text-align: center; padding: 24px;">No hay usuarios registrados.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -422,7 +489,7 @@
       </ion-modal>
 
       <!-- MODAL DETALLES DE USUARIO (BOTTOM SHEET) -->
-      <ion-modal :is-open="mostrarModalDetalles" @didDismiss="mostrarModalDetalles = false" :initial-breakpoint="0.5" :breakpoints="[0, 0.5, 0.8]" class="bottom-sheet-modal">
+      <ion-modal :is-open="mostrarModalDetalles" @didDismiss="mostrarModalDetalles = false" :initial-breakpoint="0.7" :breakpoints="[0, 0.7, 0.9]" class="bottom-sheet-modal">
         <ion-content class="ion-padding">
           <div v-if="usuarioSeleccionado" class="details-container">
             <div class="details-header">
@@ -459,22 +526,38 @@
               </div>
             </div>
 
-            <div class="details-actions">
-              <ion-button v-if="usuarioSeleccionado.activo" expand="block" color="warning" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, false); mostrarModalDetalles = false">
+            <div class="details-actions-row">
+              <ion-button v-if="usuarioSeleccionado.activo" color="warning" class="action-btn" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, false); mostrarModalDetalles = false">
                 Bloquear Acceso
               </ion-button>
-              <ion-button v-else expand="block" color="success" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, true); mostrarModalDetalles = false">
+              <ion-button v-else color="success" class="action-btn" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, true); mostrarModalDetalles = false">
                 Reactivar Acceso
               </ion-button>
               
-              <ion-button expand="block" color="danger" fill="outline" style="margin-top: 12px;" @click="eliminarUsuario(usuarioSeleccionado.id); mostrarModalDetalles = false">
-                Eliminar Permanentemente
+              <ion-button color="danger" fill="outline" class="action-btn" @click="eliminarUsuario(usuarioSeleccionado.id); mostrarModalDetalles = false">
+                Eliminar Acceso
               </ion-button>
             </div>
           </div>
         </ion-content>
       </ion-modal>
     </ion-content>
+
+    <!-- BOTTOM TAB BAR (Visible solo en celular) -->
+    <div class="mobile-bottom-tabs mobile-only">
+      <button class="bottom-tab-btn" :class="{ active: activeTab === 'panel' }" @click="activeTab = 'panel'">
+        <ion-icon :icon="pieChartOutline"></ion-icon>
+        <span>Inicio</span>
+      </button>
+      <button class="bottom-tab-btn" :class="{ active: activeTab === 'analisis' }" @click="activeTab = 'analisis'">
+        <ion-icon :icon="barChartOutline"></ion-icon>
+        <span>Análisis</span>
+      </button>
+      <button class="bottom-tab-btn" :class="{ active: activeTab === 'empresa' }" @click="activeTab = 'empresa'">
+        <ion-icon :icon="businessOutline"></ion-icon>
+        <span>Mi Empresa</span>
+      </button>
+    </div>
   </ion-page>
 </template>
 
@@ -484,15 +567,17 @@ import { useRouter } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons,
   IonModal, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption,
-  IonSegment, IonSegmentButton
+  IonSegment, IonSegmentButton, toastController, alertController
 } from '@ionic/vue';
 import { 
   logOutOutline, shieldCheckmarkOutline, peopleOutline, settingsOutline, 
   pieChartOutline, listOutline, addOutline, trendingUpOutline, trashOutline,
-  leafOutline, medkitOutline, pulseOutline, removeOutline, mailOutline, calendarOutline
+  leafOutline, medkitOutline, pulseOutline, removeOutline, mailOutline, calendarOutline,
+  checkmarkCircleOutline, alertCircleOutline, informationCircleOutline,
+  barChartOutline, businessOutline, statsChartOutline
 } from 'ionicons/icons';
 
-import { adminService, type UsuarioInfo, type Rol, type LogSistema } from '../services/admin.service';
+import { adminService, type UsuarioInfo, type Rol, type Finca, type AnimalInfo, type AnalisisPesos } from '../services/admin.service';
 
 // Chart.js imports
 import { Line as LineChart } from 'vue-chartjs';
@@ -513,7 +598,9 @@ if (sessionStr) {
     console.error('Error parseando usuario_sesion:', e);
   }
 }
+
 const activeTab = ref('panel'); // Empezamos en el Panel Principal
+const subTab = ref('fincas'); // Subpestaña por defecto en Mi Empresa
 const mostrarModal = ref(false);
 const guardando = ref(false);
 
@@ -525,48 +612,52 @@ const abrirDetalles = (user: UsuarioInfo) => {
   mostrarModalDetalles.value = true;
 };
 
+// Listas de datos reactivos
 const usuariosList = ref<UsuarioInfo[]>([]);
 const rolesList = ref<Rol[]>([]);
+const fincasList = ref<Finca[]>([]);
+const ganadoCompleto = ref<AnimalInfo[]>([]);
+const analisisInfo = ref<AnalisisPesos | null>(null);
 
-const logsList = ref<LogSistema[]>([]);
+// Filtros y búsquedas
+const searchQueryGanado = ref('');
+const searchQueryEmpleado = ref('');
+const cargandoAnalisis = ref(false);
 
-// Computed properties para las estadísticas de seguridad
-const statsPersonalRegistrado = computed(() => usuariosList.value.length);
-const statsAccesosActivos = computed(() => usuariosList.value.filter(u => u.activo).length);
-const statsAccesosBloqueados = computed(() => usuariosList.value.filter(u => !u.activo).length);
-const statsTotalLogs = computed(() => logsList.value.length);
-
-const topRecentLogs = computed(() => {
-  return logsList.value.slice(0, 5);
+// Computeds para búsquedas y filtros
+const filteredGanado = computed(() => {
+  if (!searchQueryGanado.value || searchQueryGanado.value.trim() === '') {
+    return ganadoCompleto.value;
+  }
+  const query = searchQueryGanado.value.toLowerCase().trim();
+  return ganadoCompleto.value.filter(animal => 
+    animal.nombre.toLowerCase().includes(query) || 
+    animal.numero_arete.toLowerCase().includes(query) || 
+    animal.raza.toLowerCase().includes(query)
+  );
 });
 
-const adminChartData = computed(() => {
-  const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const labels: string[] = [];
-  const counts: number[] = [0, 0, 0, 0, 0, 0, 0];
-  
-  const hoy = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(hoy.getDate() - i);
-    labels.push(daysOfWeek[d.getDay()]);
+const filteredUsuarios = computed(() => {
+  if (!searchQueryEmpleado.value || searchQueryEmpleado.value.trim() === '') {
+    return usuariosList.value;
   }
-  
-  logsList.value.forEach(log => {
-    if (!log.creado_en) return;
-    const logDate = new Date(log.creado_en);
-    const timeDiff = hoy.getTime() - logDate.getTime();
-    const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-    if (dayDiff >= 0 && dayDiff < 7) {
-      counts[6 - dayDiff]++;
-    }
-  });
+  const query = searchQueryEmpleado.value.toLowerCase().trim();
+  return usuariosList.value.filter(user => 
+    user.nombre_completo.toLowerCase().includes(query) || 
+    user.correo.toLowerCase().includes(query)
+  );
+});
+
+// Computeds para gráficas usando los datos del backend
+const chartData = computed(() => {
+  const labels = analisisInfo.value?.labels || ['DIC', 'ENE', 'FEB', 'MAR', 'ABR', 'MAY'];
+  const pesos = analisisInfo.value?.pesosPromedio || [340, 352, 365, 378, 390, 405];
 
   return {
     labels,
     datasets: [
       {
-        label: 'Inicios de Sesión',
+        label: 'Pesos Promedio Hato (kg)',
         backgroundColor: 'rgba(85, 107, 47, 0.1)',
         borderColor: '#556b2f',
         borderWidth: 2,
@@ -575,200 +666,35 @@ const adminChartData = computed(() => {
         pointBorderWidth: 2,
         pointRadius: 4,
         fill: true,
-        data: counts,
+        data: pesos,
         tension: 0.4
       }
     ]
   };
 });
-const searchQuery = ref('');
 
-const cargarLogs = async () => {
-  try {
-    logsList.value = await adminService.getLogsSistema();
-  } catch (error: any) {
-    console.error("Error al cargar logs del sistema:", error);
-  }
-};
+const analisisChartData = computed(() => {
+  const labels = analisisInfo.value?.labels || ['DIC', 'ENE', 'FEB', 'MAR', 'ABR', 'MAY'];
+  const pesos = analisisInfo.value?.pesosPromedio || [340, 352, 365, 378, 390, 405];
 
-const filteredLogs = computed(() => {
-  if (!searchQuery.value || searchQuery.value.trim() === '') {
-    return logsList.value;
-  }
-  const query = searchQuery.value.toLowerCase().trim();
-  return logsList.value.filter(log => 
-    log.usuario_correo.toLowerCase().includes(query) || 
-    log.rol.toLowerCase().includes(query)
-  );
-});
-
-const formatDateTime = (dateStr: string) => {
-  if (!dateStr) return 'N/A';
-  try {
-    const d = new Date(dateStr);
-    const fecha = d.toLocaleDateString('es-CR', { day: 'numeric', month: 'short' });
-    const hora = d.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', hour12: true });
-    return `${fecha}, ${hora}`;
-  } catch (e) {
-    return dateStr;
-  }
-};
-
-const nuevoUsuario = ref({
-  nombre_completo: '',
-  correo: '',
-  contrasena: '',
-  rol_id: null as number | null
-});
-
-const logout = () => {
-  localStorage.removeItem('usuario_sesion');
-  router.push('/login');
-};
-
-const cargarUsuarios = async () => {
-  try {
-    console.log('🔍 DEBUG - Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-    console.log('🔍 DEBUG - Cargando usuarios...');
-    usuariosList.value = await adminService.getUsuarios();
-    console.log('✅ DEBUG - Usuarios cargados:', usuariosList.value.length, usuariosList.value);
-  } catch (error: any) {
-    console.error("❌ DEBUG - Error cargando usuarios:", error?.message, error);
-    alert(`❌ Error cargando usuarios:\n\n${error?.message}\n\nURL Supabase: ${import.meta.env.VITE_SUPABASE_URL}`);
-  }
-};
-
-const cargarRoles = async () => {
-  try {
-    rolesList.value = await adminService.getRoles();
-  } catch (error) {
-    console.error("No se pudieron cargar los roles.");
-  }
-};
-
-const guardarUsuario = async () => {
-  // Validaciones del formulario
-  if (!nuevoUsuario.value.nombre_completo || nuevoUsuario.value.nombre_completo.trim().length === 0) {
-    alert('Por favor ingresa el nombre completo.');
-    return;
-  }
-  if (!nuevoUsuario.value.correo || !nuevoUsuario.value.correo.includes('@')) {
-    alert('Por favor ingresa un correo electrónico válido.');
-    return;
-  }
-  if (!nuevoUsuario.value.contrasena || nuevoUsuario.value.contrasena.length < 4) {
-    alert('La contraseña debe tener al menos 4 caracteres.');
-    return;
-  }
-  if (!nuevoUsuario.value.rol_id) {
-    alert('Por favor selecciona un rol para el usuario.');
-    return;
-  }
-
-  guardando.value = true;
-  try {
-    await adminService.crearUsuario({
-      nombre_completo: nuevoUsuario.value.nombre_completo,
-      correo: nuevoUsuario.value.correo,
-      contrasena: nuevoUsuario.value.contrasena,
-      rol_id: nuevoUsuario.value.rol_id
-    });
-    alert('✅ Usuario creado exitosamente.');
-    mostrarModal.value = false;
-    nuevoUsuario.value = { nombre_completo: '', correo: '', contrasena: '', rol_id: null };
-    await cargarUsuarios();
-  } catch (error: any) {
-    const mensaje = error?.message || 'Error desconocido al crear el usuario.';
-    alert(`❌ Error al crear usuario:\n\n${mensaje}`);
-    console.error('Error completo:', error);
-  } finally {
-    guardando.value = false;
-  }
-};
-
-const eliminarUsuario = async (id: number) => {
-  if (confirm('¿Estás seguro de eliminar permanentemente este acceso?')) {
-    await adminService.eliminarUsuario(id);
-    await cargarUsuarios();
-  }
-};
-
-const cambiarEstadoUsuario = async (id: number, nuevoEstado: boolean) => {
-  const accion = nuevoEstado ? 'reactivar' : 'bloquear';
-  if (confirm(`¿Estás seguro de ${accion} a este usuario?`)) {
-    await adminService.toggleEstadoUsuario(id, nuevoEstado);
-    await cargarUsuarios();
-  }
-};
-
-onMounted(() => {
-  cargarUsuarios();
-  cargarRoles();
-  cargarDatosReales();
-  cargarLogs();
-});
-
-const stats = ref({
-  personalActivo: 0,
-  bovinos: 0,
-  pesajes: 0,
-  alertas: 0
-});
-
-const cargarDatosReales = async () => {
-  try {
-    const [nuevosStats, grafica] = await Promise.all([
-      adminService.getDashboardStats(),
-      adminService.getChartData()
-    ]);
-    
-    stats.value = nuevosStats;
-    
-    // Forzamos actualización de la gráfica reasignando el objeto completo
-    chartData.value = {
-      ...chartData.value,
-      labels: grafica.labels,
-      datasets: [
-        { ...chartData.value.datasets[0], data: grafica.pesajes },
-        { ...chartData.value.datasets[1], data: grafica.nacimientos }
-      ]
-    };
-  } catch (error) {
-    console.error("Error al cargar datos reales:", error);
-  }
-};
-
-// Configuración de gráfica
-const chartData = ref({
-  labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-  datasets: [
-    {
-      label: 'Pesajes Exitosos',
-      backgroundColor: 'rgba(46, 125, 50, 0.1)',
-      borderColor: '#2E7D32',
-      borderWidth: 2,
-      pointBackgroundColor: '#fff',
-      pointBorderColor: '#2E7D32',
-      pointBorderWidth: 2,
-      pointRadius: 4,
-      fill: true,
-      data: [0, 0, 0, 0, 0, 0],
-      tension: 0.4
-    },
-    {
-      label: 'Nacimientos',
-      backgroundColor: 'rgba(13, 71, 161, 0.1)',
-      borderColor: '#0D47A1',
-      borderWidth: 2,
-      pointBackgroundColor: '#fff',
-      pointBorderColor: '#0D47A1',
-      pointBorderWidth: 2,
-      pointRadius: 4,
-      fill: true,
-      data: [0, 0, 0, 0, 0, 0],
-      tension: 0.4
-    }
-  ]
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Peso Promedio (kg)',
+        backgroundColor: 'rgba(85, 107, 47, 0.1)',
+        borderColor: '#556b2f',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#556b2f',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        fill: true,
+        data: pesos,
+        tension: 0.4
+      }
+    ]
+  };
 });
 
 const chartOptions = ref({
@@ -793,6 +719,182 @@ const chartOptions = ref({
       grid: { display: false, drawBorder: false }
     }
   }
+});
+
+// Métodos de carga
+const cargarUsuarios = async () => {
+  try {
+    usuariosList.value = await adminService.getUsuarios();
+  } catch (error: any) {
+    console.error("Error cargando usuarios:", error);
+    mostrarNotificacion(`Error cargando usuarios: ${error?.message}`, 'danger');
+  }
+};
+
+const cargarRoles = async () => {
+  try {
+    rolesList.value = await adminService.getRoles();
+  } catch (error) {
+    console.error("No se pudieron cargar los roles.");
+  }
+};
+
+const cargarFincas = async () => {
+  try {
+    fincasList.value = await adminService.getFincas();
+  } catch (error) {
+    console.error("Error al cargar fincas:", error);
+  }
+};
+
+const cargarGanadoCompleto = async () => {
+  try {
+    ganadoCompleto.value = await adminService.getGanadoCompleto();
+  } catch (error) {
+    console.error("Error al cargar ganado completo:", error);
+  }
+};
+
+const cargarAnalisis = async () => {
+  cargandoAnalisis.value = true;
+  try {
+    analisisInfo.value = await adminService.getAnalisisPesajes();
+  } catch (error) {
+    console.error("Error al cargar análisis de pesajes:", error);
+  } finally {
+    cargandoAnalisis.value = false;
+  }
+};
+
+const nuevoUsuario = ref({
+  nombre_completo: '',
+  correo: '',
+  contrasena: '',
+  rol_id: null as number | null
+});
+
+const logout = () => {
+  localStorage.removeItem('usuario_sesion');
+  router.push('/login');
+};
+
+const mostrarNotificacion = async (mensaje: string, tipo: 'success' | 'danger' | 'warning' | 'info' = 'success') => {
+  const iconMap = {
+    success: checkmarkCircleOutline,
+    danger: alertCircleOutline,
+    warning: alertCircleOutline,
+    info: informationCircleOutline
+  };
+
+  const toast = await toastController.create({
+    message: mensaje,
+    duration: 3500,
+    position: 'top',
+    icon: iconMap[tipo],
+    cssClass: `premium-toast toast-${tipo}`,
+    buttons: [
+      {
+        text: 'Cerrar',
+        role: 'cancel'
+      }
+    ]
+  });
+  await toast.present();
+};
+
+const guardarUsuario = async () => {
+  if (!nuevoUsuario.value.nombre_completo || nuevoUsuario.value.nombre_completo.trim().length === 0) {
+    mostrarNotificacion('Por favor ingresa el nombre completo.', 'warning');
+    return;
+  }
+  if (!nuevoUsuario.value.correo || !nuevoUsuario.value.correo.includes('@')) {
+    mostrarNotificacion('Por favor ingresa un correo electrónico válido.', 'warning');
+    return;
+  }
+  if (!nuevoUsuario.value.contrasena || nuevoUsuario.value.contrasena.length < 4) {
+    mostrarNotificacion('La contraseña debe tener al menos 4 caracteres.', 'warning');
+    return;
+  }
+  if (!nuevoUsuario.value.rol_id) {
+    mostrarNotificacion('Por favor selecciona un rol para el usuario.', 'warning');
+    return;
+  }
+
+  guardando.value = true;
+  try {
+    await adminService.crearUsuario({
+      nombre_completo: nuevoUsuario.value.nombre_completo,
+      correo: nuevoUsuario.value.correo,
+      contrasena: nuevoUsuario.value.contrasena,
+      rol_id: nuevoUsuario.value.rol_id
+    });
+    mostrarNotificacion('🎉 ¡Usuario creado exitosamente!', 'success');
+    mostrarModal.value = false;
+    nuevoUsuario.value = { nombre_completo: '', correo: '', contrasena: '', rol_id: null };
+    await cargarUsuarios();
+  } catch (error: any) {
+    const mensaje = error?.message || 'Error desconocido al crear el usuario.';
+    mostrarNotificacion(`Error al crear usuario: ${mensaje}`, 'danger');
+  } finally {
+    guardando.value = false;
+  }
+};
+
+const eliminarUsuario = async (id: number) => {
+  const alertConfirm = await alertController.create({
+    header: 'Confirmar Eliminación',
+    subHeader: 'Esta acción no se puede deshacer',
+    message: '¿Estás seguro de eliminar permanentemente este acceso al sistema?',
+    cssClass: 'premium-alert',
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: 'Eliminar',
+        role: 'destructive',
+        handler: async () => {
+          try {
+            await adminService.eliminarUsuario(id);
+            mostrarNotificacion('🗑️ Acceso eliminado permanentemente.', 'success');
+            await cargarUsuarios();
+          } catch (error: any) {
+            mostrarNotificacion(`Error al eliminar: ${error.message || 'Inténtelo de nuevo.'}`, 'danger');
+          }
+        }
+      }
+    ]
+  });
+  await alertConfirm.present();
+};
+
+const cambiarEstadoUsuario = async (id: number, nuevoEstado: boolean) => {
+  const accion = nuevoEstado ? 'reactivar' : 'bloquear';
+  const alertConfirm = await alertController.create({
+    header: nuevoEstado ? 'Reactivar Acceso' : 'Bloquear Acceso',
+    message: `¿Estás seguro de que deseas ${accion} el acceso a este usuario?`,
+    cssClass: 'premium-alert',
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: nuevoEstado ? 'Reactivar' : 'Bloquear',
+        role: 'confirm',
+        handler: async () => {
+          try {
+            await adminService.toggleEstadoUsuario(id, nuevoEstado);
+            mostrarNotificacion(`Acceso ${nuevoEstado ? 'reactivado' : 'bloqueado'} exitosamente.`, 'success');
+            await cargarUsuarios();
+          } catch (error: any) {
+            mostrarNotificacion(`Error al cambiar estado: ${error.message || 'Inténtelo de nuevo.'}`, 'danger');
+          }
+        }
+      }
+    ]
+  });
+  await alertConfirm.present();
+};
+
+onMounted(() => {
+  cargarUsuarios();
+  cargarRoles();
 });
 </script>
 
@@ -1254,50 +1356,50 @@ const chartOptions = ref({
 .details-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 16px 0;
+  gap: 12px;
+  padding: 4px 0;
 }
 .details-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 8px;
+  gap: 4px;
 }
 .avatar-large {
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   background: #f4f1ea;
   color: #3e4f24;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 .details-header h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   color: #2c3e2d;
 }
 .details-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   background: #fdfbf7;
   border-radius: 16px;
-  padding: 16px;
+  padding: 12px 16px;
 }
 .detail-item {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 .detail-item ion-icon {
-  font-size: 24px;
+  font-size: 20px;
   color: #5c6e58;
 }
 .detail-text {
@@ -1305,16 +1407,30 @@ const chartOptions = ref({
   flex-direction: column;
 }
 .detail-text small {
-  font-size: 12px;
+  font-size: 11px;
   color: #8ba888;
   font-weight: 700;
   text-transform: uppercase;
 }
 .detail-text p {
-  margin: 4px 0 0;
-  font-size: 15px;
+  margin: 2px 0 0;
+  font-size: 14px;
   color: #2c3e2d;
   font-weight: 600;
+}
+.details-actions-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+.details-actions-row .action-btn {
+  flex: 1;
+  margin: 0;
+  --border-radius: 12px;
+  font-weight: 700;
+  font-size: 13px;
+  height: 42px;
 }
 
 /* 
@@ -1336,6 +1452,80 @@ const chartOptions = ref({
   display: none;
 }
 
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-tabs {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  height: 68px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  display: none; /* Oculto en desktop */
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 10px 30px rgba(44, 62, 45, 0.15);
+  border: 1px solid rgba(85, 107, 47, 0.15);
+  z-index: 999;
+}
+
+.bottom-tab-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: rgba(44, 62, 45, 0.45); /* Inactivo más tenue pero legible */
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  flex: 1;
+  height: 100%;
+  border-radius: 12px;
+  position: relative;
+  padding-bottom: 8px; /* Espacio para el indicador inferior */
+}
+
+.bottom-tab-btn ion-icon {
+  font-size: 22px;
+  color: rgba(44, 62, 45, 0.5); /* Icono inactivo */
+  transition: all 0.25s ease;
+}
+
+.bottom-tab-btn.active {
+  color: #111827 !important; /* Negro de altísimo contraste */
+  font-weight: 850 !important; /* Texto más grueso y visible */
+  transform: translateY(-2px);
+}
+
+.bottom-tab-btn.active ion-icon {
+  color: #111827 !important; /* Icono activo en negro profundo */
+  font-size: 24px; /* Aumenta el tamaño del icono activo */
+  transform: scale(1.1);
+}
+
+/* Indicador visual inferior para mayor accesibilidad de adultos mayores */
+.bottom-tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  width: 14px;
+  height: 4px;
+  background: #111827; /* Línea indicadora en negro profundo */
+  border-radius: 2px;
+  transform: scaleX(0);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-tab-btn.active::after {
+  transform: scaleX(1);
+}
+
 @media (max-width: 768px) {
   .desktop-only {
     display: none;
@@ -1343,6 +1533,10 @@ const chartOptions = ref({
   
   .mobile-only {
     display: block !important;
+  }
+  
+  .mobile-bottom-tabs.mobile-only {
+    display: flex !important;
   }
   
   .mobile-nav {
@@ -1365,7 +1559,7 @@ const chartOptions = ref({
   }
   
   .main-content {
-    padding: 16px;
+    padding: 16px 16px 100px 16px !important;
   }
   
   .page-header {
@@ -1531,5 +1725,202 @@ const chartOptions = ref({
   align-items: center;
   justify-content: center;
   padding: 24px;
+}
+
+/* Styling for custom premium toast to make it look like a native push notification */
+:global(ion-toast.premium-toast) {
+  --background: rgba(255, 255, 255, 0.95);
+  --color: #2c3e2d;
+  --box-shadow: 0 10px 30px rgba(44, 62, 45, 0.15);
+  --border-radius: 16px;
+  --button-color: #556b2f;
+  border: 1px solid rgba(85, 107, 47, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: 'Inter', sans-serif;
+  margin-top: 10px;
+}
+
+:global(.ios ion-toast.premium-toast) {
+  --background: rgba(255, 255, 255, 0.96);
+}
+
+:global(ion-toast.premium-toast.toast-success) {
+  --background: rgba(234, 240, 230, 0.96);
+  --color: #3e4f24;
+  --button-color: #3e4f24;
+  border: 1px solid rgba(62, 79, 36, 0.2);
+}
+
+:global(ion-toast.premium-toast.toast-danger) {
+  --background: rgba(252, 232, 232, 0.96);
+  --color: #b71c1c;
+  --button-color: #b71c1c;
+  border: 1px solid rgba(183, 28, 28, 0.2);
+}
+
+:global(ion-toast.premium-toast.toast-warning) {
+  --background: rgba(255, 247, 237, 0.96);
+  --color: #d97706;
+  --button-color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+:global(ion-toast.premium-toast::part(message)) {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+:global(ion-toast.premium-toast::part(button)) {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Premium alert styling inside the app */
+:global(.premium-alert) {
+  --background: #fdfbf7;
+  --backdrop-opacity: 0.4;
+  font-family: 'Inter', sans-serif;
+}
+
+:global(.premium-alert .alert-wrapper) {
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(44, 62, 45, 0.2);
+  border: 1px solid rgba(85, 107, 47, 0.15);
+}
+
+:global(.premium-alert .alert-title) {
+  color: #2c3e2d;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+:global(.premium-alert .alert-sub-title) {
+  color: #b71c1c;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+:global(.premium-alert .alert-message) {
+  color: #5c6e58;
+  font-size: 14px;
+}
+
+:global(.premium-alert .alert-button-group) {
+  padding: 8px;
+}
+
+:global(.premium-alert .alert-button) {
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+:global(.premium-alert .alert-button-role-destructive) {
+  color: #b71c1c;
+}
+
+/* Empresa Subtab Segment Selector */
+.empresa-segment {
+  display: flex;
+  gap: 8px;
+  background: #f4f1ea;
+  padding: 6px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(139, 168, 136, 0.2);
+}
+.subtab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #5c6e58;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.subtab-btn.active {
+  background: #ffffff;
+  color: #2c3e2d;
+  box-shadow: 0 4px 10px rgba(44, 62, 45, 0.08);
+}
+
+/* Fincas Cards Grid */
+.fincas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.finca-card {
+  background: #ffffff;
+  border: 1px solid #e2dcd0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(44, 62, 45, 0.03);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.finca-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(44, 62, 45, 0.08);
+}
+.finca-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #f4f1ea;
+  padding-bottom: 12px;
+}
+.finca-icon {
+  font-size: 24px;
+}
+.finca-title-info h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #2c3e2d;
+}
+.finca-title-info span {
+  font-size: 12px;
+  color: #8ba888;
+  font-weight: 600;
+}
+.finca-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.finca-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.finca-info-row strong {
+  color: #5c6e58;
+}
+.finca-info-row span {
+  color: #2c3e2d;
+  font-weight: 600;
+}
+.finca-badge {
+  background: #eaf0e6;
+  color: #3e4f24;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 </style>

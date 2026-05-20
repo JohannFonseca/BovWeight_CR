@@ -15,74 +15,62 @@ export interface UsuarioInfo {
   creado_en?: string;
 }
 
-export interface LogSistema {
+export interface Finca {
   id: number;
-  usuario_id: number | null;
-  usuario_correo: string;
-  rol: string;
-  creado_en: string;
+  nombre: string;
+  ubicacion: string;
+  propietario_id: number;
+  propietario_nombre?: string;
+  bovinos_count: number;
+  creado_en?: string;
+}
+
+export interface Raza {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+}
+
+export interface AnimalInfo {
+  id: number;
+  nombre: string;
+  raza: string;
+  raza_id?: number;
+  numero_arete: string;
+  fecha_nacimiento: string;
+  sexo?: string;
+  color?: string;
+  estado?: string;
+  finca_id?: number;
+  finca_nombre?: string;
+  peso_actual: number;
+  observaciones?: string;
+}
+
+export interface AnalisisPesos {
+  labels: string[];
+  pesosPromedio: number[];
+  crecimientoMensual: number;
+  pesoPromedioGeneral: number;
+  bovinoMasPesado: { nombre: string; peso: number; raza: string } | null;
+}
+
+// Helper para manejar errores de RLS
+function handleRLSError(error: any, operacion: string): never {
+  if (error.code === '42501' || error.message?.includes('row-level security')) {
+    throw new Error(
+      `Permiso denegado al ${operacion}. ` +
+      `Las políticas de seguridad (RLS) de Supabase bloquean esta operación. ` +
+      `Ve al Dashboard de Supabase → tabla correspondiente → Policies → y agrega una política que permita INSERT/UPDATE/DELETE para el rol "anon".`
+    );
+  }
+  throw new Error(`Error al ${operacion}: ${error.message}`);
 }
 
 export const adminService = {
-  // Registrar inicio de sesión en el log
-  async registrarLogin(usuarioId: number | null, correo: string, rol: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('logs_sistema')
-        .insert([
-          {
-            usuario_id: usuarioId,
-            usuario_correo: correo,
-            rol: rol,
-            creado_en: new Date().toISOString()
-          }
-        ]);
-      if (error) throw error;
-    } catch (err: any) {
-      console.warn('⚠️ Advertencia: No se pudo insertar en la tabla "logs_sistema" (Supabase). Detalles:', err.message);
-      // Fallback local: guardamos un registro temporal en localStorage
-      try {
-        const localLogs = JSON.parse(localStorage.getItem('logs_sistema_fallback') || '[]');
-        localLogs.unshift({
-          id: Date.now(),
-          usuario_id: usuarioId,
-          usuario_correo: correo,
-          rol: rol,
-          creado_en: new Date().toISOString()
-        });
-        localStorage.setItem('logs_sistema_fallback', JSON.stringify(localLogs.slice(0, 100)));
-      } catch (storageErr) {
-        console.error('Error al guardar log en localStorage:', storageErr);
-      }
-    }
-  },
-
-  // Obtener logs del sistema
-  async getLogsSistema(): Promise<LogSistema[]> {
-    try {
-      const { data, error } = await supabase
-        .from('logs_sistema')
-        .select('*')
-        .order('creado_en', { ascending: false });
-
-      if (error) throw error;
-      
-      const localLogsStr = localStorage.getItem('logs_sistema_fallback') || '[]';
-      const localLogs: LogSistema[] = JSON.parse(localLogsStr);
-      const dbLogs = (data || []) as LogSistema[];
-      
-      const allLogs = [...localLogs, ...dbLogs];
-      allLogs.sort((a, b) => new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime());
-      
-      return allLogs;
-    } catch (err: any) {
-      console.warn('⚠️ No se pudo obtener logs de Supabase, cargando desde localStorage:', err.message);
-      const localLogsStr = localStorage.getItem('logs_sistema_fallback') || '[]';
-      return JSON.parse(localLogsStr) as LogSistema[];
-    }
-  },
-
-  // Obtener todos los roles
+  // ==========================================
+  // ROLES
+  // ==========================================
   async getRoles(): Promise<Rol[]> {
     const { data, error } = await supabase
       .from('roles')
@@ -104,7 +92,36 @@ export const adminService = {
     return data as Rol[];
   },
 
-  // Obtener todos los usuarios
+  // ==========================================
+  // RAZAS
+  // ==========================================
+  async getRazas(): Promise<Raza[]> {
+    const { data, error } = await supabase
+      .from('razas')
+      .select('id, nombre, descripcion')
+      .order('nombre');
+      
+    if (error) {
+      console.error('Error fetching razas:', error.message);
+      return [];
+    }
+    return (data || []) as Raza[];
+  },
+
+  async crearRaza(nombre: string, descripcion?: string): Promise<Raza> {
+    const { data, error } = await supabase
+      .from('razas')
+      .insert([{ nombre, descripcion: descripcion || null }])
+      .select()
+      .single();
+      
+    if (error) handleRLSError(error, 'crear raza');
+    return data as Raza;
+  },
+
+  // ==========================================
+  // USUARIOS (Empleados)
+  // ==========================================
   async getUsuarios(): Promise<UsuarioInfo[]> {
     const { data, error } = await supabase
       .from('usuarios')
@@ -114,10 +131,7 @@ export const adminService = {
         nombre_completo,
         activo,
         rol_id,
-        creado_en,
-        roles (
-          nombre
-        )
+        creado_en
       `)
       .order('creado_en', { ascending: false });
 
@@ -127,12 +141,10 @@ export const adminService = {
     }
 
     return (data || []).map((u: any) => {
-      let nombreRol = u.roles?.nombre;
-      if (!nombreRol) {
-        if (u.rol_id === 1) nombreRol = 'admin';
-        else if (u.rol_id === 2) nombreRol = 'ganadero';
-        else if (u.rol_id === 3) nombreRol = 'veterinario';
-      }
+      let nombreRol = '';
+      if (u.rol_id === 1) nombreRol = 'admin';
+      else if (u.rol_id === 2) nombreRol = 'ganadero';
+      else if (u.rol_id === 3) nombreRol = 'veterinario';
 
       return {
         id: u.id,
@@ -146,9 +158,7 @@ export const adminService = {
     });
   },
 
-  // Crear un nuevo usuario manualmente
   async crearUsuario(usuario: { correo: string; contrasena: string; rol_id: number; nombre_completo: string }): Promise<void> {
-    // Validaciones básicas antes de insertar
     if (!usuario.correo || !usuario.correo.includes('@')) {
       throw new Error('El correo electrónico no es válido.');
     }
@@ -159,7 +169,6 @@ export const adminService = {
       throw new Error('El nombre completo es requerido.');
     }
 
-    // Verificar si el correo ya existe
     const { data: existente } = await supabase
       .from('usuarios')
       .select('id')
@@ -182,106 +191,368 @@ export const adminService = {
         }
       ]);
       
-    if (error) {
-      console.error('Error creating user:', error.message, error.details, error.hint, error.code);
-      // Mensajes amigables para errores comunes de Supabase
-      if (error.code === '42501' || error.message.includes('row-level security')) {
-        throw new Error('Permiso denegado: Las políticas de seguridad (RLS) de Supabase bloquean esta operación. Debes agregar una política INSERT en la tabla "usuarios" desde el panel de Supabase.');
-      }
-      if (error.code === '23505') {
-        throw new Error('Ya existe un usuario con ese correo electrónico.');
-      }
-      if (error.code === '23502') {
-        throw new Error(`Falta un campo requerido en la tabla: ${error.message}`);
-      }
-      throw new Error(`Error de Supabase: ${error.message}`);
-    }
+    if (error) handleRLSError(error, 'crear usuario');
   },
 
-  // Eliminar usuario
   async eliminarUsuario(id: number): Promise<void> {
     const { error } = await supabase
       .from('usuarios')
       .delete()
       .eq('id', id);
       
-    if (error) {
-      console.error('Error deleting user:', error.message);
-      throw new Error(error.message);
-    }
+    if (error) handleRLSError(error, 'eliminar usuario');
   },
 
-  // Bloquear / Desbloquear usuario
   async toggleEstadoUsuario(id: number, nuevoEstado: boolean): Promise<void> {
     const { error } = await supabase
       .from('usuarios')
       .update({ activo: nuevoEstado })
       .eq('id', id);
       
-    if (error) {
-      console.error('Error updating user status:', error.message);
-      throw new Error(error.message);
+    if (error) handleRLSError(error, 'actualizar estado del usuario');
+  },
+
+  // ==========================================
+  // FINCAS - CRUD COMPLETO
+  // ==========================================
+  async getFincas(): Promise<Finca[]> {
+    try {
+      // Obtener fincas
+      const { data: fincas, error } = await supabase
+        .from('fincas')
+        .select('*')
+        .order('nombre');
+        
+      if (error) throw error;
+      
+      if (!fincas || fincas.length === 0) {
+        return [];
+      }
+
+      // Obtener usuarios para mapear propietarios
+      const { data: usuarios } = await supabase
+        .from('usuarios')
+        .select('id, nombre_completo');
+
+      const usuariosMap: Record<number, string> = {};
+      (usuarios || []).forEach((u: any) => {
+        usuariosMap[u.id] = u.nombre_completo;
+      });
+
+      // Contar animales por finca
+      const { data: animales } = await supabase
+        .from('animales')
+        .select('finca_id');
+
+      const conteoAnimales: Record<number, number> = {};
+      (animales || []).forEach((a: any) => {
+        if (a.finca_id) {
+          conteoAnimales[a.finca_id] = (conteoAnimales[a.finca_id] || 0) + 1;
+        }
+      });
+
+      return fincas.map((f: any) => ({
+        id: f.id,
+        nombre: f.nombre,
+        ubicacion: f.ubicacion || 'Sin ubicación',
+        propietario_id: f.propietario_id,
+        propietario_nombre: usuariosMap[f.propietario_id] || 'Sin asignar',
+        bovinos_count: conteoAnimales[f.id] || 0,
+        creado_en: f.creado_en
+      }));
+    } catch (e: any) {
+      console.error('Error al cargar fincas:', e);
+      return [];
     }
   },
 
-  // Obtener estadísticas reales para el dashboard
-  async getDashboardStats(): Promise<{ personalActivo: number, bovinos: number, pesajes: number, alertas: number }> {
+  async crearFinca(finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<void> {
+    if (!finca.nombre || finca.nombre.trim().length === 0) {
+      throw new Error('El nombre de la finca es requerido.');
+    }
+    if (!finca.ubicacion || finca.ubicacion.trim().length === 0) {
+      throw new Error('La ubicación de la finca es requerida.');
+    }
+
+    const { error } = await supabase
+      .from('fincas')
+      .insert([{
+        nombre: finca.nombre.trim(),
+        ubicacion: finca.ubicacion.trim(),
+        propietario_id: finca.propietario_id
+      }]);
+      
+    if (error) handleRLSError(error, 'crear finca');
+  },
+
+  async eliminarFinca(id: number): Promise<void> {
+    // Primero verificar si tiene animales
+    const { count } = await supabase
+      .from('animales')
+      .select('*', { count: 'exact', head: true })
+      .eq('finca_id', id);
+
+    if (count && count > 0) {
+      throw new Error(`No se puede eliminar esta finca porque tiene ${count} animales asignados. Elimine o reasigne los animales primero.`);
+    }
+
+    const { error } = await supabase
+      .from('fincas')
+      .delete()
+      .eq('id', id);
+      
+    if (error) handleRLSError(error, 'eliminar finca');
+  },
+
+  // ==========================================
+  // GANADO - CRUD COMPLETO
+  // ==========================================
+  async getGanadoCompleto(): Promise<AnimalInfo[]> {
+    try {
+      const { data, error } = await supabase
+        .from('animales')
+        .select(`
+          id,
+          nombre,
+          numero_arete,
+          fecha_nacimiento,
+          sexo,
+          color,
+          estado,
+          finca_id,
+          raza_id,
+          observaciones,
+          razas (
+            nombre
+          ),
+          fincas (
+            nombre
+          ),
+          estimaciones_peso (
+            peso_estimado_kg,
+            peso_corregido_kg,
+            creado_en
+          )
+        `);
+        
+      if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      return data.map((a: any) => {
+        const weights = a.estimaciones_peso || [];
+        weights.sort((x: any, y: any) => new Date(y.creado_en).getTime() - new Date(x.creado_en).getTime());
+        
+        const latestWeight = weights.length > 0
+          ? (weights[0].peso_corregido_kg || weights[0].peso_estimado_kg || 0)
+          : 0;
+          
+        return {
+          id: a.id,
+          nombre: a.nombre || 'Sin nombre',
+          raza: a.razas?.nombre || 'Sin raza',
+          raza_id: a.raza_id,
+          numero_arete: a.numero_arete || 'N/A',
+          fecha_nacimiento: a.fecha_nacimiento ? new Date(a.fecha_nacimiento).toLocaleDateString('es-CR') : 'N/A',
+          sexo: a.sexo || 'N/A',
+          color: a.color || '',
+          estado: a.estado || 'activo',
+          finca_id: a.finca_id,
+          finca_nombre: a.fincas?.nombre || 'Sin finca',
+          peso_actual: latestWeight > 0 ? Number(latestWeight.toFixed(1)) : 0,
+          observaciones: a.observaciones || ''
+        };
+      });
+    } catch (e) {
+      console.error('Error al cargar ganado completo:', e);
+      return [];
+    }
+  },
+
+  async crearAnimal(animal: {
+    nombre: string;
+    numero_arete: string;
+    fecha_nacimiento?: string;
+    sexo: string;
+    raza_id: number | null;
+    finca_id: number;
+    color?: string;
+    observaciones?: string;
+  }): Promise<void> {
+    if (!animal.nombre || animal.nombre.trim().length === 0) {
+      throw new Error('El nombre del animal es requerido.');
+    }
+    if (!animal.numero_arete || animal.numero_arete.trim().length === 0) {
+      throw new Error('El número de arete es requerido.');
+    }
+    if (!animal.finca_id) {
+      throw new Error('Debe seleccionar una finca para el animal.');
+    }
+
+    const insertData: any = {
+      nombre: animal.nombre.trim(),
+      numero_arete: animal.numero_arete.trim(),
+      sexo: animal.sexo || 'macho',
+      finca_id: animal.finca_id,
+      estado: 'activo'
+    };
+
+    if (animal.fecha_nacimiento) {
+      insertData.fecha_nacimiento = animal.fecha_nacimiento;
+    }
+    if (animal.raza_id) {
+      insertData.raza_id = animal.raza_id;
+    }
+    if (animal.color) {
+      insertData.color = animal.color.trim();
+    }
+    if (animal.observaciones) {
+      insertData.observaciones = animal.observaciones.trim();
+    }
+
+    const { error } = await supabase
+      .from('animales')
+      .insert([insertData]);
+      
+    if (error) handleRLSError(error, 'crear animal');
+  },
+
+  async eliminarAnimal(id: number): Promise<void> {
+    const { error } = await supabase
+      .from('animales')
+      .delete()
+      .eq('id', id);
+      
+    if (error) handleRLSError(error, 'eliminar animal');
+  },
+
+  // ==========================================
+  // DASHBOARD STATS
+  // ==========================================
+  async getDashboardStats(): Promise<{ personalActivo: number, bovinos: number, fincas: number }> {
     const { count: personalCount } = await supabase.from('usuarios').select('*', { count: 'exact', head: true }).eq('activo', true);
     const { count: bovinosCount } = await supabase.from('animales').select('*', { count: 'exact', head: true });
-    const { count: pesajesCount } = await supabase.from('estimaciones_peso').select('*', { count: 'exact', head: true });
-    
-    // Si no hay tabla de alertas, mantenemos en 0 o intentamos
-    let alertasCount = 0;
-    try {
-      const { count } = await supabase.from('alertas_medicas').select('*', { count: 'exact', head: true });
-      alertasCount = count || 0;
-    } catch(e) {}
+    const { count: fincasCount } = await supabase.from('fincas').select('*', { count: 'exact', head: true });
 
     return {
       personalActivo: personalCount || 0,
       bovinos: bovinosCount || 0,
-      pesajes: pesajesCount || 0,
-      alertas: alertasCount
+      fincas: fincasCount || 0
     };
   },
 
-  // Obtener datos reales para la gráfica de 6 meses
-  async getChartData(): Promise<{ labels: string[], pesajes: number[], nacimientos: number[] }> {
-    const { data: pesajesData } = await supabase.from('estimaciones_peso').select('creado_en');
-    const { data: animalesData } = await supabase.from('animales').select('fecha_nacimiento');
-
-    const labels = [];
-    const pesajes = [0, 0, 0, 0, 0, 0];
-    const nacimientos = [0, 0, 0, 0, 0, 0];
-    
+  // ==========================================
+  // ANÁLISIS DE PESAJES (Datos reales)
+  // ==========================================
+  async getAnalisisPesajes(): Promise<AnalisisPesos> {
+    const hoy = new Date();
+    const labels: string[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
-      d.setMonth(d.getMonth() - i);
+      d.setMonth(hoy.getMonth() - i);
       labels.push(d.toLocaleString('es-CR', { month: 'short' }).toUpperCase());
     }
 
-    if (pesajesData) {
-      pesajesData.forEach((p: any) => {
-        if (!p.creado_en) return;
-        const d = new Date(p.creado_en);
-        const monthDiff = (new Date().getFullYear() - d.getFullYear()) * 12 + new Date().getMonth() - d.getMonth();
-        if (monthDiff >= 0 && monthDiff < 6) {
-          pesajes[5 - monthDiff]++;
+    try {
+      const { data: animales, error } = await supabase
+        .from('animales')
+        .select(`
+          id,
+          nombre,
+          numero_arete,
+          razas(nombre),
+          estimaciones_peso (
+            peso_estimado_kg,
+            peso_corregido_kg,
+            creado_en
+          )
+        `);
+        
+      if (error) throw error;
+      
+      if (!animales || animales.length === 0) {
+        return {
+          labels,
+          pesosPromedio: [0, 0, 0, 0, 0, 0],
+          crecimientoMensual: 0,
+          pesoPromedioGeneral: 0,
+          bovinoMasPesado: null
+        };
+      }
+      
+      const pesosPorMes: { [key: number]: number[] } = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+      let totalPesoActual = 0;
+      let countPesosActuales = 0;
+      let maxPeso = 0;
+      let heaviestBovino: any = null;
+      
+      animales.forEach((a: any) => {
+        const weights = a.estimaciones_peso || [];
+        if (weights.length === 0) return;
+        
+        weights.sort((x: any, y: any) => new Date(x.creado_en).getTime() - new Date(y.creado_en).getTime());
+        
+        const latestWeight = weights[weights.length - 1].peso_corregido_kg || weights[weights.length - 1].peso_estimado_kg || 0;
+        if (latestWeight > 0) {
+          totalPesoActual += latestWeight;
+          countPesosActuales++;
+          if (latestWeight > maxPeso) {
+            maxPeso = latestWeight;
+            heaviestBovino = {
+              nombre: a.nombre || `Arete: ${a.numero_arete}`,
+              peso: Number(latestWeight.toFixed(1)),
+              raza: a.razas?.nombre || 'Sin raza'
+            };
+          }
         }
+        
+        weights.forEach((w: any) => {
+          const date = new Date(w.creado_en);
+          const pesoVal = w.peso_corregido_kg || w.peso_estimado_kg || 0;
+          if (pesoVal <= 0) return;
+          
+          const monthDiff = (hoy.getFullYear() - date.getFullYear()) * 12 + hoy.getMonth() - date.getMonth();
+          if (monthDiff >= 0 && monthDiff < 6) {
+            pesosPorMes[5 - monthDiff].push(pesoVal);
+          }
+        });
       });
-    }
-
-    if (animalesData) {
-      animalesData.forEach((a: any) => {
-        if (!a.fecha_nacimiento) return;
-        const d = new Date(a.fecha_nacimiento);
-        const monthDiff = (new Date().getFullYear() - d.getFullYear()) * 12 + new Date().getMonth() - d.getMonth();
-        if (monthDiff >= 0 && monthDiff < 6) {
-          nacimientos[5 - monthDiff]++;
+      
+      const pesosPromedio: number[] = [0, 0, 0, 0, 0, 0];
+      
+      for (let i = 0; i < 6; i++) {
+        const arr = pesosPorMes[i];
+        if (arr && arr.length > 0) {
+          const sum = arr.reduce((sumVal, val) => sumVal + val, 0);
+          pesosPromedio[i] = Number((sum / arr.length).toFixed(1));
         }
-      });
+      }
+      
+      const pesoUltimo = pesosPromedio[5];
+      const pesoPenultimo = pesosPromedio[4];
+      const dif = pesoUltimo - pesoPenultimo;
+      const crecimientoMensual = pesoPenultimo > 0 ? Number(((dif / pesoPenultimo) * 100).toFixed(1)) : 0;
+      
+      const pesoPromedioGeneral = countPesosActuales > 0 ? Number((totalPesoActual / countPesosActuales).toFixed(1)) : 0;
+      
+      return {
+        labels,
+        pesosPromedio,
+        crecimientoMensual,
+        pesoPromedioGeneral,
+        bovinoMasPesado: heaviestBovino
+      };
+    } catch (e) {
+      console.error('Error al calcular análisis de pesajes:', e);
+      return {
+        labels,
+        pesosPromedio: [0, 0, 0, 0, 0, 0],
+        crecimientoMensual: 0,
+        pesoPromedioGeneral: 0,
+        bovinoMasPesado: null
+      };
     }
-
-    return { labels, pesajes, nacimientos };
   }
 };
