@@ -476,7 +476,10 @@ const guardarUsuario = async () => {
     nuevoUsuario.value = { nombre_completo: '', correo: '', contrasena: '', rol_id: null };
     await cargarUsuarios();
   } catch (error) {
-    alert("Error al crear el usuario. Verifica la BD.");
+    // Mostrar mensaje de error más útil al usuario y registrar detalles
+    console.error('Error al crear usuario (admin UI):', error);
+    const msg = (error as any)?.message || JSON.stringify(error) || 'Error desconocido al crear usuario. Verifica la BD.';
+    alert(`Error al crear el usuario: ${msg}`);
   } finally {
     guardando.value = false;
   }
