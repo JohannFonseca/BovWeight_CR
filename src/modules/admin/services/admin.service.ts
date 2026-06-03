@@ -2,16 +2,17 @@
  * ============================================================
  * admin.service.ts — Servicio de Administración de BovWeight CR
  * ============================================================
- * 
+ *
  * ¿Qué es este archivo?
  * Este es el "cerebro" de toda la sección de administración.
  * Aquí se definen TODAS las funciones que se comunican con la
  * base de datos (Supabase) para crear, leer, actualizar y
  * eliminar datos (operaciones CRUD).
- * 
+ */
+
 // Importamos el cliente de Supabase que ya está configurado con la URL y la API Key.
 // El '@/supabase' es un alias que apunta a src/supabase/index.ts
-//import { supabase } from '@/supabase';
+import { supabase } from '@/supabase';
 
 /**
  * Rol — Representa un tipo de usuario en el sistema.
