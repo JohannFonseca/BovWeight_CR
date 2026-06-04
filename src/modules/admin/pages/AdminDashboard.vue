@@ -62,12 +62,12 @@
             </div>
             <div v-if="activeTab === 'empresa'">
               <h1 class="page-title">Mi Empresa Ganadera</h1>
-              <p class="page-subtitle">Administración de fincas, ganado y empleados</p>
+              <p class="page-subtitle">Administración de fincas, ganado y ganaderos</p>
             </div>
             
             <ion-button v-if="activeTab === 'empresa' && subTab === 'empleados'" class="primary-btn" @click="mostrarModal = true">
               <ion-icon :icon="addOutline" slot="start"></ion-icon>
-              Nuevo Empleado
+              Nuevo Ganadero
             </ion-button>
           </div>
 
@@ -82,7 +82,7 @@
               </div>
               <div class="stat-details">
                 <span class="stat-value">{{ usuariosList.length }}</span>
-                <span class="stat-label">Personal Registrado</span>
+                <span class="stat-label">Ganaderos Registrados</span>
               </div>
               <div class="stat-trend neutral">
                 <span>Cuentas</span>
@@ -145,7 +145,7 @@
             <!-- Recent Activity Table -->
             <div class="panel-card">
               <div class="panel-header">
-                <h3>Listado Rápido de Personal Activo</h3>
+                <h3>Listado Rápido de Ganaderos Activos</h3>
               </div>
               <div class="panel-body no-padding">
                 <div class="table-responsive">
@@ -292,7 +292,7 @@
                 🐄 Ganado
               </button>
               <button class="subtab-btn" :class="{ active: subTab === 'empleados' }" @click="subTab = 'empleados'">
-                👥 Empleados
+                👥 Ganaderos
               </button>
             </div>
 
@@ -378,7 +378,7 @@
             <!-- SUB-TAB: EMPLEADOS -->
             <div v-if="subTab === 'empleados'" class="panel-card">
               <div class="panel-header logs-header">
-                <h3>Listado del Personal de la Empresa</h3>
+                <h3>Listado de Ganaderos Afiliados</h3>
                 <div class="logs-actions">
                   <div class="search-box">
                     <input 
@@ -453,7 +453,7 @@
       <ion-modal :is-open="mostrarModal" @didDismiss="mostrarModal = false">
         <ion-header>
           <ion-toolbar>
-            <ion-title>Registrar Nuevo Usuario</ion-title>
+            <ion-title>Registrar Nuevo Ganadero</ion-title>
             <ion-buttons slot="end">
               <ion-button @click="mostrarModal = false">Cerrar</ion-button>
             </ion-buttons>
@@ -473,11 +473,9 @@
               <ion-label position="stacked">Contraseña Inicial</ion-label>
               <ion-input v-model="nuevoUsuario.contrasena" type="password" placeholder="Mínimo 6 caracteres"></ion-input>
             </ion-item>
-            <ion-item>
+            <ion-item disabled>
               <ion-label position="stacked">Rol en el Sistema</ion-label>
-              <ion-select v-model="nuevoUsuario.rol_id" placeholder="Selecciona un rol">
-                <ion-select-option v-for="rol in rolesList" :key="rol.id" :value="rol.id">{{ rol.nombre.toUpperCase() }}</ion-select-option>
-              </ion-select>
+              <ion-input value="GANADERO" readonly></ion-input>
             </ion-item>
             <div class="form-actions">
               <ion-button expand="block" class="primary-btn" @click="guardarUsuario" :disabled="guardando">
@@ -489,16 +487,42 @@
       </ion-modal>
 
       <!-- MODAL DETALLES DE USUARIO (BOTTOM SHEET) -->
-      <ion-modal :is-open="mostrarModalDetalles" @didDismiss="mostrarModalDetalles = false" :initial-breakpoint="0.7" :breakpoints="[0, 0.7, 0.9]" class="bottom-sheet-modal">
+      <ion-modal :is-open="mostrarModalDetalles" @didDismiss="mostrarModalDetalles = false" :initial-breakpoint="0.85" :breakpoints="[0, 0.85, 0.95]" class="bottom-sheet-modal">
         <ion-content class="ion-padding">
           <div v-if="usuarioSeleccionado" class="details-container">
             <div class="details-header">
               <div class="avatar-large">{{ usuarioSeleccionado.nombre_completo ? usuarioSeleccionado.nombre_completo.charAt(0).toUpperCase() : 'U' }}</div>
-              <h2>{{ usuarioSeleccionado.nombre_completo }}</h2>
+              <h2 v-if="!modoEdicion">{{ usuarioSeleccionado.nombre_completo }}</h2>
               <span class="role-badge" :class="usuarioSeleccionado.rol_nombre">{{ usuarioSeleccionado.rol_nombre || 'Desconocido' }}</span>
             </div>
             
-            <div class="details-body">
+            <!-- Perfil / Modo Edición -->
+            <div v-if="modoEdicion" class="details-body edit-mode-form" style="display: flex; flex-direction: column; gap: 12px; background: #fdfbf7; border-radius: 16px; padding: 16px; border: 1px solid #e2dcd0;">
+              <h3 style="font-size: 15px; font-weight: 700; color: #2c3e2d; margin: 0 0 8px 0;">✏️ Editar Datos del Ganadero</h3>
+              <ion-item style="--background: transparent; --padding-start: 0;">
+                <ion-label position="stacked" style="color: #5c6e58; font-weight: 600;">Nombre Completo</ion-label>
+                <ion-input v-model="editUserData.nombre_completo" placeholder="Nombre completo"></ion-input>
+              </ion-item>
+              <ion-item style="--background: transparent; --padding-start: 0;">
+                <ion-label position="stacked" style="color: #5c6e58; font-weight: 600;">Correo Electrónico</ion-label>
+                <ion-input v-model="editUserData.correo" type="email" placeholder="correo@ejemplo.com"></ion-input>
+              </ion-item>
+              <ion-item style="--background: transparent; --padding-start: 0;">
+                <ion-label position="stacked" style="color: #5c6e58; font-weight: 600;">Nueva Contraseña (Opcional)</ion-label>
+                <ion-input v-model="editUserData.contrasena" type="password" placeholder="Dejar en blanco para mantener actual"></ion-input>
+              </ion-item>
+              <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <ion-button fill="outline" color="medium" @click="modoEdicion = false" style="flex: 1; --border-radius: 12px; font-weight: 700; height: 38px;">Cancelar</ion-button>
+                <ion-button color="success" @click="guardarEdicionUsuario" style="flex: 1; --border-radius: 12px; font-weight: 700; height: 38px;">Guardar</ion-button>
+              </div>
+            </div>
+
+            <div v-else class="details-body">
+              <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+                <ion-button fill="clear" size="small" color="primary" @click="activarEdicion" style="font-weight: 700; --padding-end: 0; margin: 0;">
+                  ✏️ Editar Perfil
+                </ion-button>
+              </div>
               <div class="detail-item">
                 <ion-icon :icon="mailOutline"></ion-icon>
                 <div class="detail-text">
@@ -526,15 +550,63 @@
               </div>
             </div>
 
-            <div class="details-actions-row">
-              <ion-button v-if="usuarioSeleccionado.activo" color="warning" class="action-btn" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, false); mostrarModalDetalles = false">
+            <!-- Fincas del Ganadero y Soporte -->
+            <div v-if="!modoEdicion" class="fincas-section" style="margin-top: 16px;">
+              <h3 style="font-size: 15px; font-weight: 700; color: #2c3e2d; margin: 0 0 10px 4px; display: flex; align-items: center; gap: 6px;">
+                <span>🏠</span> Fincas registradas ({{ fincasDelUsuarioSeleccionado.length }})
+              </h3>
+              
+              <div v-if="fincasDelUsuarioSeleccionado.length > 0" class="fincas-mini-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto;">
+                <div v-for="finca in fincasDelUsuarioSeleccionado" :key="finca.id" class="finca-mini-card" style="background: #ffffff; border: 1px solid #e2dcd0; border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.01);">
+                  <div class="finca-mini-info" style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-weight: 700; color: #2c3e2d; font-size: 13px;">{{ finca.nombre }}</span>
+                    <span style="font-size: 11px; color: #5c6e58;">📍 {{ finca.ubicacion }}</span>
+                    <span style="font-size: 10px; font-weight: 700; color: #8ba888; text-transform: uppercase;">{{ finca.bovinos_count }} Bovinos</span>
+                  </div>
+                  <ion-button fill="clear" color="danger" @click="eliminarFincaConfirmar(finca.id)" style="--padding-start: 4px; --padding-end: 4px; margin: 0;">
+                    <ion-icon :icon="trashOutline" slot="icon-only" style="font-size: 18px;"></ion-icon>
+                  </ion-button>
+                </div>
+              </div>
+              <div v-else style="background: #fdfbf7; border: 1px dashed #e2dcd0; border-radius: 12px; padding: 14px; text-align: center; color: #5c6e58; font-size: 12px; margin-bottom: 8px;">
+                Este ganadero aún no tiene fincas registradas.
+              </div>
+
+              <!-- Formulario Soporte: Agregar Finca para este Ganadero -->
+              <div class="soporte-finca-form" style="margin-top: 16px; background: #eaf0e6; border-radius: 16px; padding: 14px; border: 1px solid rgba(85,107,47,0.12);">
+                <h4 style="font-size: 13px; font-weight: 700; color: #3e4f24; margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px;">
+                  <span>➕</span> Agregar Finca (Soporte Técnico)
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <input 
+                    type="text" 
+                    v-model="nuevaFincaData.nombre" 
+                    placeholder="Nombre de la finca (ej. Finca Linda Vista)" 
+                    style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #c9c3b8; padding: 0 10px; font-size: 12px; background: #ffffff;"
+                  />
+                  <input 
+                    type="text" 
+                    v-model="nuevaFincaData.ubicacion" 
+                    placeholder="Ubicación (ej. San Carlos, Alajuela)" 
+                    style="width: 100%; height: 36px; border-radius: 8px; border: 1px solid #c9c3b8; padding: 0 10px; font-size: 12px; background: #ffffff;"
+                  />
+                  <ion-button expand="block" size="small" color="primary" @click="crearFincaParaUsuario" :disabled="guardandoNuevaFinca" style="--border-radius: 8px; font-weight: 700; margin: 4px 0 0 0; height: 32px; font-size: 12px;">
+                    {{ guardandoNuevaFinca ? 'Registrando...' : 'Registrar Finca' }}
+                  </ion-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de Acción de Bloqueo / Eliminación general -->
+            <div v-if="!modoEdicion" class="details-actions-row" style="margin-top: 16px; border-top: 1px solid #e2dcd0; padding-top: 16px; display: flex; gap: 8px;">
+              <ion-button v-if="usuarioSeleccionado.activo" color="warning" class="action-btn" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, false); mostrarModalDetalles = false" style="flex: 1; margin: 0; --border-radius: 12px; font-weight: 700; height: 38px;">
                 Bloquear Acceso
               </ion-button>
-              <ion-button v-else color="success" class="action-btn" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, true); mostrarModalDetalles = false">
+              <ion-button v-else color="success" class="action-btn" @click="cambiarEstadoUsuario(usuarioSeleccionado.id, true); mostrarModalDetalles = false" style="flex: 1; margin: 0; --border-radius: 12px; font-weight: 700; height: 38px;">
                 Reactivar Acceso
               </ion-button>
               
-              <ion-button color="danger" fill="outline" class="action-btn" @click="eliminarUsuario(usuarioSeleccionado.id); mostrarModalDetalles = false">
+              <ion-button color="danger" fill="outline" class="action-btn" @click="eliminarUsuario(usuarioSeleccionado.id); mostrarModalDetalles = false" style="flex: 1; margin: 0; --border-radius: 12px; font-weight: 700; height: 38px;">
                 Eliminar Acceso
               </ion-button>
             </div>
@@ -600,16 +672,129 @@ if (sessionStr) {
 }
 
 const activeTab = ref('panel'); // Empezamos en el Panel Principal
-const subTab = ref('fincas'); // Subpestaña por defecto en Mi Empresa
+const subTab = ref('empleados'); // Subpestaña por defecto en Mi Empresa (Ganaderos)
 const mostrarModal = ref(false);
 const guardando = ref(false);
 
 const usuarioSeleccionado = ref<UsuarioInfo | null>(null);
 const mostrarModalDetalles = ref(false);
+const modoEdicion = ref(false);
+
+const editUserData = ref({
+  nombre_completo: '',
+  correo: '',
+  contrasena: ''
+});
+
+const nuevaFincaData = ref({
+  nombre: '',
+  ubicacion: ''
+});
+const guardandoNuevaFinca = ref(false);
 
 const abrirDetalles = (user: UsuarioInfo) => {
   usuarioSeleccionado.value = user;
+  modoEdicion.value = false;
   mostrarModalDetalles.value = true;
+};
+
+const activarEdicion = () => {
+  if (usuarioSeleccionado.value) {
+    editUserData.value = {
+      nombre_completo: usuarioSeleccionado.value.nombre_completo,
+      correo: usuarioSeleccionado.value.correo,
+      contrasena: ''
+    };
+    modoEdicion.value = true;
+  }
+};
+
+const guardarEdicionUsuario = async () => {
+  if (!usuarioSeleccionado.value) return;
+  if (!editUserData.value.nombre_completo || editUserData.value.nombre_completo.trim().length === 0) {
+    mostrarNotificacion('El nombre no puede estar vacío.', 'warning');
+    return;
+  }
+  if (!editUserData.value.correo || !editUserData.value.correo.includes('@')) {
+    mostrarNotificacion('Ingresa un correo electrónico válido.', 'warning');
+    return;
+  }
+
+  try {
+    await adminService.editarUsuario(usuarioSeleccionado.value.id, {
+      nombre_completo: editUserData.value.nombre_completo,
+      correo: editUserData.value.correo,
+      contrasena: editUserData.value.contrasena || undefined
+    });
+    mostrarNotificacion('🎉 Ganadero modificado exitosamente.', 'success');
+    modoEdicion.value = false;
+    mostrarModalDetalles.value = false;
+    await cargarUsuarios();
+  } catch (error: any) {
+    mostrarNotificacion(`Error al editar ganadero: ${error.message || 'Error desconocido'}`, 'danger');
+  }
+};
+
+const fincasDelUsuarioSeleccionado = computed(() => {
+  if (!usuarioSeleccionado.value) return [];
+  return fincasList.value.filter(f => f.propietario_id === usuarioSeleccionado.value!.id);
+});
+
+const crearFincaParaUsuario = async () => {
+  if (!usuarioSeleccionado.value) return;
+  if (!nuevaFincaData.value.nombre || nuevaFincaData.value.nombre.trim().length === 0) {
+    mostrarNotificacion('Por favor ingresa el nombre de la finca.', 'warning');
+    return;
+  }
+  if (!nuevaFincaData.value.ubicacion || nuevaFincaData.value.ubicacion.trim().length === 0) {
+    mostrarNotificacion('Por favor ingresa la ubicación.', 'warning');
+    return;
+  }
+
+  guardandoNuevaFinca.value = true;
+  try {
+    await adminService.crearFinca({
+      nombre: nuevaFincaData.value.nombre,
+      ubicacion: nuevaFincaData.value.ubicacion,
+      propietario_id: usuarioSeleccionado.value.id
+    });
+    mostrarNotificacion('🎉 Finca registrada exitosamente para el ganadero.', 'success');
+    nuevaFincaData.value = { nombre: '', ubicacion: '' };
+    await cargarFincas();
+    await cargarGanadoCompleto();
+  } catch (error: any) {
+    mostrarNotificacion(`Error al crear finca: ${error.message || 'Error desconocido'}`, 'danger');
+  } finally {
+    guardandoNuevaFinca.value = false;
+  }
+};
+
+const eliminarFincaConfirmar = async (fincaId: number) => {
+  const alertConfirm = await alertController.create({
+    header: 'Confirmar Eliminación',
+    subHeader: 'Esta acción no se puede deshacer',
+    message: '¿Estás seguro de eliminar esta finca? Solo se puede eliminar si no tiene ganado asignado.',
+    cssClass: 'premium-alert',
+    buttons: [
+      { text: 'Cancelar', role: 'cancel' },
+      {
+        text: 'Eliminar',
+        role: 'destructive',
+        handler: async () => {
+          try {
+            await adminService.eliminarFinca(fincaId);
+            mostrarNotificacion('🗑️ Finca eliminada exitosamente.', 'success');
+            await cargarFincas();
+            await cargarGanadoCompleto();
+            await cargarAnalisis();
+          } catch (error: any) {
+            mostrarNotificacion(`Error al eliminar finca: ${error.message || 'Inténtelo de nuevo.'}`, 'danger');
+          }
+        }
+      }
+    ]
+  });
+  await alertConfirm.present();
 };
 
 // Listas de datos reactivos
@@ -770,7 +955,7 @@ const nuevoUsuario = ref({
   nombre_completo: '',
   correo: '',
   contrasena: '',
-  rol_id: null as number | null
+  rol_id: 2
 });
 
 const logout = () => {
@@ -830,7 +1015,7 @@ const guardarUsuario = async () => {
     });
     mostrarNotificacion('🎉 ¡Usuario creado exitosamente!', 'success');
     mostrarModal.value = false;
-    nuevoUsuario.value = { nombre_completo: '', correo: '', contrasena: '', rol_id: null };
+    nuevoUsuario.value = { nombre_completo: '', correo: '', contrasena: '', rol_id: 2 };
     await cargarUsuarios();
   } catch (error: any) {
     const mensaje = error?.message || 'Error desconocido al crear el usuario.';
@@ -895,8 +1080,10 @@ const cambiarEstadoUsuario = async (id: number, nuevoEstado: boolean) => {
 onMounted(() => {
   cargarUsuarios();
   cargarRoles();
-});
-</script>
+  cargarFincas();
+  cargarGanadoCompleto();
+  cargarAnalisis();
+});</script>
 
 <style scoped>
 /* 
