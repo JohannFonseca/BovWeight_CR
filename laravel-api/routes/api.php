@@ -35,5 +35,13 @@ Route::post('/animales', [GanadoController::class, 'crearAnimal']);
 Route::delete('/animales/{id}', [GanadoController::class, 'eliminarAnimal']);
 
 // Dashboard & Weight Analysis Routes
+Route::get('/admin/dashboard', [AdminController::class, 'getDashboardStats']);
+Route::get('/admin/usuarios', [AdminController::class, 'getUsuarios']);
+Route::post('/admin/usuarios', [AdminController::class, 'crearUsuario']);
+Route::get('/admin/usuarios/{id}', [AdminController::class, 'getUsuario']);
+Route::patch('/admin/usuarios/{id}/status', [AdminController::class, 'toggleUsuarioStatus']);
+Route::get('/admin/fincas', [AdminController::class, 'getFincas']);
+Route::get('/admin/fincas/{id}', [AdminController::class, 'getFinca']);
+Route::get('/admin/reportes', [AdminController::class, 'getReportes']);
 Route::get('/dashboard-stats', [GanadoController::class, 'getDashboardStats']);
 Route::get('/analisis-pesajes', [GanadoController::class, 'getAnalisisPesajes']);

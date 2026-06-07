@@ -20,6 +20,9 @@ export const animalRepository: IAnimalRepository = createAnimalRepository();
 // Repositorio instanciado para la gestión de autenticación y sesiones
 export const authRepository: IAuthRepository = new LaravelAuthRepository();
 
+// Exponer el servicio adminApi para llamadas administrativas de Laravel
+export { adminApi } from './adminApi';
+
 // Alias de compatibilidad para el servicio de datos
 export const dataService = animalRepository;
 

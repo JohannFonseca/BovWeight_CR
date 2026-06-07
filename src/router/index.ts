@@ -22,9 +22,44 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/admin',
-    name: 'AdminDashboard',
-    component: () => import('../modules/admin/pages/AdminDashboard.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['admin'] }
+    component: () => import('../modules/admin/layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['admin'] },
+    children: [
+      {
+        path: '',
+        redirect: '/admin/dashboard',
+      },
+      {
+        path: 'dashboard',
+        name: 'AdminDashboard',
+        component: () => import('../modules/admin/pages/AdminDashboard.vue'),
+      },
+      {
+        path: 'usuarios',
+        name: 'AdminUsuarios',
+        component: () => import('../modules/admin/pages/AdminUsuarios.vue'),
+      },
+      {
+        path: 'usuarios/:id',
+        name: 'AdminUsuarioDetalle',
+        component: () => import('../modules/admin/pages/AdminUsuarioDetalle.vue'),
+      },
+      {
+        path: 'fincas',
+        name: 'AdminFincas',
+        component: () => import('../modules/admin/pages/AdminFincas.vue'),
+      },
+      {
+        path: 'fincas/:id',
+        name: 'AdminFincaDetalle',
+        component: () => import('../modules/admin/pages/AdminFincaDetalle.vue'),
+      },
+      {
+        path: 'reportes',
+        name: 'AdminReportes',
+        component: () => import('../modules/admin/pages/AdminReportes.vue'),
+      },
+    ]
   },
   {
     path: '/veterinario',

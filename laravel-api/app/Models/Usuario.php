@@ -20,6 +20,7 @@ class Usuario extends Authenticatable
         'contrasena_hash',
         'nombre_completo',
         'rol_id',
+        'ganadero_id',
         'activo',
     ];
 
@@ -43,5 +44,15 @@ class Usuario extends Authenticatable
     public function fincas(): HasMany
     {
         return $this->hasMany(Finca::class, 'propietario_id');
+    }
+
+    public function ganadero(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'ganadero_id');
+    }
+
+    public function veterinarios(): HasMany
+    {
+        return $this->hasMany(Usuario::class, 'ganadero_id');
     }
 }

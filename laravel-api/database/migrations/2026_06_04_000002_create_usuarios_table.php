@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('contrasena_hash');
             $table->string('nombre_completo')->nullable();
             $table->foreignId('rol_id')->constrained('roles')->onDelete('cascade');
+            $table->foreignId('ganadero_id')->nullable()->constrained('usuarios')->onDelete('cascade');
             $table->boolean('activo')->default(true);
             $table->timestamps();
         });

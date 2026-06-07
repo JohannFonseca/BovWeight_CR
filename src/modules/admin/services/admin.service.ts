@@ -44,14 +44,6 @@ export interface Finca {
   creado_en?: string;
 }
 
-/**
- * Raza — Catálogo de razas bovinas (Brahman, Charolais, etc.)
- */
-export interface Raza {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-}
 
 /**
  * AnimalInfo — Info completa de un bovino para mostrar en la tabla.
@@ -88,13 +80,6 @@ export const adminService = {
     return laravelAdminService.getRoles();
   },
 
-  async getRazas(): Promise<Raza[]> {
-    return laravelAdminService.getRazas();
-  },
-
-  async crearRaza(nombre: string, descripcion?: string): Promise<Raza> {
-    return laravelAdminService.crearRaza(nombre, descripcion);
-  },
 
   async getUsuarios(): Promise<UsuarioInfo[]> {
     return laravelAdminService.getUsuarios();
@@ -132,26 +117,6 @@ export const adminService = {
     return laravelAdminService.getGanadoCompleto();
   },
 
-  async crearAnimal(animal: {
-    nombre: string;
-    numero_arete: string;
-    fecha_nacimiento?: string;
-    sexo: string;
-    raza_id: number | null;
-    finca_id: number;
-    color?: string;
-    observaciones?: string;
-  }): Promise<void> {
-    return laravelAdminService.crearAnimal(animal);
-  },
-
-  async eliminarAnimal(id: number): Promise<void> {
-    return laravelAdminService.eliminarAnimal(id);
-  },
-
-  async getDashboardStats(): Promise<{ personalActivo: number; bovinos: number; fincas: number }> {
-    return laravelAdminService.getDashboardStats();
-  },
 
   async getAnalisisPesajes(): Promise<AnalisisPesos> {
     return laravelAdminService.getAnalisisPesajes();

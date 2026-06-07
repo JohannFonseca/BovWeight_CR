@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import type { Rol, Raza, UsuarioInfo, Finca, AnimalInfo, AnalisisPesos } from './admin.service';
+import type { Rol, UsuarioInfo, Finca, AnimalInfo, AnalisisPesos } from './admin.service';
 
 const getApiUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -33,15 +33,6 @@ export const laravelAdminService = {
     return response.data;
   },
 
-  async getRazas(): Promise<Raza[]> {
-    const response = await axios.get(`${getApiUrl()}/razas`);
-    return response.data;
-  },
-
-  async crearRaza(nombre: string, descripcion?: string): Promise<Raza> {
-    const response = await axios.post(`${getApiUrl()}/razas`, { nombre, descripcion });
-    return response.data;
-  },
 
   async getUsuarios(): Promise<UsuarioInfo[]> {
     const response = await axios.get(`${getApiUrl()}/usuarios`, { headers: getHeaders() });
@@ -86,27 +77,6 @@ export const laravelAdminService = {
     return response.data;
   },
 
-  async crearAnimal(animal: {
-    nombre: string;
-    numero_arete: string;
-    fecha_nacimiento?: string;
-    sexo: string;
-    raza_id: number | null;
-    finca_id: number;
-    color?: string;
-    observaciones?: string;
-  }): Promise<void> {
-    await axios.post(`${getApiUrl()}/animales`, animal, { headers: getHeaders() });
-  },
-
-  async eliminarAnimal(id: number): Promise<void> {
-    await axios.delete(`${getApiUrl()}/animales/${id}`, { headers: getHeaders() });
-  },
-
-  async getDashboardStats(): Promise<{ personalActivo: number; bovinos: number; fincas: number }> {
-    const response = await axios.get(`${getApiUrl()}/dashboard-stats`, { headers: getHeaders() });
-    return response.data;
-  },
 
   async getAnalisisPesajes(): Promise<AnalisisPesos> {
     const response = await axios.get(`${getApiUrl()}/analisis-pesajes`, { headers: getHeaders() });
