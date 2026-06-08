@@ -110,7 +110,7 @@
 
         <!-- Botones de acción -->
         <div class="action-buttons">
-          <ion-button expand="block" class="action-btn primary-action" size="large">
+          <ion-button expand="block" class="action-btn primary-action" size="large" :router-link="`/ganado/estimacion-ia?animalId=${animal.id}`">
             <ion-icon :icon="addCircleOutline" slot="start"></ion-icon>
             Registrar Nuevo Peso
           </ion-button>
@@ -146,9 +146,6 @@ import {
   pricetagOutline,
   colorPaletteOutline,
   calendarOutline,
-  arrowUpOutline,
-  arrowDownOutline,
-  removeOutline,
   pulseOutline,
   trendingUpOutline,
   addCircleOutline,
@@ -196,7 +193,7 @@ const diffClass = computed(() => ({
 
 <style scoped>
 .animal-detail-content {
-  --background: #f4f7f0;
+  --background: #f4f6f0;
 }
 
 /* ── Contenedores de estado ── */
@@ -294,12 +291,12 @@ const diffClass = computed(() => ({
 /* ── Tarjeta principal ── */
 .animal-hero-card {
   background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 24px;
   color: #fff;
-  margin-top: 24px;
+  margin-top: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 8px 32px rgba(46, 125, 50, 0.25);
+  box-shadow: 0 12px 30px rgba(46, 125, 50, 0.22);
   position: relative;
   overflow: hidden;
 }
@@ -311,7 +308,7 @@ const diffClass = computed(() => ({
   right: -20%;
   width: 200px;
   height: 200px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 50%;
 }
 
@@ -325,10 +322,11 @@ const diffClass = computed(() => ({
 .animal-avatar {
   width: 80px;
   height: 80px;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .animal-avatar img {
@@ -344,19 +342,20 @@ const diffClass = computed(() => ({
   align-items: center;
   justify-content: center;
   font-size: 36px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
-  backdrop-filter: blur(4px);
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .animal-name {
@@ -364,6 +363,7 @@ const diffClass = computed(() => ({
   font-weight: 800;
   margin: 0 0 12px;
   letter-spacing: -0.5px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .info-chips {
@@ -376,20 +376,23 @@ const diffClass = computed(() => ({
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.18);
   padding: 6px 14px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 /* ── Resumen de peso ── */
 .weight-summary-card {
   background: #fff;
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 20px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(46, 125, 50, 0.04);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -404,24 +407,24 @@ const diffClass = computed(() => ({
 .weight-label {
   display: block;
   font-size: 12px;
-  color: #888;
+  color: #7c8e78;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .weight-value {
   font-size: 36px;
-  font-weight: 800;
+  font-weight: 900;
   color: #1B5E20;
   line-height: 1;
 }
 
 .weight-value small {
   font-size: 16px;
-  font-weight: 600;
-  color: #666;
+  font-weight: 700;
+  color: #5c6e58;
 }
 
 .weight-diff {
@@ -430,23 +433,26 @@ const diffClass = computed(() => ({
   gap: 4px;
   padding: 8px 16px;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .weight-diff.gain {
-  background: rgba(46, 125, 50, 0.1);
+  background: linear-gradient(135deg, rgba(46, 125, 50, 0.15), rgba(46, 125, 50, 0.05));
   color: #2E7D32;
+  border: 1px solid rgba(46, 125, 50, 0.1);
 }
 
 .weight-diff.loss {
-  background: rgba(211, 47, 47, 0.1);
+  background: linear-gradient(135deg, rgba(211, 47, 47, 0.15), rgba(211, 47, 47, 0.05));
   color: #d32f2f;
+  border: 1px solid rgba(211, 47, 47, 0.1);
 }
 
 .weight-diff.stable {
-  background: rgba(158, 158, 158, 0.1);
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.15), rgba(158, 158, 158, 0.05));
   color: #757575;
+  border: 1px solid rgba(158, 158, 158, 0.1);
 }
 
 .weight-diff ion-icon {
@@ -459,11 +465,12 @@ const diffClass = computed(() => ({
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: #f9faf6;
+  background: #fdfdfc;
   border-radius: 12px;
-  font-size: 14px;
-  color: #555;
-  font-weight: 500;
+  font-size: 13.5px;
+  color: #5c6e58;
+  font-weight: 600;
+  border: 1px solid rgba(46, 125, 50, 0.04);
 }
 
 .weight-status ion-icon {
@@ -474,16 +481,17 @@ const diffClass = computed(() => ({
 /* ── Tarjeta de gráfico ── */
 .chart-card {
   background: #fff;
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 20px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(46, 125, 50, 0.04);
 }
 
 .section-title {
   font-size: 16px;
-  font-weight: 700;
-  color: #333;
+  font-weight: 800;
+  color: #1B5E20;
   margin: 0 0 16px;
   display: flex;
   align-items: center;
@@ -498,7 +506,7 @@ const diffClass = computed(() => ({
 .action-buttons {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-top: 8px;
 }
 
@@ -507,12 +515,12 @@ const diffClass = computed(() => ({
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.3px;
+  height: 50px;
 }
 
 .primary-action {
-  --background: #2E7D32;
-  --background-hover: #1B5E20;
-  --box-shadow: 0 4px 16px rgba(46, 125, 50, 0.3);
+  --background: linear-gradient(135deg, #2E7D32, #1B5E20);
+  --box-shadow: 0 8px 20px -5px rgba(46, 125, 50, 0.4);
 }
 
 .secondary-action {
@@ -524,7 +532,8 @@ const diffClass = computed(() => ({
 .retry-btn,
 .back-btn {
   --border-radius: 14px;
-  --background: #2E7D32;
+  --background: linear-gradient(135deg, #2E7D32, #1B5E20);
+  --box-shadow: 0 8px 16px -5px rgba(46, 125, 50, 0.3);
   margin-top: 8px;
   width: 100%;
   max-width: 280px;

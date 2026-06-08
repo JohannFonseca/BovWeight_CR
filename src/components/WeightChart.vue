@@ -81,6 +81,14 @@ function setFilter(value: FilterValue) {
   activeFilter.value = value;
 }
 
+function parseDateString(dateStr: string): Date {
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+  }
+  return new Date(dateStr);
+}
+
 const filteredData = computed<WeightRecord[]>(() => {
   if (activeFilter.value === 'all') return props.weightData;
 
@@ -88,13 +96,13 @@ const filteredData = computed<WeightRecord[]>(() => {
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - months);
 
-  return props.weightData.filter((r) => new Date(r.fecha) >= cutoff);
+  return props.weightData.filter((r) => parseDateString(r.fecha) >= cutoff);
 });
 
 // ── Datos del gráfico ──
 const chartData = computed<ChartData<'line'>>(() => {
   const labels = filteredData.value.map((r) => {
-    const d = new Date(r.fecha);
+    const d = parseDateString(r.fecha);
     return d.toLocaleDateString('es-CR', { month: 'short', year: '2-digit' });
   });
 

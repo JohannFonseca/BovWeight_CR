@@ -169,7 +169,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton,
   IonIcon, IonSpinner, IonText, IonGrid, IonRow, IonCol, IonCard, IonCardHeader,
@@ -187,7 +186,6 @@ import {
 // Registro de componentes Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
-const router = useRouter();
 const loading = ref(true);
 const error = ref<string | null>(null);
 const reportesData = ref<any>(null);

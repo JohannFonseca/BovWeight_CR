@@ -1,7 +1,6 @@
 /**
  * @file interfaces.ts
- * @description Contratos y abstracciones principales del sistema (DIP e ISP).
- * Desacopla la interfaz de usuario de las implementaciones concretas de persistencia.
+ * @description Interfaces y contratos de datos para conectar el frontend con la base de datos.
  */
 
 /**
@@ -24,6 +23,8 @@ export interface Animal {
   imagen: string;
   pesoActual: number;
   historialPeso: WeightRecord[];
+  sexo?: string;
+  color?: string;
 }
 
 /**
@@ -48,6 +49,45 @@ export interface IAnimalRepository {
 
   /** Obtiene el historial de pesajes de un animal. */
   getWeightHistory(animalId: number): Promise<WeightRecord[]>;
+
+  /** Realiza una estimación de peso por IA en base a medidas o una foto del celular. */
+  estimateWeight(animalId: number | null, girth: number | null, length: number | null, imageFile?: File | File[]): Promise<{ peso_estimado: number; model: string; largo_detectado?: number; perimetro_detectado?: number; confianza?: number }>;
+
+  /** Registra y guarda la estimación de peso (con corrección de báscula opcional) en BD. */
+  saveWeightRecord(animalId: number, pesoEstimado: number, pesoCorregido?: number): Promise<any>;
+
+  /** Obtiene la lista completa de fincas. */
+  getFincas(): Promise<any[]>;
+
+  /** Crea una nueva finca. */
+  crearFinca(finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<any>;
+
+  /** Crea un nuevo animal. */
+  crearAnimal(animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; observaciones?: string | null }): Promise<any>;
+
+  /** Obtiene todas las razas de la base de datos. */
+  getRazas(): Promise<any[]>;
+
+  /** Obtiene los usuarios (p. ej., filtrando por rol como veterinario). */
+  getUsuarios(rolNombre?: string): Promise<any[]>;
+
+  /** Elimina un animal por ID. */
+  eliminarAnimal(id: number): Promise<any>;
+
+  /** Elimina una finca por ID. */
+  eliminarFinca(id: number): Promise<any>;
+
+  /** Obtiene los detalles de un usuario específico. */
+  getUsuarioDetalle(id: number): Promise<any>;
+
+  /** Crea un nuevo usuario en el sistema. */
+  crearUsuario(usuario: { correo: string; contrasena: string; rol_id: number; nombre_completo: string; ganadero_id?: number | null }): Promise<any>;
+
+  /** Obtiene todos los roles del sistema. */
+  getRoles(): Promise<any[]>;
+
+  /** Edita los datos de un usuario. */
+  editarUsuario(id: number, data: { correo: string; nombre_completo: string; contrasena?: string }): Promise<any>;
 }
 
 /**

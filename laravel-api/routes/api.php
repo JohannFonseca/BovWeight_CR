@@ -33,6 +33,9 @@ Route::get('/animales/{id}', [GanadoController::class, 'getAnimalById']);
 Route::get('/animales/{id}/historial-peso', [GanadoController::class, 'getWeightHistory']);
 Route::post('/animales', [GanadoController::class, 'crearAnimal']);
 Route::delete('/animales/{id}', [GanadoController::class, 'eliminarAnimal']);
+Route::post('/estimar-peso', [GanadoController::class, 'estimarPeso']);
+Route::post('/animales/{id}/registrar-peso', [GanadoController::class, 'registrarPeso']);
+
 
 // Dashboard & Weight Analysis Routes
 Route::get('/admin/dashboard', [AdminController::class, 'getDashboardStats']);

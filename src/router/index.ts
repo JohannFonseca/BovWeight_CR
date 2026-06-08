@@ -1,8 +1,6 @@
 /**
  * @file index.ts (Router)
- * @description Configuración del sistema de rutas del lado del cliente (Vue/Ionic Router).
- * Define las vistas disponibles, aplica carga perezosa (lazy-loading) y establece políticas
- * de seguridad y control de acceso según el estado de autenticación y los roles del usuario.
+ * @description Rutas de la aplicación y protección por roles.
  */
 
 import { createRouter, createWebHistory } from '@ionic/vue-router';
@@ -74,6 +72,30 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
   },
   {
+    path: '/ganado/estimacion-ia',
+    name: 'AiEstimation',
+    component: () => import('../modules/ganado/pages/AiEstimationPage.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+  },
+  {
+    path: '/ganado/registrar',
+    name: 'RegistrarGanado',
+    component: () => import('../modules/ganado/pages/RegistrarPage.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+  },
+  {
+    path: '/ganado/personal',
+    name: 'PersonalGanado',
+    component: () => import('../modules/ganado/pages/PersonalPage.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+  },
+  {
+    path: '/ganado/ajustes',
+    name: 'AjustesGanado',
+    component: () => import('../modules/ganado/pages/AjustesPage.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+  },
+  {
     path: '/animal/:id',
     name: 'AnimalDetail',
     component: () => import('../modules/ganado/pages/AnimalDetailPage.vue'),
@@ -81,17 +103,13 @@ const routes: Array<RouteRecordRaw> = [
   },
 ];
 
-// Instanciación del enrutador con historial basado en la API de navegación del navegador
+// Crear el router usando historial web
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
 
-/**
- * Guardián de navegación global (Navigation Guard).
- * Valida los permisos de acceso de cada ruta en base a la sesión del usuario guardada en localStorage
- * y redirige automáticamente al login o a la pantalla principal respectiva si no tiene permisos.
- */
+// Guardián para verificar permisos de acceso antes de entrar a cada ruta
 router.beforeEach((to, from, next) => {
   const sessionStr = localStorage.getItem('usuario_sesion');
   let userSession: any = null;

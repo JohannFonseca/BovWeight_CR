@@ -180,7 +180,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonCard, IonCardHeader, IonCardContent, IonGrid, IonRow, IonCol,
+  IonCard, IonCardContent, IonGrid, IonRow, IonCol,
   IonSpinner, IonText, IonButtons, IonButton, IonIcon,
   IonMenuButton
 } from '@ionic/vue';

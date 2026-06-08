@@ -402,7 +402,7 @@ const guardarUsuario = async () => {
     payload.ganadero_id = form.value.ganadero_id;
   }
 
-  const { data, error: apiError } = await adminApi.crearUsuario(payload);
+  const { error: apiError } = await adminApi.crearUsuario(payload);
   saving.value = false;
 
   if (apiError) {

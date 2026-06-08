@@ -9,6 +9,7 @@ use App\Models\Animal;
 use App\Models\EstimacionPeso;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
 class GanadoController extends Controller
@@ -160,9 +161,11 @@ class GanadoController extends Controller
                 'raza' => $a->raza ? $a->raza->nombre : 'Brahman',
                 'edad' => $edad,
                 'arete' => $a->numero_arete,
-                'imagen' => $a->observaciones ?? 'assets/cow-placeholder.png', // Fallback or observations
+                'imagen' => null,
                 'pesoActual' => $pesoActual,
                 'historialPeso' => $historialPeso,
+                'sexo' => $a->sexo ?? 'macho',
+                'color' => $a->color ?? '',
             ];
         });
 
@@ -203,9 +206,11 @@ class GanadoController extends Controller
             'raza' => $a->raza ? $a->raza->nombre : 'Desconocida',
             'edad' => $edad,
             'arete' => $a->numero_arete,
-            'imagen' => $a->observaciones ?? 'assets/cow-placeholder.png',
+            'imagen' => null,
             'pesoActual' => $pesoActual,
             'historialPeso' => $historialPeso,
+            'sexo' => $a->sexo ?? 'macho',
+            'color' => $a->color ?? '',
         ]);
     }
 
@@ -430,4 +435,175 @@ class GanadoController extends Controller
             'bovinoMasPesado' => $heaviestBovino,
         ]);
     }
+
+    public function estimarPeso(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'imagen' => 'nullable', // custom validation for array/single files
+            'perimetro_toracico_cm' => 'required_without:imagen|numeric|min:10',
+            'largo_cuerpo_cm' => 'required_without:imagen|numeric|min:10',
+            'animal_id' => 'nullable|exists:animales,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        if ($request->hasFile('imagen')) {
+            $images = $request->file('imagen');
+            $filesToValidate = is_array($images) ? $images : [$images];
+            foreach ($filesToValidate as $imgFile) {
+                $rules = ['file' => 'required|file|image|max:10240'];
+                $val = Validator::make(['file' => $imgFile], $rules);
+                if ($val->fails()) {
+                    return response()->json(['message' => $val->errors()->first()], 422);
+                }
+            }
+        }
+
+        $girth = $request->input('perimetro_toracico_cm');
+        $length = $request->input('largo_cuerpo_cm');
+        $animalId = $request->input('animal_id');
+
+        // Default attributes
+        $breedName = 'Brahman';
+        $sexName = 'macho';
+        $ageYears = 2.0;
+
+        if ($animalId) {
+            $animal = Animal::with('raza')->find($animalId);
+            if ($animal) {
+                if ($animal->raza) {
+                    $breedName = $animal->raza->nombre;
+                }
+                $sexName = $animal->sexo ?? 'macho';
+                if ($animal->fecha_nacimiento) {
+                    $birthDate = Carbon::parse($animal->fecha_nacimiento);
+                    $ageYears = round($birthDate->diffInMonths(Carbon::now()) / 12.0, 2);
+                }
+            }
+        }
+
+        // 1. Try calling the Flask microservice if image is uploaded
+        if ($request->hasFile('imagen')) {
+            $images = $request->file('imagen');
+            try {
+                // Call Python microservice via HTTP POST
+                $http = Http::timeout(60);
+                if (is_array($images)) {
+                    foreach ($images as $img) {
+                        $http = $http->attach(
+                            'imagen[]', 
+                            file_get_contents($img->getRealPath()), 
+                            $img->getClientOriginalName()
+                        );
+                    }
+                } else {
+                    $http = $http->attach(
+                        'imagen', 
+                        file_get_contents($images->getRealPath()), 
+                        $images->getClientOriginalName()
+                    );
+                }
+
+                $response = $http->post('http://localhost:5001/predict', [
+                    'breed' => $breedName,
+                    'sex' => $sexName,
+                    'age' => $ageYears,
+                ]);
+
+                if ($response->successful()) {
+                    return response()->json($response->json());
+                }
+            } catch (\Exception $e) {
+                // Log exception or print locally, fallback to local CLI script execution below
+            }
+        }
+
+        // 2. Fallback / Manual: Execute python CLI script locally
+        $pythonPath = 'python3';
+        $scriptPath = storage_path('ai/predict_weight.py');
+
+        $breedArg = escapeshellarg($breedName);
+        $sexArg = escapeshellarg($sexName);
+        $ageArg = escapeshellarg($ageYears);
+
+        $tempPaths = [];
+        if ($request->hasFile('imagen')) {
+            $images = $request->file('imagen');
+            $imgList = is_array($images) ? $images : [$images];
+            
+            $tempDir = storage_path('app/temp_predictions');
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+            
+            $imageArgsStr = '';
+            foreach ($imgList as $img) {
+                $filename = uniqid() . '.' . $img->getClientOriginalExtension();
+                $img->move($tempDir, $filename);
+                $tempPath = $tempDir . '/' . $filename;
+                $tempPaths[] = $tempPath;
+                $imageArgsStr .= ' --image ' . escapeshellarg($tempPath);
+            }
+            
+            $command = "$pythonPath \"$scriptPath\"$imageArgsStr --breed $breedArg --sex $sexArg --age $ageArg 2>&1";
+        } else {
+            $girthArg = escapeshellarg($girth);
+            $lengthArg = escapeshellarg($length);
+            $command = "$pythonPath \"$scriptPath\" --girth $girthArg --length $lengthArg --breed $breedArg --sex $sexArg --age $ageArg 2>&1";
+        }
+        
+        $output = shell_exec($command);
+        
+        // Clean up temp files
+        foreach ($tempPaths as $path) {
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+        
+        if (empty($output)) {
+            return response()->json(['message' => 'No se pudo obtener respuesta del motor de IA.'], 500);
+        }
+
+        $decoded = json_decode($output, true);
+        if (!$decoded || !isset($decoded['success']) || !$decoded['success']) {
+            return response()->json([
+                'message' => 'Error al decodificar la predicción de IA.',
+                'raw_output' => $output
+            ], 500);
+        }
+
+        return response()->json($decoded);
+    }
+
+    public function registrarPeso(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'peso_estimado_kg' => 'required|numeric|min:1',
+            'peso_corregido_kg' => 'nullable|numeric|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $animal = Animal::find($id);
+        if (!$animal) {
+            return response()->json(['message' => 'Animal no encontrado.'], 404);
+        }
+
+        $estimacion = EstimacionPeso::create([
+            'animal_id' => $id,
+            'peso_estimado_kg' => $request->input('peso_estimado_kg'),
+            'peso_corregido_kg' => $request->input('peso_corregido_kg'),
+        ]);
+
+        return response()->json([
+            'message' => 'Pesaje registrado exitosamente.',
+            'estimacion' => $estimacion
+        ], 201);
+    }
 }
+
