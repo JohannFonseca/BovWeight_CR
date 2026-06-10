@@ -267,4 +267,57 @@ export class LaravelAnimalRepository implements IAnimalRepository {
       throw new Error(err.response?.data?.message || 'Error al editar el usuario');
     }
   }
+
+  async getReportesGanadero(): Promise<any[]> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.get(`${apiUrl}/reportes-ganadero`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getReportesGanadero con Laravel:', err.message);
+      throw new Error('Error al obtener los reportes');
+    }
+  }
+
+  async guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; animal_ids: number[] }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/reportes-ganadero`, reporte, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en guardarReporteGanadero con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al guardar el reporte');
+    }
+  }
+
+  async getReporteDetalleGanadero(id: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.get(`${apiUrl}/reportes-ganadero/${id}`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getReporteDetalleGanadero con Laravel:', err.message);
+      throw new Error('Error al obtener el detalle del reporte');
+    }
+  }
+
+  async eliminarReporteGanadero(id: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.delete(`${apiUrl}/reportes-ganadero/${id}`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en eliminarReporteGanadero con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al eliminar el reporte');
+    }
+  }
 }
+

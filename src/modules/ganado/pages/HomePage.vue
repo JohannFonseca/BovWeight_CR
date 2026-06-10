@@ -35,18 +35,18 @@
               <ion-icon :icon="gridOutline"></ion-icon>
               <span>Mi Finca</span>
             </a>
-            <a href="#" class="nav-item">
+            <router-link to="/ganado/animales" class="nav-item">
               <ion-icon :icon="pawOutline"></ion-icon>
               <span>Mis Animales</span>
-            </a>
+            </router-link>
             <router-link to="/ganado/estimacion-ia" class="nav-item ai-highlight">
               <ion-icon :icon="cameraOutline"></ion-icon>
               <span>Estimar Peso IA</span>
             </router-link>
-            <a href="#" class="nav-item">
+            <router-link to="/ganado/reportes" class="nav-item">
               <ion-icon :icon="barChartOutline"></ion-icon>
               <span>Reportes</span>
-            </a>
+            </router-link>
           </nav>
         </aside>
 
@@ -101,7 +101,7 @@
             <div class="panel-card animals-panel">
               <div class="panel-header">
                 <h3>Mi Rebaño</h3>
-                <ion-button fill="clear" size="small">Ver todos</ion-button>
+                <ion-button fill="clear" size="small" router-link="/ganado/animales">Ver todos</ion-button>
               </div>
               
               <div class="panel-body no-padding">
@@ -118,7 +118,7 @@
 
                 <div v-else class="animal-list">
                   <router-link
-                    v-for="a in animals"
+                    v-for="a in animals.slice(0, 5)"
                     :key="a.id"
                     :to="`/animal/${a.id}`"
                     class="animal-row"
@@ -131,7 +131,7 @@
                       <span class="animal-tag">Arete: #{{ a.arete || 'N/A' }} | {{ a.raza }}</span>
                     </div>
                     <div class="animal-weight">
-                      <span class="weight-val">{{ a.pesoActual }} kg</span>
+                      <span class="weight-val">{{ a.pesoActual > 0 ? `${a.pesoActual} kg` : 'S/P' }}</span>
                       <ion-icon :icon="chevronForwardOutline" class="go-icon"></ion-icon>
                     </div>
                   </router-link>
@@ -224,6 +224,8 @@ async function load() {
     loading.value = false;
   }
 }
+
+
 
 onMounted(load);
 
@@ -448,4 +450,6 @@ const chartOptions = ref({
   .stats-grid { gap: 12px; margin-bottom: 20px; }
   .content-grid { gap: 16px; }
 }
+
+
 </style>

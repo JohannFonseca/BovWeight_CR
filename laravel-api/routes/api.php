@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\GanadoController;
+use App\Http\Controllers\ReporteController;
 
 // Auth Routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -35,6 +36,13 @@ Route::post('/animales', [GanadoController::class, 'crearAnimal']);
 Route::delete('/animales/{id}', [GanadoController::class, 'eliminarAnimal']);
 Route::post('/estimar-peso', [GanadoController::class, 'estimarPeso']);
 Route::post('/animales/{id}/registrar-peso', [GanadoController::class, 'registrarPeso']);
+
+// Reportes Ganadero Routes
+Route::get('/reportes-ganadero', [ReporteController::class, 'getReportes']);
+Route::post('/reportes-ganadero', [ReporteController::class, 'guardarReporte']);
+Route::get('/reportes-ganadero/{id}', [ReporteController::class, 'getReporteDetalle']);
+Route::delete('/reportes-ganadero/{id}', [ReporteController::class, 'eliminarReporte']);
+
 
 
 // Dashboard & Weight Analysis Routes
