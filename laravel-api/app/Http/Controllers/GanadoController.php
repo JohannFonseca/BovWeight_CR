@@ -166,6 +166,8 @@ class GanadoController extends Controller
                 'historialPeso' => $historialPeso,
                 'sexo' => $a->sexo ?? 'macho',
                 'color' => $a->color ?? '',
+                'finca_id' => $a->finca_id,
+                'finca_nombre' => $a->finca ? $a->finca->nombre : 'Mi Finca',
             ];
         });
 

@@ -72,6 +72,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
   },
   {
+    path: '/ganado/animales',
+    name: 'MisAnimales',
+    component: () => import('../modules/ganado/pages/AnimalsPage.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+  },
+  {
     path: '/ganado/estimacion-ia',
     name: 'AiEstimation',
     component: () => import('../modules/ganado/pages/AiEstimationPage.vue'),
@@ -93,6 +99,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/ganado/ajustes',
     name: 'AjustesGanado',
     component: () => import('../modules/ganado/pages/AjustesPage.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+  },
+  {
+    path: '/ganado/reportes',
+    name: 'GanaderoReportes',
+    component: () => import('../modules/reportes/pages/ReportsPage.vue'),
     meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
   },
   {

@@ -88,7 +88,20 @@ export interface IAnimalRepository {
 
   /** Edita los datos de un usuario. */
   editarUsuario(id: number, data: { correo: string; nombre_completo: string; contrasena?: string }): Promise<any>;
+
+  /** Obtiene todos los reportes de ganadero guardados. */
+  getReportesGanadero(): Promise<any[]>;
+
+  /** Guarda un reporte de ganadero con una selección de animales. */
+  guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; animal_ids: number[] }): Promise<any>;
+
+  /** Obtiene los detalles de un reporte de ganadero, incluyendo los animales asignados. */
+  getReporteDetalleGanadero(id: number): Promise<any>;
+
+  /** Elimina un reporte de ganadero por ID. */
+  eliminarReporteGanadero(id: number): Promise<any>;
 }
+
 
 /**
  * Interfaz para la autenticación y control de accesos.
