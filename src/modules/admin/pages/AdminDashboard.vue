@@ -169,6 +169,16 @@
               </ion-row>
             </ion-grid>
           </div>
+
+          <!-- Chart de Evolución de Registros -->
+          <div class="panel-card chart-panel">
+            <div class="panel-header">
+              <h3>Actividad Reciente del Sistema</h3>
+            </div>
+            <div class="panel-body">
+              <LineChart :data="chartData" :options="chartOptions" class="chart-container" />
+            </div>
+          </div>
         </div>
       </div>
     </ion-content>
@@ -189,6 +199,15 @@ import {
   statsChartOutline, trendingUpOutline
 } from 'ionicons/icons';
 import { adminApi } from '@/services';
+
+// Chart.js imports
+import { Line as LineChart } from 'vue-chartjs';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement,
+  LineElement, Title, Tooltip, Legend, Filler
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 const router = useRouter();
 const loading = ref(true);
@@ -232,6 +251,35 @@ const irARuta = (ruta: string) => {
 
 onMounted(() => {
   fetchStats();
+});
+
+// Chart Configuration
+const chartData = ref({
+  labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+  datasets: [
+    {
+      label: 'Nuevos Usuarios',
+      backgroundColor: 'rgba(44, 62, 45, 0.1)',
+      borderColor: '#2c3e2d',
+      borderWidth: 2,
+      pointBackgroundColor: '#fff',
+      pointBorderColor: '#2c3e2d',
+      pointRadius: 4,
+      fill: true,
+      data: [12, 19, 15, 25],
+      tension: 0.4
+    }
+  ]
+});
+
+const chartOptions = ref({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
+    x: { grid: { display: false } }
+  }
 });
 </script>
 
@@ -496,4 +544,27 @@ onMounted(() => {
   font-weight: 700;
   color: #2c3e2d;
 }
+
+/* ====== PANEL CHART ====== */
+.panel-card { 
+  background: #FFFFFF; 
+  border-radius: 24px; 
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03); 
+  border: 1px solid rgba(0,0,0,0.02); 
+  display: flex; 
+  flex-direction: column; 
+  overflow: hidden; 
+  margin-top: 24px; 
+  margin-bottom: 24px; 
+}
+.panel-header { 
+  padding: 24px; 
+  border-bottom: 1px solid #f4f1ea; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
+.panel-header h3 { margin: 0; font-size: 18px; font-weight: 800; color: #2c3e2d; }
+.panel-body { padding: 24px; flex: 1; }
+.chart-container { height: 260px; width: 100%; }
 </style>

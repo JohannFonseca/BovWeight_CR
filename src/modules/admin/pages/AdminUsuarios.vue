@@ -350,7 +350,7 @@ const resetForm = () => {
 };
 
 const onRoleChange = () => {
-  const selectedRol = rolesDisponibles.value.find(r => r.id === form.value.rol_id);
+  const selectedRol = rolesDisponibles.value.find(r => r.id === Number(form.value.rol_id));
   if (selectedRol && selectedRol.nombre.toLowerCase() === 'veterinario') {
     esVeterinario.value = true;
   } else {
