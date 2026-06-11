@@ -506,7 +506,7 @@ class GanadoController extends Controller
                     );
                 }
 
-                $response = $http->post('http://localhost:5001/predict', [
+                $response = $http->post(env('AI_SERVICE_URL', 'http://localhost:5001/predict'), [
                     'breed' => $breedName,
                     'sex' => $sexName,
                     'age' => $ageYears,
