@@ -96,6 +96,9 @@
                     <span class="sex-badge" :class="a.sexo">
                       {{ a.sexo === 'hembra' ? '♀' : '♂' }}
                     </span>
+                    <span class="status-badge" :class="a.estado || 'activo'">
+                      {{ (a.estado || 'activo').toUpperCase() }}
+                    </span>
                   </div>
 
                   <!-- Información de Pesajes por Animal -->
@@ -613,5 +616,28 @@ onMounted(loadAnimals);
   .animal-weigh-dates {
     gap: 8px;
   }
+}
+
+.status-badge {
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 4px;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+
+.status-badge.activo {
+  color: #2e7d32;
+  background: #eaf0e6;
+}
+
+.status-badge.vendido {
+  color: #d97706;
+  background: #fff7ed;
+}
+
+.status-badge.fallecido {
+  color: #dc2626;
+  background: #fef2f2;
 }
 </style>

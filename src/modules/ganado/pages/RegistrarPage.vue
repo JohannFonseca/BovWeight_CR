@@ -69,13 +69,22 @@
                 <div class="detail-pill">
                   <strong>{{ f.bovinos_count || 0 }}</strong> animales
                 </div>
-                <button 
-                  class="delete-icon-btn" 
-                  @click="confirmDeleteFinca(f)"
-                  title="Eliminar Finca"
-                >
-                  <ion-icon :icon="trashOutline"></ion-icon>
-                </button>
+                <div class="action-buttons">
+                  <button 
+                    class="edit-icon-btn" 
+                    @click="openEditFincaModal(f)"
+                    title="Editar Finca"
+                  >
+                    <ion-icon :icon="pencilOutline"></ion-icon>
+                  </button>
+                  <button 
+                    class="delete-icon-btn" 
+                    @click="confirmDeleteFinca(f)"
+                    title="Eliminar Finca"
+                  >
+                    <ion-icon :icon="trashOutline"></ion-icon>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -113,11 +122,23 @@
                 <div class="animal-meta">
                   <h3>{{ a.nombre }}</h3>
                   <span class="animal-tag">Arete: #{{ a.arete || 'N/A' }} | Raza: {{ a.raza }}</span>
-                  <span class="animal-sub">Edad: {{ a.edad }} | Sexo: {{ a.sexo }}</span>
+                  <span class="animal-sub">
+                    Edad: {{ a.edad }} | Sexo: {{ a.sexo }}
+                    <span class="status-dot-label" :class="a.estado || 'activo'">
+                      • {{ (a.estado || 'activo').toUpperCase() }}
+                    </span>
+                  </span>
                 </div>
               </div>
               <div class="animal-row-right">
                 <span class="weight-tag" v-if="a.pesoActual > 0">{{ a.pesoActual }} kg</span>
+                <button 
+                  class="edit-icon-btn" 
+                  @click="openEditAnimalModal(a)"
+                  title="Editar Animal"
+                >
+                  <ion-icon :icon="pencilOutline"></ion-icon>
+                </button>
                 <button 
                   class="delete-icon-btn" 
                   @click="confirmDeleteAnimal(a)"
@@ -135,11 +156,11 @@
       <BottomNav />
     </ion-content>
 
-    <!-- MODAL: CREAR FINCA -->
+    <!-- MODAL: CREAR/EDITAR FINCA -->
     <div v-if="showFincaModal" class="modal-overlay animate-fade-in">
       <div class="modal-card">
         <div class="modal-header">
-          <h3>🏡 Nueva Finca</h3>
+          <h3>{{ editingFincaId ? '🏡 Editar Finca' : '🏡 Nueva Finca' }}</h3>
           <button class="close-btn" @click="closeFincaModal">×</button>
         </div>
         <form @submit.prevent="saveFinca">
@@ -169,18 +190,18 @@
             <button type="button" class="cancel-btn" @click="closeFincaModal">Cancelar</button>
             <button type="submit" class="submit-btn" :disabled="savingFinca">
               <span v-if="savingFinca">Guardando...</span>
-              <span v-else>Guardar Finca</span>
+              <span v-else>{{ editingFincaId ? 'Actualizar Finca' : 'Guardar Finca' }}</span>
             </button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- MODAL: CREAR ANIMAL -->
+    <!-- MODAL: CREAR/EDITAR ANIMAL -->
     <div v-if="showAnimalModal" class="modal-overlay animate-fade-in">
       <div class="modal-card max-width-md">
         <div class="modal-header">
-          <h3>🐂 Registrar Nuevo Animal</h3>
+          <h3>{{ editingAnimalId ? '🐂 Editar Animal' : '🐂 Registrar Nuevo Animal' }}</h3>
           <button class="close-btn" @click="closeAnimalModal">×</button>
         </div>
         <form @submit.prevent="saveAnimal">
@@ -259,6 +280,17 @@
                   class="form-input" 
                 />
               </div>
+
+              <div class="form-group" v-if="editingAnimalId">
+                <label class="form-label">Estado del Animal *</label>
+                <div class="select-wrapper">
+                  <select v-model="animalForm.estado" required class="custom-select">
+                    <option value="activo">Activo</option>
+                    <option value="vendido">Vendido</option>
+                    <option value="fallecido">Fallecido</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div class="form-group full-width">
@@ -275,7 +307,7 @@
             <button type="button" class="cancel-btn" @click="closeAnimalModal">Cancelar</button>
             <button type="submit" class="submit-btn" :disabled="savingAnimal">
               <span v-if="savingAnimal">Guardando...</span>
-              <span v-else>Guardar Animal</span>
+              <span v-else>{{ editingAnimalId ? 'Actualizar Animal' : 'Guardar Animal' }}</span>
             </button>
           </div>
         </form>
@@ -300,7 +332,7 @@ import {
   IonSpinner, IonIcon, IonToast
 } from '@ionic/vue';
 import { 
-  addOutline, trashOutline, locationOutline 
+  addOutline, trashOutline, locationOutline, pencilOutline 
 } from 'ionicons/icons';
 import BottomNav from '@/components/BottomNav.vue';
 import { animalRepository } from '@/services';
@@ -337,9 +369,10 @@ const showToast = (message: string, color: 'success' | 'danger' | 'warning' = 's
   toast.value.show = true;
 };
 
-// Control de modales
+// Control de modales y edición
 const showFincaModal = ref(false);
 const savingFinca = ref(false);
+const editingFincaId = ref<number | null>(null);
 const fincaForm = ref({
   nombre: '',
   ubicacion: ''
@@ -347,6 +380,7 @@ const fincaForm = ref({
 
 const showAnimalModal = ref(false);
 const savingAnimal = ref(false);
+const editingAnimalId = ref<number | null>(null);
 const animalForm = ref<{
   nombre: string;
   numero_arete: string;
@@ -355,6 +389,7 @@ const animalForm = ref<{
   sexo: string;
   fecha_nacimiento: string;
   color: string;
+  estado: string;
   observaciones: string;
 }>({
   nombre: '',
@@ -364,6 +399,7 @@ const animalForm = ref<{
   sexo: 'macho',
   fecha_nacimiento: '',
   color: '',
+  estado: 'activo',
   observaciones: ''
 });
 
@@ -400,7 +436,17 @@ async function fetchRazas() {
 
 // Acciones para fincas
 const openFincaModal = () => {
+  editingFincaId.value = null;
   fincaForm.value = { nombre: '', ubicacion: '' };
+  showFincaModal.value = true;
+};
+
+const openEditFincaModal = (finca: any) => {
+  editingFincaId.value = finca.id;
+  fincaForm.value = { 
+    nombre: finca.nombre, 
+    ubicacion: finca.ubicacion 
+  };
   showFincaModal.value = true;
 };
 
@@ -415,12 +461,19 @@ const saveFinca = async () => {
   }
   savingFinca.value = true;
   try {
-    await animalRepository.crearFinca({
+    const payload = {
       nombre: fincaForm.value.nombre,
       ubicacion: fincaForm.value.ubicacion,
       propietario_id: usuarioSesion.value.id
-    });
-    showToast('Finca creada exitosamente.');
+    };
+
+    if (editingFincaId.value) {
+      await animalRepository.editarFinca(editingFincaId.value, payload);
+      showToast('Finca actualizada exitosamente.');
+    } else {
+      await animalRepository.crearFinca(payload);
+      showToast('Finca creada exitosamente.');
+    }
     closeFincaModal();
     await fetchFincas();
   } catch (e: any) {
@@ -449,6 +502,7 @@ const confirmDeleteFinca = async (finca: any) => {
 
 // Acciones para animales
 const openAnimalModal = () => {
+  editingAnimalId.value = null;
   animalForm.value = {
     nombre: '',
     numero_arete: '',
@@ -457,7 +511,30 @@ const openAnimalModal = () => {
     sexo: 'macho',
     fecha_nacimiento: '',
     color: '',
+    estado: 'activo',
     observaciones: ''
+  };
+  showAnimalModal.value = true;
+};
+
+const openEditAnimalModal = (animal: any) => {
+  editingAnimalId.value = animal.id;
+  
+  let formattedDob = '';
+  if (animal.fecha_nacimiento) {
+    formattedDob = animal.fecha_nacimiento.split(' ')[0];
+  }
+
+  animalForm.value = {
+    nombre: animal.nombre || '',
+    numero_arete: animal.arete || '',
+    finca_id: animal.finca_id || null,
+    raza_id: animal.raza_id || null,
+    sexo: animal.sexo || 'macho',
+    fecha_nacimiento: formattedDob,
+    color: animal.color || '',
+    estado: animal.estado || 'activo',
+    observaciones: animal.observaciones || ''
   };
   showAnimalModal.value = true;
 };
@@ -473,7 +550,7 @@ const saveAnimal = async () => {
   }
   savingAnimal.value = true;
   try {
-    await animalRepository.crearAnimal({
+    const payload = {
       nombre: animalForm.value.nombre,
       numero_arete: animalForm.value.numero_arete,
       finca_id: animalForm.value.finca_id,
@@ -481,12 +558,19 @@ const saveAnimal = async () => {
       sexo: animalForm.value.sexo,
       fecha_nacimiento: animalForm.value.fecha_nacimiento || null,
       color: animalForm.value.color || null,
+      estado: animalForm.value.estado || 'activo',
       observaciones: animalForm.value.observaciones || null
-    });
-    showToast('Animal registrado exitosamente.');
+    };
+
+    if (editingAnimalId.value) {
+      await animalRepository.editarAnimal(editingAnimalId.value, payload);
+      showToast('Animal actualizado exitosamente.');
+    } else {
+      await animalRepository.crearAnimal(payload);
+      showToast('Animal registrado exitosamente.');
+    }
     closeAnimalModal();
     await fetchAnimals();
-    // reload fincas to update count
     await fetchFincas();
   } catch (e: any) {
     showToast(e.message || 'Error al guardar animal.', 'danger');
@@ -1025,5 +1109,45 @@ onMounted(() => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-icon-btn {
+  background: transparent;
+  border: none;
+  color: #c0c5b1;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.edit-icon-btn:active, .edit-icon-btn:hover {
+  background: #eaf0e6;
+  color: #2e7d32;
+}
+
+.status-dot-label {
+  font-weight: 700;
+  margin-left: 4px;
+}
+.status-dot-label.activo {
+  color: #2e7d32;
+}
+.status-dot-label.vendido {
+  color: #d97706;
+}
+.status-dot-label.fallecido {
+  color: #dc2626;
 }
 </style>

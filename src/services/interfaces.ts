@@ -62,8 +62,14 @@ export interface IAnimalRepository {
   /** Crea una nueva finca. */
   crearFinca(finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<any>;
 
+  /** Edita una finca existente. */
+  editarFinca(id: number, finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<any>;
+
   /** Crea un nuevo animal. */
   crearAnimal(animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; observaciones?: string | null }): Promise<any>;
+
+  /** Edita un animal existente. */
+  editarAnimal(id: number, animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; estado?: string | null; observaciones?: string | null }): Promise<any>;
 
   /** Obtiene todas las razas de la base de datos. */
   getRazas(): Promise<any[]>;

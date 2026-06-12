@@ -149,6 +149,19 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
+  async editarFinca(id: number, finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.put(`${apiUrl}/fincas/${id}`, finca, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en editarFinca con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al editar la finca');
+    }
+  }
+
   async crearAnimal(animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; observaciones?: string | null }): Promise<any> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {
@@ -159,6 +172,19 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     } catch (err: any) {
       console.error('Error en crearAnimal con Laravel:', err.message);
       throw new Error(err.response?.data?.message || 'Error al registrar el animal');
+    }
+  }
+
+  async editarAnimal(id: number, animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; estado?: string | null; observaciones?: string | null }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.put(`${apiUrl}/animales/${id}`, animal, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en editarAnimal con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al editar el animal');
     }
   }
 
