@@ -114,13 +114,53 @@
             <ion-icon :icon="addCircleOutline" slot="start"></ion-icon>
             Registrar Nuevo Peso
           </ion-button>
-          <ion-button expand="block" class="action-btn secondary-action" fill="outline" size="large">
+          <ion-button expand="block" class="action-btn secondary-action" fill="outline" size="large" @click="showHistoryModal = true">
             <ion-icon :icon="documentTextOutline" slot="start"></ion-icon>
             Ver Historial Completo
           </ion-button>
         </div>
       </div>
     </ion-content>
+
+    <!-- MODAL DE HISTORIAL COMPLETO -->
+    <ion-modal :is-open="showHistoryModal" @didDismiss="showHistoryModal = false">
+      <ion-header>
+        <ion-toolbar class="modal-toolbar">
+          <ion-title>Historial de Pesajes</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showHistoryModal = false" class="close-modal-btn">Cerrar</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding modal-history-content">
+        <div v-if="animal" class="history-list-container">
+          <div class="history-animal-info-card">
+            <h3>{{ animal.nombre }}</h3>
+            <p>Arete: <strong>#{{ animal.arete || 'Sin arete' }}</strong> | Raza: <strong>{{ animal.raza }}</strong></p>
+          </div>
+          
+          <div class="table-responsive">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Peso Registrado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(rec, index) in [...animal.historialPeso].reverse()" :key="index">
+                  <td>{{ rec.fecha }}</td>
+                  <td class="weight-col">{{ rec.peso }} kg</td>
+                </tr>
+                <tr v-if="!animal.historialPeso || animal.historialPeso.length === 0">
+                  <td colspan="2" class="no-records">No hay registros de pesaje.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
@@ -137,6 +177,7 @@ import {
   IonButtons,
   IonBackButton,
   IonIcon,
+  IonModal,
 } from '@ionic/vue';
 import {
   cloudOfflineOutline,
@@ -163,6 +204,7 @@ const route = useRoute();
 const animal = ref<Animal | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
+const showHistoryModal = ref(false);
 
 // ── Cargar datos ──
 async function loadAnimal() {
@@ -537,5 +579,88 @@ const diffClass = computed(() => ({
   margin-top: 8px;
   width: 100%;
   max-width: 280px;
+}
+
+/* ── Modal de Historial ── */
+.modal-toolbar {
+  --background: #2E7D32;
+  --color: #ffffff;
+}
+
+.close-modal-btn {
+  --color: #ffffff;
+  font-weight: 700;
+}
+
+.modal-history-content {
+  --background: #f4f6f0;
+}
+
+.history-animal-info-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  border: 1px solid rgba(46, 125, 50, 0.08);
+}
+
+.history-animal-info-card h3 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #1B5E20;
+}
+
+.history-animal-info-card p {
+  margin: 0;
+  font-size: 14px;
+  color: #5c6e58;
+}
+
+.table-responsive {
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.02);
+  border: 1px solid rgba(46, 125, 50, 0.08);
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.history-table th {
+  background: #eaf0e8;
+  color: #1B5E20;
+  font-weight: 700;
+  padding: 14px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(46, 125, 50, 0.08);
+}
+
+.history-table td {
+  padding: 14px 16px;
+  font-size: 15px;
+  color: #2c3e2d;
+  border-bottom: 1px solid #f0f3ed;
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.weight-col {
+  font-weight: 700;
+  color: #2E7D32;
+}
+
+.no-records {
+  text-align: center;
+  color: #7c8e78;
+  padding: 24px !important;
+  font-style: italic;
 }
 </style>

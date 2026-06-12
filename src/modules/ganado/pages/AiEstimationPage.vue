@@ -268,6 +268,11 @@
                   </div>
                 </div>
 
+                <div class="warning-box">
+                  <ion-icon :icon="alertCircleOutline"></ion-icon>
+                  <span><strong>Peso estimado aproximado:</strong> La estimación por IA es una aproximación y no reemplaza a una báscula real calibrada.</span>
+                </div>
+
                 <div class="model-badge">
                   <span class="badge-icon">🧠</span>
                   <span>Modelo: <strong>{{ usedModel }}</strong></span>
@@ -341,6 +346,10 @@
                 </div>
                 
                 <div class="guide-steps">
+                  <div class="warning-box" style="margin-top: 0; margin-bottom: 16px;">
+                    <ion-icon :icon="alertCircleOutline"></ion-icon>
+                    <span><strong>Nota de campo:</strong> La estimación de la IA es aproximada. En campo, se recomienda calibrar con pesajes reales de báscula periódicamente.</span>
+                  </div>
                   <div class="step">
                     <span class="step-num">📸</span>
                     <p><strong>Para estimar con Foto:</strong> Toma una foto de perfil del animal completo a una distancia aproximada de 2 a 3 metros. Asegúrate de que no haya obstáculos tapando las patas o el cuerpo del animal.</p>
@@ -1460,5 +1469,28 @@ onMounted(async () => {
   border-radius: 20px;
   backdrop-filter: blur(4px);
   z-index: 20;
+}
+
+/* Warning disclaimer box */
+.warning-box {
+  background: #fff9e6;
+  border: 1px solid #ffeeba;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #856404;
+  font-size: 13.5px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.warning-box ion-icon {
+  font-size: 20px;
+  color: #c59b27;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 </style>

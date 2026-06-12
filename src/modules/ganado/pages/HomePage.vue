@@ -7,6 +7,10 @@
             <span class="logo-icon">🐄</span>
             <span class="app-logo">BovWeight CR</span>
             <span class="badge-ganadero">GANADERO</span>
+            <span v-if="isOffline" class="offline-badge">
+              <ion-icon :icon="cloudOfflineOutline" style="margin-right: 4px; font-size: 14px;"></ion-icon>
+              Offline
+            </span>
           </div>
         </ion-title>
         <ion-buttons slot="end">
@@ -159,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, 
@@ -186,6 +190,18 @@ const animals = ref<Animal[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const router = useRouter();
+
+// Conectividad sin conexión
+const isOffline = ref(!navigator.onLine);
+const updateOnlineStatus = () => {
+  isOffline.value = !navigator.onLine;
+};
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+onUnmounted(() => {
+  window.removeEventListener('online', updateOnlineStatus);
+  window.removeEventListener('offline', updateOnlineStatus);
+});
 
 const usuarioSesion = ref<any>(null);
 const sessionStr = localStorage.getItem('usuario_sesion');
@@ -452,4 +468,22 @@ const chartOptions = ref({
 }
 
 
+.offline-badge {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  animation: pulse-offline 2s infinite alternate;
+}
+
+@keyframes pulse-offline {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
 </style>

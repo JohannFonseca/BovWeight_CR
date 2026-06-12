@@ -28,6 +28,7 @@ class ReporteController extends Controller
                     'id' => $r->id,
                     'titulo' => $r->titulo,
                     'descripcion' => $r->descripcion,
+                    'destinatario' => $r->destinatario,
                     'animal_ids' => $r->animal_ids,
                     'cant_animales' => is_array($r->animal_ids) ? count($r->animal_ids) : 0,
                     'fecha_creacion' => $r->created_at ? $r->created_at->format('d/m/Y H:i') : null,
@@ -50,6 +51,7 @@ class ReporteController extends Controller
         $validator = Validator::make($request->all(), [
             'titulo' => 'required|string|min:1|max:255',
             'descripcion' => 'nullable|string',
+            'destinatario' => 'nullable|string|max:255',
             'animal_ids' => 'required|array|min:1',
             'animal_ids.*' => 'exists:animales,id'
         ]);
@@ -63,6 +65,7 @@ class ReporteController extends Controller
             'descripcion' => $request->input('descripcion') ? trim($request->input('descripcion')) : null,
             'usuario_id' => $userId,
             'animal_ids' => $request->input('animal_ids'),
+            'destinatario' => $request->input('destinatario') ? trim($request->input('destinatario')) : null,
         ]);
 
         return response()->json([
@@ -71,6 +74,7 @@ class ReporteController extends Controller
                 'id' => $reporte->id,
                 'titulo' => $reporte->titulo,
                 'descripcion' => $reporte->descripcion,
+                'destinatario' => $reporte->destinatario,
                 'animal_ids' => $reporte->animal_ids,
                 'fecha_creacion' => $reporte->created_at->format('d/m/Y H:i')
             ]
@@ -138,6 +142,7 @@ class ReporteController extends Controller
             'id' => $reporte->id,
             'titulo' => $reporte->titulo,
             'descripcion' => $reporte->descripcion,
+            'destinatario' => $reporte->destinatario,
             'animal_ids' => $reporte->animal_ids,
             'fecha_creacion' => $reporte->created_at->format('d/m/Y H:i'),
             'animales' => $animales

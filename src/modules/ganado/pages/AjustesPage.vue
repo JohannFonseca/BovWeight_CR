@@ -206,6 +206,7 @@ const updateProfile = async () => {
     // Actualizar la sesión almacenada en el navegador
     usuarioSesion.value.nombre_completo = profileForm.value.nombre_completo;
     usuarioSesion.value.correo = profileForm.value.correo;
+    usuarioSesion.value.usuario = profileForm.value.correo;
     localStorage.setItem('usuario_sesion', JSON.stringify(usuarioSesion.value));
     
     showToast('Perfil actualizado con éxito.');
@@ -229,7 +230,7 @@ onMounted(() => {
     try {
       usuarioSesion.value = JSON.parse(sessionStr);
       profileForm.value.nombre_completo = usuarioSesion.value.nombre_completo || '';
-      profileForm.value.correo = usuarioSesion.value.correo || '';
+      profileForm.value.correo = usuarioSesion.value.correo || usuarioSesion.value.usuario || '';
       
       // Load saved profile photo
       const savedPhoto = localStorage.getItem(`foto_perfil_usuario_${usuarioSesion.value.id}`);

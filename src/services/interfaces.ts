@@ -25,6 +25,7 @@ export interface Animal {
   historialPeso: WeightRecord[];
   sexo?: string;
   color?: string;
+  estado?: string;
 }
 
 /**
@@ -62,8 +63,14 @@ export interface IAnimalRepository {
   /** Crea una nueva finca. */
   crearFinca(finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<any>;
 
+  /** Edita una finca existente. */
+  editarFinca(id: number, finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<any>;
+
   /** Crea un nuevo animal. */
   crearAnimal(animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; observaciones?: string | null }): Promise<any>;
+
+  /** Edita un animal existente. */
+  editarAnimal(id: number, animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; estado?: string | null; observaciones?: string | null }): Promise<any>;
 
   /** Obtiene todas las razas de la base de datos. */
   getRazas(): Promise<any[]>;
@@ -93,7 +100,7 @@ export interface IAnimalRepository {
   getReportesGanadero(): Promise<any[]>;
 
   /** Guarda un reporte de ganadero con una selección de animales. */
-  guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; animal_ids: number[] }): Promise<any>;
+  guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; destinatario?: string | null; animal_ids: number[] }): Promise<any>;
 
   /** Obtiene los detalles de un reporte de ganadero, incluyendo los animales asignados. */
   getReporteDetalleGanadero(id: number): Promise<any>;

@@ -41,6 +41,37 @@
           </div>
         </div>
 
+        <!-- Filtro por Estado -->
+        <div class="status-filter-container">
+          <label class="filter-label">Filtrar por Estado:</label>
+          <div class="status-chips">
+            <button 
+              type="button" 
+              class="status-chip-btn" 
+              :class="{ active: statusFilter === 'activo' }" 
+              @click="statusFilter = 'activo'"
+            >
+              Activos
+            </button>
+            <button 
+              type="button" 
+              class="status-chip-btn" 
+              :class="{ active: statusFilter === 'inactivo' }" 
+              @click="statusFilter = 'inactivo'"
+            >
+              Otros
+            </button>
+            <button 
+              type="button" 
+              class="status-chip-btn" 
+              :class="{ active: statusFilter === 'todos' }" 
+              @click="statusFilter = 'todos'"
+            >
+              Todos
+            </button>
+          </div>
+        </div>
+
         <!-- Carga o Estados vacíos -->
         <div v-if="loading" class="loading-state">
           <ion-spinner name="crescent"></ion-spinner>
@@ -96,6 +127,9 @@
                     <span class="sex-badge" :class="a.sexo">
                       {{ a.sexo === 'hembra' ? '♀' : '♂' }}
                     </span>
+                    <span class="status-badge" :class="a.estado || 'activo'">
+                      {{ (a.estado || 'activo').toUpperCase() }}
+                    </span>
                   </div>
 
                   <!-- Información de Pesajes por Animal -->
@@ -149,6 +183,7 @@ const animals = ref<Animal[]>([]);
 const loading = ref(true);
 const searchQuery = ref('');
 const selectedFincaName = ref('all');
+const statusFilter = ref<'todos' | 'activo' | 'inactivo'>('activo');
 
 async function loadAnimals() {
   loading.value = true;
@@ -212,6 +247,13 @@ const filteredGroups = computed(() => {
   // Filtrar por finca seleccionada
   if (selectedFincaName.value !== 'all') {
     list = list.filter(a => ((a as any).finca_nombre || 'Sin Finca') === selectedFincaName.value);
+  }
+
+  // Filtrar por estado del animal
+  if (statusFilter.value === 'activo') {
+    list = list.filter(a => !a.estado || a.estado.toLowerCase() === 'activo');
+  } else if (statusFilter.value === 'inactivo') {
+    list = list.filter(a => a.estado && a.estado.toLowerCase() !== 'activo');
   }
 
   // Agrupar los resultados filtrados por Finca
@@ -613,5 +655,65 @@ onMounted(loadAnimals);
   .animal-weigh-dates {
     gap: 8px;
   }
+}
+
+.status-badge {
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 4px;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+
+.status-badge.activo {
+  color: #2e7d32;
+  background: #eaf0e6;
+}
+
+.status-badge.vendido {
+  color: #d97706;
+  background: #fff7ed;
+}
+
+.status-badge.fallecido {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+/* Status Filter Styling */
+.status-filter-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(46, 125, 50, 0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+}
+
+.status-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.status-chip-btn {
+  border: 1px solid #e2dcd0;
+  background: #ffffff;
+  color: #5c6e58;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.status-chip-btn.active {
+  background: #2E7D32;
+  color: #ffffff;
+  border-color: #2E7D32;
+  box-shadow: 0 4px 10px rgba(46, 125, 50, 0.12);
 }
 </style>

@@ -83,6 +83,32 @@ class GanadoController extends Controller
         return response()->json(['message' => 'Finca eliminada exitosamente.']);
     }
 
+    public function editarFinca(Request $request, $id)
+    {
+        $finca = Finca::find($id);
+        if (!$finca) {
+            return response()->json(['message' => 'Finca no encontrada.'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'nombre' => 'required|string|min:1',
+            'ubicacion' => 'required|string|min:1',
+            'propietario_id' => 'required|exists:usuarios,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $finca->update([
+            'nombre' => trim($request->input('nombre')),
+            'ubicacion' => trim($request->input('ubicacion')),
+            'propietario_id' => $request->input('propietario_id'),
+        ]);
+
+        return response()->json($finca);
+    }
+
     // ==========================================
     // ANIMALES
     // ==========================================
@@ -159,15 +185,19 @@ class GanadoController extends Controller
                 'id' => $a->id,
                 'nombre' => $a->nombre ?? 'Sin nombre',
                 'raza' => $a->raza ? $a->raza->nombre : 'Brahman',
+                'raza_id' => $a->raza_id,
                 'edad' => $edad,
+                'fecha_nacimiento' => $a->fecha_nacimiento,
                 'arete' => $a->numero_arete,
                 'imagen' => null,
                 'pesoActual' => $pesoActual,
                 'historialPeso' => $historialPeso,
                 'sexo' => $a->sexo ?? 'macho',
                 'color' => $a->color ?? '',
+                'estado' => $a->estado ?? 'activo',
                 'finca_id' => $a->finca_id,
                 'finca_nombre' => $a->finca ? $a->finca->nombre : 'Mi Finca',
+                'observaciones' => $a->observaciones ?? '',
             ];
         });
 
@@ -206,13 +236,19 @@ class GanadoController extends Controller
             'id' => $a->id,
             'nombre' => $a->nombre ?? 'Sin nombre',
             'raza' => $a->raza ? $a->raza->nombre : 'Desconocida',
+            'raza_id' => $a->raza_id,
             'edad' => $edad,
+            'fecha_nacimiento' => $a->fecha_nacimiento,
             'arete' => $a->numero_arete,
             'imagen' => null,
             'pesoActual' => $pesoActual,
             'historialPeso' => $historialPeso,
             'sexo' => $a->sexo ?? 'macho',
             'color' => $a->color ?? '',
+            'estado' => $a->estado ?? 'activo',
+            'finca_id' => $a->finca_id,
+            'finca_nombre' => $a->finca ? $a->finca->nombre : 'Mi Finca',
+            'observaciones' => $a->observaciones ?? '',
         ]);
     }
 
@@ -272,6 +308,44 @@ class GanadoController extends Controller
 
         $a->delete();
         return response()->json(['message' => 'Animal eliminado exitosamente.']);
+    }
+
+    public function editarAnimal(Request $request, $id)
+    {
+        $animal = Animal::find($id);
+        if (!$animal) {
+            return response()->json(['message' => 'Animal no encontrado.'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'nombre' => 'required|string|min:1',
+            'numero_arete' => 'required|string|min:1',
+            'finca_id' => 'required|exists:fincas,id',
+            'raza_id' => 'nullable|exists:razas,id',
+            'fecha_nacimiento' => 'nullable|date',
+            'sexo' => 'nullable|string',
+            'color' => 'nullable|string',
+            'estado' => 'nullable|string|in:activo,vendido,fallecido',
+            'observaciones' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $animal->update([
+            'nombre' => trim($request->input('nombre')),
+            'numero_arete' => trim($request->input('numero_arete')),
+            'finca_id' => $request->input('finca_id'),
+            'raza_id' => $request->input('raza_id'),
+            'fecha_nacimiento' => $request->input('fecha_nacimiento'),
+            'sexo' => $request->input('sexo') ?? $animal->sexo,
+            'color' => $request->input('color') ? trim($request->input('color')) : null,
+            'estado' => $request->input('estado') ?? $animal->estado ?? 'activo',
+            'observaciones' => $request->input('observaciones') ? trim($request->input('observaciones')) : null,
+        ]);
+
+        return response()->json($animal);
     }
 
     // ==========================================

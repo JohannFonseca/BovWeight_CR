@@ -25,6 +25,7 @@ Route::put('/usuarios/{id}/toggle-activo', [AdminController::class, 'toggleEstad
 // Fincas CRUD Routes
 Route::get('/fincas', [GanadoController::class, 'getFincas']);
 Route::post('/fincas', [GanadoController::class, 'crearFinca']);
+Route::put('/fincas/{id}', [GanadoController::class, 'editarFinca']);
 Route::delete('/fincas/{id}', [GanadoController::class, 'eliminarFinca']);
 
 // Animales CRUD Routes
@@ -33,6 +34,7 @@ Route::get('/animales', [GanadoController::class, 'getAllAnimals']);
 Route::get('/animales/{id}', [GanadoController::class, 'getAnimalById']);
 Route::get('/animales/{id}/historial-peso', [GanadoController::class, 'getWeightHistory']);
 Route::post('/animales', [GanadoController::class, 'crearAnimal']);
+Route::put('/animales/{id}', [GanadoController::class, 'editarAnimal']);
 Route::delete('/animales/{id}', [GanadoController::class, 'eliminarAnimal']);
 Route::post('/estimar-peso', [GanadoController::class, 'estimarPeso']);
 Route::post('/animales/{id}/registrar-peso', [GanadoController::class, 'registrarPeso']);
