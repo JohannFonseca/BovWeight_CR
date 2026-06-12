@@ -72,6 +72,16 @@
                   </div>
 
                   <div class="form-group">
+                    <label class="form-label">Dirigido a (Nombre de persona - Opcional)</label>
+                    <input 
+                      type="text" 
+                      v-model="newReport.destinatario" 
+                      placeholder="Ej. Juan Pérez" 
+                      class="custom-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
                     <label class="form-label">Filtrar por Finca</label>
                     <div class="select-wrapper">
                       <select v-model="selectedFincaId" class="custom-select">
@@ -203,6 +213,7 @@
                   <p class="meta">
                     📅 Creado: <strong>{{ r.fecha_creacion }}</strong> | 
                     🐂 Animales: <strong>{{ r.cant_animales }}</strong>
+                    <span v-if="r.destinatario"> | 👤 Para: <strong>{{ r.destinatario }}</strong></span>
                   </p>
                 </div>
               </div>
@@ -236,6 +247,7 @@
           </div>
         </div>
       </div>
+      <BottomNav />
     </ion-content>
 
     <!-- NOTIFICACIONES TOAST -->
@@ -266,6 +278,7 @@
           <div class="preview-report-header">
             <h1>{{ previewReport.titulo }}</h1>
             <p class="preview-date">📅 Creado el: <strong>{{ previewReport.fecha_creacion }}</strong></p>
+            <p class="preview-desc" v-if="previewReport.destinatario">👤 Dirigido a: <strong>{{ previewReport.destinatario }}</strong></p>
             <p class="preview-desc" v-if="previewReport.descripcion">{{ previewReport.descripcion }}</p>
           </div>
           
@@ -347,6 +360,7 @@ import {
 import { 
   saveOutline, downloadOutline, checkmarkOutline, trashOutline, eyeOutline, closeOutline
 } from 'ionicons/icons';
+import BottomNav from '@/components/BottomNav.vue';
 import { animalRepository, type Animal } from '@/services';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -398,7 +412,12 @@ function closePreviewModal() {
 
 function exportPreviewPdf() {
   if (!previewReport.value) return;
-  doGeneratePdf(previewReport.value.titulo, previewReport.value.descripcion || '', previewReport.value.animales || []);
+  doGeneratePdf(
+    previewReport.value.titulo, 
+    previewReport.value.descripcion || '', 
+    previewReport.value.destinatario || '', 
+    previewReport.value.animales || []
+  );
 }
 
 // Datos cargados de la API
@@ -411,7 +430,8 @@ const selectedFincaId = ref<number | null>(null);
 const selectedAnimalIds = ref<number[]>([]);
 const newReport = ref({
   titulo: '',
-  descripcion: ''
+  descripcion: '',
+  destinatario: ''
 });
 
 // Toast
@@ -522,7 +542,7 @@ function toggleSelectAll() {
 }
 
 // Helper para generar el PDF a nivel cliente
-function doGeneratePdf(title: string, description: string, reportAnimals: any[]) {
+function doGeneratePdf(title: string, description: string, destinatario: string, reportAnimals: any[]) {
   const doc = new jsPDF();
   const userName = usuarioSesion.value?.nombre_completo || 'Ganadero BovWeight';
   const currentDate = new Date().toLocaleDateString('es-CR', {
@@ -590,7 +610,13 @@ function doGeneratePdf(title: string, description: string, reportAnimals: any[])
   doc.setFontSize(10);
   doc.setTextColor(50, 50, 50);
   doc.text(`Propietario: ${userName}`, 14, statsY + 6);
-  doc.text(`Cantidad de animales: ${totalAnimals}`, 14, statsY + 12);
+  
+  if (destinatario) {
+    doc.text(`Dirigido a: ${destinatario}`, 14, statsY + 12);
+    doc.text(`Cantidad de animales: ${totalAnimals}`, 14, statsY + 18);
+  } else {
+    doc.text(`Cantidad de animales: ${totalAnimals}`, 14, statsY + 12);
+  }
   
   doc.text(`Peso promedio: ${averageWeight > 0 ? averageWeight + ' kg' : 'N/A'}`, 110, statsY + 6);
   if (weights.length > 0) {
@@ -598,7 +624,7 @@ function doGeneratePdf(title: string, description: string, reportAnimals: any[])
   }
 
   // --- TABLA DE DETALLES ---
-  const tableY = statsY + 22;
+  const tableY = statsY + (destinatario ? 28 : 22);
   
   // Mapear los animales al formato de la tabla
   const tableRows = reportAnimals.map((a, idx) => {
@@ -662,8 +688,9 @@ function downloadPdfOnly() {
   const reportAnimals = animals.value.filter(a => selectedAnimalIds.value.includes(a.id));
   const title = newReport.value.titulo.trim() || 'Reporte de Ganado';
   const desc = newReport.value.descripcion.trim();
+  const dest = newReport.value.destinatario.trim();
   
-  doGeneratePdf(title, desc, reportAnimals);
+  doGeneratePdf(title, desc, dest, reportAnimals);
 }
 
 // Acción: Crear y guardar reporte en base de datos + Descargar PDF
@@ -673,12 +700,14 @@ async function handleGenerateReport() {
   
   const title = newReport.value.titulo.trim() || 'Reporte de Ganado';
   const desc = newReport.value.descripcion.trim();
+  const dest = newReport.value.destinatario.trim();
 
   try {
     // 1. Guardar en la base de datos
     await animalRepository.guardarReporteGanadero({
       titulo: title,
       descripcion: desc || null,
+      destinatario: dest || null,
       animal_ids: selectedAnimalIds.value
     });
 
@@ -686,11 +715,12 @@ async function handleGenerateReport() {
     const reportAnimals = animals.value.filter(a => selectedAnimalIds.value.includes(a.id));
 
     // 3. Generar y descargar el PDF
-    doGeneratePdf(title, desc, reportAnimals);
+    doGeneratePdf(title, desc, dest, reportAnimals);
 
     // 4. Limpiar campos y refrescar
     newReport.value.titulo = '';
     newReport.value.descripcion = '';
+    newReport.value.destinatario = '';
     selectedAnimalIds.value = [];
     
     // Refrescar listado
@@ -712,7 +742,7 @@ async function reExportReport(report: any) {
   try {
     const detail = await animalRepository.getReporteDetalleGanadero(report.id);
     if (detail && detail.animales) {
-      doGeneratePdf(detail.titulo, detail.descripcion || '', detail.animales);
+      doGeneratePdf(detail.titulo, detail.descripcion || '', detail.destinatario || '', detail.animales);
     } else {
       showToast('No se pudieron obtener los animales asociados al reporte.', 'danger');
     }

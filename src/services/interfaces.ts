@@ -93,7 +93,7 @@ export interface IAnimalRepository {
   getReportesGanadero(): Promise<any[]>;
 
   /** Guarda un reporte de ganadero con una selección de animales. */
-  guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; animal_ids: number[] }): Promise<any>;
+  guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; destinatario?: string | null; animal_ids: number[] }): Promise<any>;
 
   /** Obtiene los detalles de un reporte de ganadero, incluyendo los animales asignados. */
   getReporteDetalleGanadero(id: number): Promise<any>;

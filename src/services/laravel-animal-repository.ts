@@ -281,7 +281,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
-  async guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; animal_ids: number[] }): Promise<any> {
+  async guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; destinatario?: string | null; animal_ids: number[] }): Promise<any> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {
       const response = await axios.post(`${apiUrl}/reportes-ganadero`, reporte, {

@@ -14,6 +14,7 @@ class Reporte extends Model
         'descripcion',
         'usuario_id',
         'animal_ids',
+        'destinatario',
     ];
 
     protected $casts = [

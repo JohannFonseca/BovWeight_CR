@@ -42,6 +42,16 @@
         <span>Personal</span>
       </button>
 
+      <!-- Pestaña Reportes -->
+      <button 
+        class="nav-tab" 
+        :class="{ active: currentRoute === '/ganado/reportes' }" 
+        @click="navigateTo('/ganado/reportes')"
+      >
+        <ion-icon :icon="documentTextOutline"></ion-icon>
+        <span>Reportes</span>
+      </button>
+
       <!-- Pestaña Ajustes -->
       <button 
         class="nav-tab" 
@@ -63,7 +73,8 @@ import {
   barChartOutline, 
   addCircleOutline, 
   cameraOutline, 
-  peopleOutline, 
+  peopleOutline,
+  documentTextOutline,
   settingsOutline 
 } from 'ionicons/icons';
 
