@@ -17,6 +17,7 @@ class EstimacionPeso extends Model
         'animal_id',
         'peso_estimado_kg',
         'peso_corregido_kg',
+        'ruta_imagen',
     ];
 
     public function animal(): BelongsTo

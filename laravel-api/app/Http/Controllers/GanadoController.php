@@ -541,6 +541,15 @@ class GanadoController extends Controller
         $length = $request->input('largo_cuerpo_cm');
         $animalId = $request->input('animal_id');
 
+        // Store the uploaded image to public disk if present
+        $uploadedImagePath = null;
+        if ($request->hasFile('imagen')) {
+            $images = $request->file('imagen');
+            $primaryImage = is_array($images) ? $images[0] : $images;
+            $savedPath = $primaryImage->store('predictions', 'public');
+            $uploadedImagePath = asset('storage/' . $savedPath);
+        }
+
         // Default attributes
         $breedName = 'Brahman';
         $sexName = 'macho';
@@ -601,7 +610,11 @@ class GanadoController extends Controller
             }
 
             if ($response && $response->successful()) {
-                return response()->json($response->json());
+                $responseData = $response->json();
+                if ($uploadedImagePath) {
+                    $responseData['estimacion']['ruta_imagen'] = $uploadedImagePath;
+                }
+                return response()->json($responseData);
             }
         } catch (\Exception $e) {
             // Log or ignore, fallback to local CLI script execution below
@@ -662,6 +675,10 @@ class GanadoController extends Controller
             ], 500);
         }
 
+        if ($uploadedImagePath) {
+            $decoded['estimacion']['ruta_imagen'] = $uploadedImagePath;
+        }
+
         return response()->json($decoded);
     }
 
@@ -670,6 +687,7 @@ class GanadoController extends Controller
         $validator = Validator::make($request->all(), [
             'peso_estimado_kg' => 'required|numeric|min:1',
             'peso_corregido_kg' => 'nullable|numeric|min:1',
+            'ruta_imagen' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -685,6 +703,7 @@ class GanadoController extends Controller
             'animal_id' => $id,
             'peso_estimado_kg' => $request->input('peso_estimado_kg'),
             'peso_corregido_kg' => $request->input('peso_corregido_kg'),
+            'ruta_imagen' => $request->input('ruta_imagen'),
         ]);
 
         return response()->json([

@@ -420,6 +420,7 @@ const usedModel = ref<string>('');
 const detectedGirth = ref<number | null>(null);
 const detectedLength = ref<number | null>(null);
 const confidence = ref<number | null>(null);
+const rutaImagen = ref<string | null>(null);
 
 // Controladores de estado
 const loadingEstimation = ref(false);
@@ -545,6 +546,7 @@ async function performEstimation() {
       detectedLength.value = res.largo_detectado || null;
       confidence.value = res.confianza || null;
       processedImagesCount.value = selectedFiles.value.length;
+      rutaImagen.value = res.ruta_imagen || null;
     } else {
       if (!isValidManualForm.value) {
         throw new Error('Por favor, completa las medidas manualmente.');
@@ -583,7 +585,8 @@ async function saveRecord() {
     await animalRepository.saveWeightRecord(
       selectedAnimalId.value,
       estimatedWeight.value,
-      pesoCorregido.value || undefined
+      pesoCorregido.value || undefined,
+      rutaImagen.value || undefined
     );
     
     triggerToast('¡Pesaje de IA guardado exitosamente en base de datos!', 'success');
@@ -615,6 +618,7 @@ function resetEstimation() {
   detectedLength.value = null;
   confidence.value = null;
   error.value = null;
+  rutaImagen.value = null;
 }
 
 function triggerToast(message: string, color: string = 'success') {

@@ -52,10 +52,10 @@ export interface IAnimalRepository {
   getWeightHistory(animalId: number): Promise<WeightRecord[]>;
 
   /** Realiza una estimación de peso por IA en base a medidas o una foto del celular. */
-  estimateWeight(animalId: number | null, girth: number | null, length: number | null, imageFile?: File | File[]): Promise<{ peso_estimado: number; model: string; largo_detectado?: number; perimetro_detectado?: number; confianza?: number }>;
+  estimateWeight(animalId: number | null, girth: number | null, length: number | null, imageFile?: File | File[]): Promise<{ peso_estimado: number; model: string; largo_detectado?: number; perimetro_detectado?: number; confianza?: number; ruta_imagen?: string | null }>;
 
   /** Registra y guarda la estimación de peso (con corrección de báscula opcional) en BD. */
-  saveWeightRecord(animalId: number, pesoEstimado: number, pesoCorregido?: number): Promise<any>;
+  saveWeightRecord(animalId: number, pesoEstimado: number, pesoCorregido?: number, rutaImagen?: string): Promise<any>;
 
   /** Obtiene la lista completa de fincas. */
   getFincas(): Promise<any[]>;

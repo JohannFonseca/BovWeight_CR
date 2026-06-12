@@ -65,7 +65,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
-  async estimateWeight(animalId: number | null, girth: number | null, length: number | null, imageFile?: File | File[]): Promise<{ peso_estimado: number; model: string; largo_detectado?: number; perimetro_detectado?: number; confianza?: number }> {
+  async estimateWeight(animalId: number | null, girth: number | null, length: number | null, imageFile?: File | File[]): Promise<{ peso_estimado: number; model: string; largo_detectado?: number; perimetro_detectado?: number; confianza?: number; ruta_imagen?: string | null }> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {
       let data: any;
@@ -99,7 +99,8 @@ export class LaravelAnimalRepository implements IAnimalRepository {
         model: response.data.metadata.modelo_utilizado,
         largo_detectado: response.data.estimacion.largo_cuerpo_cm,
         perimetro_detectado: response.data.estimacion.perimetro_toracico_cm,
-        confianza: response.data.estimacion.confianza
+        confianza: response.data.estimacion.confianza,
+        ruta_imagen: response.data.estimacion.ruta_imagen || null
       };
     } catch (err: any) {
       console.error('Error en estimateWeight con Laravel:', err.message);
@@ -107,12 +108,13 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
-  async saveWeightRecord(animalId: number, pesoEstimado: number, pesoCorregido?: number): Promise<any> {
+  async saveWeightRecord(animalId: number, pesoEstimado: number, pesoCorregido?: number, rutaImagen?: string): Promise<any> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {
       const response = await axios.post(`${apiUrl}/animales/${animalId}/registrar-peso`, {
         peso_estimado_kg: pesoEstimado,
         peso_corregido_kg: pesoCorregido,
+        ruta_imagen: rutaImagen,
       }, {
         headers: this.getHeaders(),
       });
