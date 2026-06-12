@@ -486,12 +486,13 @@ class GanadoController extends Controller
             }
         }
 
-        // 1. Try calling the Flask microservice if image is uploaded
-        if ($request->hasFile('imagen')) {
-            $images = $request->file('imagen');
-            try {
-                // Call Python microservice via HTTP POST
-                $http = Http::timeout(60);
+        // 1. Try calling the Flask microservice URL via HTTP POST (both for image and manual)
+        try {
+            $http = Http::timeout(60);
+            $aiUrl = env('AI_SERVICE_URL', 'http://localhost:5001/predict');
+            
+            if ($request->hasFile('imagen')) {
+                $images = $request->file('imagen');
                 if (is_array($images)) {
                     foreach ($images as $img) {
                         $http = $http->attach(
@@ -507,23 +508,33 @@ class GanadoController extends Controller
                         $images->getClientOriginalName()
                     );
                 }
-
-                $response = $http->post(env('AI_SERVICE_URL', 'http://localhost:5001/predict'), [
+                $response = $http->post($aiUrl, [
                     'breed' => $breedName,
                     'sex' => $sexName,
                     'age' => $ageYears,
                 ]);
-
-                if ($response->successful()) {
-                    return response()->json($response->json());
-                }
-            } catch (\Exception $e) {
-                // Log exception or print locally, fallback to local CLI script execution below
+            } else {
+                // Manual inputs
+                $response = $http->post($aiUrl, [
+                    'breed' => $breedName,
+                    'sex' => $sexName,
+                    'age' => $ageYears,
+                    'perimetro_toracico_cm' => $girth,
+                    'largo_cuerpo_cm' => $length,
+                    'girth' => $girth,
+                    'length' => $length
+                ]);
             }
+
+            if ($response && $response->successful()) {
+                return response()->json($response->json());
+            }
+        } catch (\Exception $e) {
+            // Log or ignore, fallback to local CLI script execution below
         }
 
         // 2. Fallback / Manual: Execute python CLI script locally
-        $pythonPath = 'python3';
+        $pythonPath = env('PYTHON_PATH', PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3');
         $scriptPath = storage_path('ai/predict_weight.py');
 
         $breedArg = escapeshellarg($breedName);

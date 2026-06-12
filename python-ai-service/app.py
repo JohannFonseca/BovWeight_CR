@@ -63,6 +63,77 @@ def calculate_fallback_weight(girth, length, breed, sex, age):
     estimated_weight = base_weight * sex_factor * age_factor
     return round(estimated_weight, 2)
 
+# Random Forest model loading/training helper
+rf_model = None
+
+def load_or_train_rf_model():
+    global rf_model
+    if rf_model is not None:
+        return rf_model
+    try:
+        import numpy as np
+        from sklearn.ensemble import RandomForestRegressor
+        import pickle
+        
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        model_path = os.path.join(dir_path, "rf_weight_model.pkl")
+        
+        breed_map = {"brahman": 0, "charolais": 1, "nelore": 2, "holstein": 3, "jersey": 4}
+        
+        if not os.path.exists(model_path):
+            print("⏳ [BovWeight AI] Training Random Forest model dynamically...")
+            np.random.seed(42)
+            n_samples = 250
+            syn_girth = np.random.uniform(100, 220, n_samples)
+            syn_length = np.random.uniform(90, 180, n_samples)
+            syn_breed = np.random.randint(0, 6, n_samples)
+            syn_sex = np.random.randint(0, 2, n_samples)
+            syn_age = np.random.uniform(0.5, 8.0, n_samples)
+            
+            syn_weights = []
+            for i in range(n_samples):
+                b_name = list(breed_map.keys())[syn_breed[i]] if syn_breed[i] < 5 else "other"
+                s_name = "macho" if syn_sex[i] == 1 else "hembra"
+                base_w = calculate_fallback_weight(syn_girth[i], syn_length[i], b_name, s_name, syn_age[i])
+                noise = np.random.normal(0, base_w * 0.02)
+                syn_weights.append(max(30.0, base_w + noise))
+            
+            syn_weights = np.array(syn_weights)
+            X_train = np.column_stack((syn_girth, syn_length, syn_breed, syn_sex, syn_age))
+            y_train = syn_weights
+            
+            rf = RandomForestRegressor(n_estimators=50, random_state=42)
+            rf.fit(X_train, y_train)
+            
+            with open(model_path, "wb") as f:
+                pickle.dump(rf, f)
+            print("✅ [BovWeight AI] Random Forest model trained and saved dynamically.")
+            
+        with open(model_path, "rb") as f:
+            rf_model = pickle.load(f)
+        return rf_model
+    except Exception as e:
+        print(f"⚠️ [BovWeight AI] Could not load or train Random Forest model: {str(e)}")
+        return None
+
+def estimate_weight_rf_or_fallback(girth, length, breed, sex, age):
+    model = load_or_train_rf_model()
+    if model is not None:
+        try:
+            import numpy as np
+            breed_map = {"brahman": 0, "charolais": 1, "nelore": 2, "holstein": 3, "jersey": 4}
+            breed_code = breed_map.get(breed.lower(), 5)
+            sex_code = 1 if sex.lower() in ["macho", "toro"] else 0
+            
+            X_predict = np.array([[girth, length, breed_code, sex_code, age]])
+            weight = float(model.predict(X_predict)[0])
+            return round(weight, 2), "random_forest_regressor"
+        except Exception as e:
+            print(f"⚠️ RF prediction failed: {str(e)}")
+            
+    return calculate_fallback_weight(girth, length, breed, sex, age), "multivariate_regression_fallback"
+
+
 def get_base_dimensions(breed, sex, age):
     """
     Helper to get base dimensions of bovine by breed, sex, and age.
@@ -101,6 +172,33 @@ def get_base_dimensions(breed, sex, age):
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    # Detect JSON or Form data
+    data = {}
+    if request.is_json:
+        data = request.get_json() or {}
+    else:
+        data = request.form or {}
+
+    breed = request.form.get("breed") or data.get("breed", "brahman")
+    sex = request.form.get("sex") or data.get("sex", "macho")
+    try:
+        age = float(request.form.get("age") or data.get("age", 2.0))
+    except (ValueError, TypeError):
+        age = 2.0
+
+    girth_val = (
+        request.form.get("girth") 
+        or request.form.get("perimetro_toracico_cm") 
+        or data.get("girth") 
+        or data.get("perimetro_toracico_cm")
+    )
+    length_val = (
+        request.form.get("length") 
+        or request.form.get("largo_cuerpo_cm") 
+        or data.get("length") 
+        or data.get("largo_cuerpo_cm")
+    )
+
     # Get all uploaded images
     img_files = []
     for key in ["imagen", "imagen[]", "image", "image[]"]:
@@ -110,17 +208,44 @@ def predict():
     # Fallback to check if any other key contains files
     if not img_files:
         for key in request.files:
-            img_files.extend(request.files.getlist(key))
+            try:
+                files_list = request.files.getlist(key)
+                if files_list and all(hasattr(f, "filename") and f.filename for f in files_list):
+                    img_files.extend(files_list)
+            except Exception:
+                pass
 
     if not img_files:
-        return jsonify({"success": False, "message": "No image file provided."}), 400
-
-    breed = request.form.get("breed", "brahman")
-    sex = request.form.get("sex", "macho")
-    try:
-        age = float(request.form.get("age", 2.0))
-    except ValueError:
-        age = 2.0
+        if girth_val is not None and length_val is not None:
+            try:
+                avg_girth = float(girth_val)
+                avg_length = float(length_val)
+            except (ValueError, TypeError):
+                return jsonify({"success": False, "message": "Invalid manual girth or length values."}), 400
+                
+            weight, weight_model = estimate_weight_rf_or_fallback(avg_girth, avg_length, breed, sex, age)
+            
+            response = {
+                "success": True,
+                "estimacion": {
+                    "perimetro_toracico_cm": round(avg_girth, 1),
+                    "largo_cuerpo_cm": round(avg_length, 1),
+                    "raza": breed,
+                    "sexo": sex,
+                    "edad_años": age,
+                    "peso_estimado_kg": weight,
+                    "confianza": None,
+                    "imagenes_procesadas": 0
+                },
+                "metadata": {
+                    "modelo_utilizado": weight_model,
+                    "detalles_fotos": [],
+                    "version": "1.3.0"
+                }
+            }
+            return jsonify(response)
+        else:
+            return jsonify({"success": False, "message": "No image file nor manual measurements (girth & length) provided."}), 400
 
     results_list = []
     yolo_detections_count = 0
@@ -225,17 +350,18 @@ def predict():
     # If we have YOLO detections in any image, we only average those. Otherwise, we average all.
     if yolo_detections_count > 0:
         target_results = [r for r in results_list if r["is_yolo"]]
-        model_used = f"yolov8_cow_detection_regressor (average of {yolo_detections_count} images)"
+        dimension_model = f"yolov8_cow_detection (average of {yolo_detections_count} images)"
     else:
         target_results = results_list
-        model_used = f"pure_python_hash_fallback (average of {len(results_list)} images)"
+        dimension_model = f"pure_python_hash_fallback (average of {len(results_list)} images)"
 
     avg_girth = sum(r["perimetro"] for r in target_results) / len(target_results)
     avg_length = sum(r["largo"] for r in target_results) / len(target_results)
     avg_confidence = sum(r["confianza"] for r in target_results) / len(target_results)
 
     # Calculate final estimated weight based on averaged dimensions
-    weight = calculate_fallback_weight(avg_girth, avg_length, breed, sex, age)
+    weight, weight_model = estimate_weight_rf_or_fallback(avg_girth, avg_length, breed, sex, age)
+    model_used = f"{dimension_model} + {weight_model}"
 
     response = {
         "success": True,
