@@ -100,8 +100,9 @@ export function useWeightStatus(animal: Ref<Animal | null>) {
   // Retorna la diferencia de peso formateada como texto (ej. "+12 kg" o "-5 kg")
   const diffText = computed(() => {
     const diff = weightDiff.value;
-    const sign = diff > 0 ? '+' : '';
-    return `${sign}${diff} kg`;
+    const roundedDiff = Math.round(diff * 10) / 10;
+    const sign = roundedDiff > 0 ? '+' : '';
+    return `${sign}${roundedDiff} kg`;
   });
 
   // Retorna el mensaje textual descriptivo del estado físico general

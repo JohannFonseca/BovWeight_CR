@@ -25,6 +25,7 @@ export interface Animal {
   historialPeso: WeightRecord[];
   sexo?: string;
   color?: string;
+  estado?: string;
 }
 
 /**
