@@ -347,5 +347,70 @@ export class LaravelAnimalRepository implements IAnimalRepository {
       throw new Error(err.response?.data?.message || 'Error al eliminar el reporte');
     }
   }
+
+  async getVeterinariosGanadero(): Promise<any[]> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.get(`${apiUrl}/ganadero/veterinarios`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getVeterinariosGanadero con Laravel:', err.message);
+      throw new Error('Error al obtener veterinarios del ganadero');
+    }
+  }
+
+  async asignarFincaVeterinario(payload: { veterinario_id: number; finca_id: number }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/ganadero/veterinarios/asignar-finca`, payload, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en asignarFincaVeterinario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al asignar veterinario a la finca');
+    }
+  }
+
+  async guardarPermisosVeterinario(payload: { veterinario_id: number; finca_id: number; animales_ids: number[] }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/ganadero/veterinarios/guardar-permisos`, payload, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en guardarPermisosVeterinario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al guardar permisos del veterinario');
+    }
+  }
+
+  async revocarFincaVeterinario(vetId: number, fincaId: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.delete(`${apiUrl}/ganadero/veterinarios/${vetId}/revocar-finca/${fincaId}`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en revocarFincaVeterinario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al revocar acceso a la finca');
+    }
+  }
+
+  async toggleEstadoVeterinario(vetId: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.put(`${apiUrl}/ganadero/veterinarios/${vetId}/toggle-estado`, {}, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en toggleEstadoVeterinario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al cambiar estado del veterinario');
+    }
+  }
 }
 

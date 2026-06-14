@@ -124,6 +124,21 @@ class ReporteController extends Controller
                     $edad = $diffYears > 0 ? "{$diffYears} años" : 'Menos de 1 año';
                 }
 
+                $imagenUrl = null;
+                $latestWithImage = $weights->whereNotNull('ruta_imagen')->last();
+                if ($latestWithImage) {
+                    $imagenUrl = $latestWithImage->ruta_imagen;
+                }
+
+                $estimacionesDetalle = $weights->map(function ($h) {
+                    return [
+                        'fecha' => Carbon::parse($h->created_at)->format('d/m/Y'),
+                        'peso_estimado' => (float)$h->peso_estimado_kg,
+                        'peso_corregido' => $h->peso_corregido_kg ? (float)$h->peso_corregido_kg : null,
+                        'ruta_imagen' => $h->ruta_imagen
+                    ];
+                })->all();
+
                 return [
                     'id' => $a->id,
                     'nombre' => $a->nombre ?? 'Sin nombre',
@@ -135,6 +150,8 @@ class ReporteController extends Controller
                     'finca' => $a->finca ? $a->finca->nombre : 'Sin finca',
                     'pesoActual' => $pesoActual,
                     'historialPeso' => $historialPeso,
+                    'imagen' => $imagenUrl,
+                    'estimaciones' => $estimacionesDetalle,
                 ];
             });
 

@@ -22,6 +22,13 @@ Route::put('/usuarios/{id}', [AdminController::class, 'editarUsuario']);
 Route::delete('/usuarios/{id}', [AdminController::class, 'eliminarUsuario']);
 Route::put('/usuarios/{id}/toggle-activo', [AdminController::class, 'toggleEstadoUsuario']);
 
+// Veterinarians & Permissions Routes (within Ganadero space)
+Route::get('/ganadero/veterinarios', [GanadoController::class, 'getVeterinariosGanadero']);
+Route::post('/ganadero/veterinarios/asignar-finca', [GanadoController::class, 'asignarFincaVeterinario']);
+Route::post('/ganadero/veterinarios/guardar-permisos', [GanadoController::class, 'guardarPermisosVeterinario']);
+Route::delete('/ganadero/veterinarios/{vetId}/revocar-finca/{fincaId}', [GanadoController::class, 'revocarFincaVeterinario']);
+Route::put('/ganadero/veterinarios/{vetId}/toggle-estado', [GanadoController::class, 'toggleEstadoVeterinario']);
+
 // Fincas CRUD Routes
 Route::get('/fincas', [GanadoController::class, 'getFincas']);
 Route::post('/fincas', [GanadoController::class, 'crearFinca']);
@@ -58,3 +65,5 @@ Route::get('/admin/fincas/{id}', [AdminController::class, 'getFinca']);
 Route::get('/admin/reportes', [AdminController::class, 'getReportes']);
 Route::get('/dashboard-stats', [GanadoController::class, 'getDashboardStats']);
 Route::get('/analisis-pesajes', [GanadoController::class, 'getAnalisisPesajes']);
+Route::get('/obtener-imagen-base64', [GanadoController::class, 'obtenerImagenBase64']);
+

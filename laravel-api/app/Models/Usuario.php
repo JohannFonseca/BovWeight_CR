@@ -55,4 +55,9 @@ class Usuario extends Authenticatable
     {
         return $this->hasMany(Usuario::class, 'ganadero_id');
     }
+
+    public function fincasAsignadas(): HasMany
+    {
+        return $this->hasMany(FincaVeterinario::class, 'veterinario_id');
+    }
 }

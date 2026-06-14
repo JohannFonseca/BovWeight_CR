@@ -44,6 +44,7 @@ class DatabaseSeeder extends Seeder
             'nombre_completo' => 'Ana Veterinaria',
             'rol_id' => $vetRole->id,
             'activo' => true,
+            'ganadero_id' => $ganadero->id,
         ]);
 
         // 3. Seed Fincas
@@ -112,6 +113,7 @@ class DatabaseSeeder extends Seeder
                 'peso_estimado_kg' => 380 + ((5 - $i) * 12),
                 'peso_corregido_kg' => 382 + ((5 - $i) * 12.5),
                 'created_at' => $now->copy()->subMonths($i),
+                'ruta_imagen' => ($i === 0) ? asset('storage/predictions/BqEyKSPm3BfQX5ZRADB88vY5HSyOkScHc8RmjoUI.jpg') : null,
             ]);
         }
 
@@ -122,6 +124,7 @@ class DatabaseSeeder extends Seeder
                 'peso_estimado_kg' => 420 + ((5 - $i) * 15),
                 'peso_corregido_kg' => 425 + ((5 - $i) * 16),
                 'created_at' => $now->copy()->subMonths($i),
+                'ruta_imagen' => ($i === 0) ? asset('storage/predictions/c3fPRA9dXgActHBfoaBMheOIfAuLDUziLDiLzjXC.jpg') : null,
             ]);
         }
 
@@ -132,7 +135,16 @@ class DatabaseSeeder extends Seeder
                 'peso_estimado_kg' => 480 + ((5 - $i) * 8),
                 'peso_corregido_kg' => 482 + ((5 - $i) * 8.2),
                 'created_at' => $now->copy()->subMonths($i),
+                'ruta_imagen' => ($i === 0) ? asset('storage/predictions/0zok3LDNWPbRgP22JVxnBR70sgBmsJSyDb1HUF9U.jpg') : null,
             ]);
         }
+
+        // 7. Seed Finca Veterinario Assignment
+        \App\Models\FincaVeterinario::create([
+            'finca_id' => $finca1->id,
+            'veterinario_id' => $vet->id,
+            'animales_autorizados' => [$animal1->id, $animal2->id],
+            'activo' => true,
+        ]);
     }
 }

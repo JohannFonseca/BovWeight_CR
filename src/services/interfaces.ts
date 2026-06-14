@@ -107,6 +107,21 @@ export interface IAnimalRepository {
 
   /** Elimina un reporte de ganadero por ID. */
   eliminarReporteGanadero(id: number): Promise<any>;
+
+  /** Obtiene la lista de veterinarios del ganadero actual. */
+  getVeterinariosGanadero(): Promise<any[]>;
+
+  /** Asigna un veterinario a una finca. */
+  asignarFincaVeterinario(payload: { veterinario_id: number; finca_id: number }): Promise<any>;
+
+  /** Guarda la lista de animales autorizados para un veterinario en una finca. */
+  guardarPermisosVeterinario(payload: { veterinario_id: number; finca_id: number; animales_ids: number[] }): Promise<any>;
+
+  /** Revoca el acceso de un veterinario a una finca. */
+  revocarFincaVeterinario(vetId: number, fincaId: number): Promise<any>;
+
+  /** Activa/Desactiva el estado de un veterinario. */
+  toggleEstadoVeterinario(vetId: number): Promise<any>;
 }
 
 

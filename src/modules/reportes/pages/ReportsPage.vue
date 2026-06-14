@@ -410,9 +410,9 @@ function closePreviewModal() {
   previewReport.value = null;
 }
 
-function exportPreviewPdf() {
+async function exportPreviewPdf() {
   if (!previewReport.value) return;
-  doGeneratePdf(
+  await doGeneratePdf(
     previewReport.value.titulo, 
     previewReport.value.descripcion || '', 
     previewReport.value.destinatario || '', 
@@ -541,15 +541,30 @@ function toggleSelectAll() {
   }
 }
 
+// Helper para convertir una URL de imagen a base64 usando el proxy de Laravel (evita CORS)
+async function getBase64ImageFromUrl(url: string): Promise<string> {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  const response = await fetch(`${apiUrl}/obtener-imagen-base64?url=${encodeURIComponent(url)}`);
+  if (!response.ok) {
+    throw new Error('Error al obtener la imagen del servidor');
+  }
+  const data = await response.json();
+  if (data && data.base64) {
+    return data.base64;
+  }
+  throw new Error('Formato de imagen inválido devuelto por el servidor');
+}
+
 // Helper para generar el PDF a nivel cliente
-function doGeneratePdf(title: string, description: string, destinatario: string, reportAnimals: any[]) {
+async function doGeneratePdf(title: string, description: string, destinatario: string, reportAnimals: any[]) {
+  showToast('Generando reporte PDF con fotografías...');
   const doc = new jsPDF();
   const userName = usuarioSesion.value?.nombre_completo || 'Ganadero BovWeight';
   const currentDate = new Date().toLocaleDateString('es-CR', {
     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 
-  // --- HEADER DISEÑO PREMIUM ---
+  // --- PRIMERA PÁGINA: PORTADA/RESUMEN ---
   // Color principal: Verde bosque (#1B5E20)
   doc.setFillColor(27, 94, 32);
   doc.rect(0, 0, 210, 38, 'F');
@@ -578,12 +593,10 @@ function doGeneratePdf(title: string, description: string, destinatario: string,
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    // Split description text to wrap correctly
     const splitDesc = doc.splitTextToSize(description, 182);
     doc.text(splitDesc, 14, 55);
   }
 
-  // Línea decorativa
   const lineY = description ? 68 : 56;
   doc.setDrawColor(226, 220, 208);
   doc.setLineWidth(0.5);
@@ -596,7 +609,6 @@ function doGeneratePdf(title: string, description: string, destinatario: string,
   doc.setTextColor(27, 94, 32);
   doc.text('INFORMACIÓN GENERAL DEL LOTE', 14, statsY);
 
-  // Calcular estadísticas del reporte
   const totalAnimals = reportAnimals.length;
   const weights = reportAnimals.filter(a => a.pesoActual > 0).map(a => a.pesoActual);
   const averageWeight = weights.length > 0 
@@ -625,8 +637,6 @@ function doGeneratePdf(title: string, description: string, destinatario: string,
 
   // --- TABLA DE DETALLES ---
   const tableY = statsY + (destinatario ? 28 : 22);
-  
-  // Mapear los animales al formato de la tabla
   const tableRows = reportAnimals.map((a, idx) => {
     return [
       idx + 1,
@@ -661,6 +671,121 @@ function doGeneratePdf(title: string, description: string, destinatario: string,
     margin: { left: 14, right: 14 }
   });
 
+  // --- DETALLE INDIVIDUAL DE CADA ANIMAL ---
+  for (const a of reportAnimals) {
+    doc.addPage();
+    
+    // Encabezado del animal
+    doc.setFillColor(27, 94, 32);
+    doc.rect(0, 0, 210, 20, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text(`FICHA TÉCNICA: ${a.nombre || 'Sin nombre'} (Arete/Tag: ${a.arete || 'N/A'})`, 14, 13);
+    
+    let currentY = 32;
+    
+    // Columna 1: Datos Generales
+    doc.setTextColor(27, 94, 32);
+    doc.setFontSize(11);
+    doc.text('DATOS GENERALES', 14, currentY);
+    
+    doc.setTextColor(50, 50, 50);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'normal');
+    
+    doc.text(`Nombre: ${a.nombre || 'Sin nombre'}`, 14, currentY + 7);
+    doc.text(`Número de Arete: ${a.arete || 'N/A'}`, 14, currentY + 13);
+    doc.text(`Raza: ${a.raza || 'Brahman'}`, 14, currentY + 19);
+    doc.text(`Edad: ${a.edad || 'N/A'}`, 14, currentY + 25);
+    doc.text(`Sexo: ${a.sexo === 'hembra' ? 'Hembra' : 'Macho'}`, 14, currentY + 31);
+    doc.text(`Color: ${a.color || 'No especificado'}`, 14, currentY + 37);
+    doc.text(`Finca: ${a.finca_nombre || a.finca || 'Mi Finca'}`, 14, currentY + 43);
+    doc.text(`Peso Actual: ${a.pesoActual > 0 ? a.pesoActual + ' kg' : 'Sin pesajes'}`, 14, currentY + 49);
+
+    // Columna 2: Fotografía principal
+    const imgX = 118;
+    const imgY = 30;
+    const imgW = 78;
+    const imgH = 56;
+    
+    // Dibujar borde para el contenedor de la imagen
+    doc.setDrawColor(210, 215, 205);
+    doc.setLineWidth(0.5);
+    
+    if (a.imagen) {
+      try {
+        const base64 = await getBase64ImageFromUrl(a.imagen);
+        doc.addImage(base64, 'JPEG', imgX, imgY, imgW, imgH);
+      } catch (err) {
+        console.error('Error al cargar imagen del bovino para PDF:', err);
+        doc.rect(imgX, imgY, imgW, imgH);
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.text('Fotografía no disponible', imgX + 22, imgY + 30);
+      }
+    } else {
+      doc.rect(imgX, imgY, imgW, imgH);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.text('Sin fotografía registrada', imgX + 22, imgY + 30);
+    }
+    
+    // Sección inferior: Historial de pesajes/estimaciones
+    currentY = 96;
+    doc.setTextColor(27, 94, 32);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('HISTORIAL DE ESTIMACIONES Y REGISTRO DE PESOS', 14, currentY);
+    
+    // Mapear los pesajes/estimaciones detallados
+    const estRows = (a.estimaciones || []).map((est: any, eIdx: number) => {
+      return [
+        eIdx + 1,
+        est.fecha,
+        est.peso_estimado ? `${est.peso_estimado} kg` : 'N/A',
+        est.peso_corregido ? `${est.peso_corregido} kg` : 'Sin corregir',
+        est.peso_corregido ? 'Corregido por Báscula' : 'Estimación por Foto IA'
+      ];
+    });
+    
+    // Si no tiene registros en el campo estimaciones, usar el historialPeso por defecto
+    if (estRows.length === 0 && a.historialPeso && a.historialPeso.length > 0) {
+      a.historialPeso.forEach((hp: any, eIdx: number) => {
+        estRows.push([
+          eIdx + 1,
+          hp.fecha,
+          `${hp.peso} kg`,
+          'N/A',
+          'Registro Histórico'
+        ]);
+      });
+    }
+
+    if (estRows.length === 0) {
+      estRows.push(['-', 'Sin registros de pesajes', '-', '-', '-']);
+    }
+    
+    autoTable(doc, {
+      startY: currentY + 5,
+      head: [['N°', 'Fecha de Registro', 'Peso Estimado IA', 'Peso Báscula', 'Método/Tipo']],
+      body: estRows,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [46, 125, 50],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9
+      },
+      styles: {
+        fontSize: 8.5,
+        cellPadding: 3.5
+      },
+      margin: { left: 14, right: 14 }
+    });
+  }
+
   // --- PIE DE PÁGINA ---
   const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
@@ -668,7 +793,6 @@ function doGeneratePdf(title: string, description: string, destinatario: string,
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    // Draw a thin line above footer
     doc.setDrawColor(240, 240, 240);
     doc.line(14, 280, 196, 280);
     
@@ -683,14 +807,14 @@ function doGeneratePdf(title: string, description: string, destinatario: string,
 }
 
 // Acción: Descargar PDF sin persistir en BD
-function downloadPdfOnly() {
+async function downloadPdfOnly() {
   if (selectedAnimalIds.value.length === 0) return;
   const reportAnimals = animals.value.filter(a => selectedAnimalIds.value.includes(a.id));
   const title = newReport.value.titulo.trim() || 'Reporte de Ganado';
   const desc = newReport.value.descripcion.trim();
   const dest = newReport.value.destinatario.trim();
   
-  doGeneratePdf(title, desc, dest, reportAnimals);
+  await doGeneratePdf(title, desc, dest, reportAnimals);
 }
 
 // Acción: Crear y guardar reporte en base de datos + Descargar PDF
@@ -715,7 +839,7 @@ async function handleGenerateReport() {
     const reportAnimals = animals.value.filter(a => selectedAnimalIds.value.includes(a.id));
 
     // 3. Generar y descargar el PDF
-    doGeneratePdf(title, desc, dest, reportAnimals);
+    await doGeneratePdf(title, desc, dest, reportAnimals);
 
     // 4. Limpiar campos y refrescar
     newReport.value.titulo = '';
@@ -738,11 +862,10 @@ async function handleGenerateReport() {
 
 // Acción: Re-exportar un reporte guardado (con pesos actuales)
 async function reExportReport(report: any) {
-  showToast('Obteniendo datos actualizados del reporte...');
   try {
     const detail = await animalRepository.getReporteDetalleGanadero(report.id);
     if (detail && detail.animales) {
-      doGeneratePdf(detail.titulo, detail.descripcion || '', detail.destinatario || '', detail.animales);
+      await doGeneratePdf(detail.titulo, detail.descripcion || '', detail.destinatario || '', detail.animales);
     } else {
       showToast('No se pudieron obtener los animales asociados al reporte.', 'danger');
     }

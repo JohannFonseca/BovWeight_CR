@@ -26,6 +26,13 @@ class GanadoController extends Controller
 
         if ($userRole === 'ganadero' && $userId) {
             $query->where('propietario_id', $userId);
+        } else if ($userRole === 'veterinario' && $userId) {
+            $authorizedFincaIds = \App\Models\FincaVeterinario::where('veterinario_id', $userId)
+                ->where('activo', true)
+                ->pluck('finca_id')
+                ->toArray();
+            
+            $query->whereIn('id', $authorizedFincaIds);
         }
 
         $fincas = $query->orderBy('nombre')->get()->map(function ($f) {
@@ -156,6 +163,22 @@ class GanadoController extends Controller
             $query->whereHas('finca', function ($q) use ($userId) {
                 $q->where('propietario_id', $userId);
             });
+        } else if ($userRole === 'veterinario' && $userId) {
+            $assignments = \App\Models\FincaVeterinario::where('veterinario_id', $userId)
+                ->where('activo', true)
+                ->get();
+            
+            $authorizedFincaIds = $assignments->pluck('finca_id')->toArray();
+            
+            $authorizedAnimalIds = [];
+            foreach ($assignments as $asg) {
+                if ($asg->animales_autorizados) {
+                    $authorizedAnimalIds = array_merge($authorizedAnimalIds, $asg->animales_autorizados);
+                }
+            }
+
+            $query->whereIn('finca_id', $authorizedFincaIds)
+                  ->whereIn('id', $authorizedAnimalIds);
         }
 
         $animales = $query->get()->map(function ($a) {
@@ -181,6 +204,13 @@ class GanadoController extends Controller
                 $edad = $diffYears > 0 ? "{$diffYears} años" : 'Menos de 1 año';
             }
 
+            // Get latest image if any
+            $imagenUrl = null;
+            $latestWithImage = $weights->whereNotNull('ruta_imagen')->last();
+            if ($latestWithImage) {
+                $imagenUrl = $latestWithImage->ruta_imagen;
+            }
+
             return [
                 'id' => $a->id,
                 'nombre' => $a->nombre ?? 'Sin nombre',
@@ -189,7 +219,7 @@ class GanadoController extends Controller
                 'edad' => $edad,
                 'fecha_nacimiento' => $a->fecha_nacimiento,
                 'arete' => $a->numero_arete,
-                'imagen' => null,
+                'imagen' => $imagenUrl,
                 'pesoActual' => $pesoActual,
                 'historialPeso' => $historialPeso,
                 'sexo' => $a->sexo ?? 'macho',
@@ -206,9 +236,24 @@ class GanadoController extends Controller
 
     public function getAnimalById(Request $request, $id)
     {
+        $userId = $request->header('X-User-Id');
+        $userRole = strtolower($request->header('X-User-Role') ?? '');
+
         $a = Animal::with(['raza', 'finca', 'estimacionesPeso'])->find($id);
         if (!$a) {
             return response()->json(['message' => 'Animal no encontrado.'], 404);
+        }
+
+        if ($userRole === 'veterinario' && $userId) {
+            $hasAccess = \App\Models\FincaVeterinario::where('veterinario_id', $userId)
+                ->where('finca_id', $a->finca_id)
+                ->where('activo', true)
+                ->whereJsonContains('animales_autorizados', (int)$a->id)
+                ->exists();
+
+            if (!$hasAccess) {
+                return response()->json(['message' => 'No tiene permisos para ver este animal.'], 403);
+            }
         }
 
         $weights = $a->estimacionesPeso->sortBy('created_at')->values();
@@ -232,6 +277,12 @@ class GanadoController extends Controller
             $edad = $diffYears > 0 ? "{$diffYears} años" : 'Menos de 1 año';
         }
 
+        $imagenUrl = null;
+        $latestWithImage = $weights->whereNotNull('ruta_imagen')->last();
+        if ($latestWithImage) {
+            $imagenUrl = $latestWithImage->ruta_imagen;
+        }
+
         return response()->json([
             'id' => $a->id,
             'nombre' => $a->nombre ?? 'Sin nombre',
@@ -240,7 +291,7 @@ class GanadoController extends Controller
             'edad' => $edad,
             'fecha_nacimiento' => $a->fecha_nacimiento,
             'arete' => $a->numero_arete,
-            'imagen' => null,
+            'imagen' => $imagenUrl,
             'pesoActual' => $pesoActual,
             'historialPeso' => $historialPeso,
             'sexo' => $a->sexo ?? 'macho',
@@ -252,8 +303,28 @@ class GanadoController extends Controller
         ]);
     }
 
-    public function getWeightHistory($id)
+    public function getWeightHistory(Request $request, $id)
     {
+        $userId = $request->header('X-User-Id');
+        $userRole = strtolower($request->header('X-User-Role') ?? '');
+
+        $animal = Animal::find($id);
+        if (!$animal) {
+            return response()->json(['message' => 'Animal no encontrado.'], 404);
+        }
+
+        if ($userRole === 'veterinario' && $userId) {
+            $hasAccess = \App\Models\FincaVeterinario::where('veterinario_id', $userId)
+                ->where('finca_id', $animal->finca_id)
+                ->where('activo', true)
+                ->whereJsonContains('animales_autorizados', (int)$animal->id)
+                ->exists();
+
+            if (!$hasAccess) {
+                return response()->json(['message' => 'No tiene permisos para ver el historial de este animal.'], 403);
+            }
+        }
+
         $weights = EstimacionPeso::where('animal_id', $id)
             ->orderBy('created_at', 'asc')
             ->get()
@@ -710,6 +781,199 @@ class GanadoController extends Controller
             'message' => 'Pesaje registrado exitosamente.',
             'estimacion' => $estimacion
         ], 201);
+    }
+
+    // ==========================================
+    // VETERINARIOS Y PERMISOS (GESTIÓN GANADERO)
+    // ==========================================
+    public function getVeterinariosGanadero(Request $request)
+    {
+        $userId = $request->header('X-User-Id');
+        if (!$userId) {
+            return response()->json(['message' => 'No autorizado'], 401);
+        }
+
+        $vets = Usuario::where('ganadero_id', $userId)
+            ->whereHas('rol', function ($q) {
+                $q->where('nombre', 'veterinario');
+            })
+            ->with(['fincasAsignadas.finca'])
+            ->orderBy('nombre_completo')
+            ->get()
+            ->map(function ($v) {
+                $fincasCount = $v->fincasAsignadas->where('activo', true)->count();
+                $animalesCount = 0;
+                $fincasDetails = [];
+
+                foreach ($v->fincasAsignadas as $fa) {
+                    if ($fa->activo && $fa->finca) {
+                        $authAnimals = $fa->animales_autorizados ?? [];
+                        $animalesCount += count($authAnimals);
+                        $fincasDetails[] = [
+                            'id' => $fa->finca->id,
+                            'nombre' => $fa->finca->nombre,
+                            'activo' => (bool)$fa->activo,
+                            'animales_autorizados' => $authAnimals
+                        ];
+                    }
+                }
+
+                return [
+                    'id' => $v->id,
+                    'correo' => $v->correo,
+                    'nombre_completo' => $v->nombre_completo ?? 'Sin nombre',
+                    'activo' => (bool)$v->activo,
+                    'creado_en' => $v->created_at ? $v->created_at->format('d/m/Y') : 'Reciente',
+                    'fincas_count' => $fincasCount,
+                    'animales_count' => $animalesCount,
+                    'fincas' => $fincasDetails,
+                ];
+            });
+
+        return response()->json($vets);
+    }
+
+    public function asignarFincaVeterinario(Request $request)
+    {
+        $userId = $request->header('X-User-Id');
+        $validator = Validator::make($request->all(), [
+            'veterinario_id' => 'required|exists:usuarios,id',
+            'finca_id' => 'required|exists:fincas,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $finca = Finca::find($request->input('finca_id'));
+        if (!$finca || $finca->propietario_id != $userId) {
+            return response()->json(['message' => 'No autorizado para esta finca.'], 403);
+        }
+
+        $assignment = \App\Models\FincaVeterinario::updateOrCreate(
+            [
+                'finca_id' => $request->input('finca_id'),
+                'veterinario_id' => $request->input('veterinario_id'),
+            ],
+            [
+                'activo' => true,
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Veterinario asignado exitosamente a la finca.',
+            'assignment' => $assignment
+        ]);
+    }
+
+    public function guardarPermisosVeterinario(Request $request)
+    {
+        $userId = $request->header('X-User-Id');
+        $validator = Validator::make($request->all(), [
+            'veterinario_id' => 'required|exists:usuarios,id',
+            'finca_id' => 'required|exists:fincas,id',
+            'animales_ids' => 'present|array',
+            'animales_ids.*' => 'exists:animales,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $finca = Finca::find($request->input('finca_id'));
+        if (!$finca || $finca->propietario_id != $userId) {
+            return response()->json(['message' => 'No autorizado para esta finca.'], 403);
+        }
+
+        $assignment = \App\Models\FincaVeterinario::updateOrCreate(
+            [
+                'finca_id' => $request->input('finca_id'),
+                'veterinario_id' => $request->input('veterinario_id'),
+            ],
+            [
+                'animales_autorizados' => $request->input('animales_ids'),
+                'activo' => true,
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Permisos de ganado actualizados exitosamente.',
+            'assignment' => $assignment
+        ]);
+    }
+
+    public function revocarFincaVeterinario(Request $request, $vetId, $fincaId)
+    {
+        $userId = $request->header('X-User-Id');
+        $finca = Finca::find($fincaId);
+        if (!$finca || $finca->propietario_id != $userId) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        \App\Models\FincaVeterinario::where('finca_id', $fincaId)
+            ->where('veterinario_id', $vetId)
+            ->delete();
+
+        return response()->json(['message' => 'Acceso a la finca revocado exitosamente.']);
+    }
+
+    public function toggleEstadoVeterinario(Request $request, $vetId)
+    {
+        $userId = $request->header('X-User-Id');
+        $vet = Usuario::where('id', $vetId)
+            ->where('ganadero_id', $userId)
+            ->first();
+
+        if (!$vet) {
+            return response()->json(['message' => 'Veterinario no encontrado o no autorizado.'], 404);
+        }
+
+        $vet->activo = !$vet->activo;
+        $vet->save();
+
+        return response()->json([
+            'message' => 'Estado del veterinario actualizado exitosamente.',
+            'activo' => (bool)$vet->activo
+        ]);
+    }
+
+    public function obtenerImagenBase64(Request $request)
+    {
+        $url = $request->query('url');
+        if (!$url) {
+            return response()->json(['message' => 'Falta la URL de la imagen.'], 400);
+        }
+
+        $parsed = parse_url($url);
+        $path = $parsed['path'] ?? '';
+
+        if (str_contains($path, '/storage/predictions/')) {
+            $filename = basename($path);
+            $localPath = 'predictions/' . $filename;
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($localPath)) {
+                $fileContents = \Illuminate\Support\Facades\Storage::disk('public')->get($localPath);
+                $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($localPath) ?? 'image/jpeg';
+                $base64 = base64_encode($fileContents);
+                return response()->json([
+                    'base64' => 'data:' . $mime . ';base64,' . $base64
+                ]);
+            }
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::get($url);
+            if ($response->successful()) {
+                $base64 = base64_encode($response->body());
+                $mime = $response->header('Content-Type') ?? 'image/jpeg';
+                return response()->json([
+                    'base64' => 'data:' . $mime . ';base64,' . $base64
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Regresar error genérico
+        }
+
+        return response()->json(['message' => 'Imagen no encontrada.'], 404);
     }
 }
 
