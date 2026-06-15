@@ -67,3 +67,8 @@ Route::get('/dashboard-stats', [GanadoController::class, 'getDashboardStats']);
 Route::get('/analisis-pesajes', [GanadoController::class, 'getAnalisisPesajes']);
 Route::get('/obtener-imagen-base64', [GanadoController::class, 'obtenerImagenBase64']);
 
+// Veterinarian Dashboard Routes
+Route::middleware(['veterinario'])->prefix('veterinario')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\VeterinarioDashboardController::class, 'getDashboardData']);
+    Route::get('/animal/{id}', [\App\Http\Controllers\VeterinarioAnimalController::class, 'show']);
+});

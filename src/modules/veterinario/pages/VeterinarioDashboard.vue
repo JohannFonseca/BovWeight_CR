@@ -31,19 +31,19 @@
         <!-- Sidebar -->
         <aside class="sidebar desktop-only">
           <nav class="nav-menu">
-            <a href="#" class="nav-item active">
+            <a @click.prevent="router.push('/veterinario')" class="nav-item active">
               <ion-icon :icon="medkitOutline"></ion-icon>
               <span>Panel Clínico</span>
             </a>
-            <a href="#" class="nav-item">
+            <a @click.prevent="router.push('/veterinario/animales')" class="nav-item">
               <ion-icon :icon="pawOutline"></ion-icon>
               <span>Animales Asignados</span>
             </a>
-            <a href="#" class="nav-item">
+            <a @click.prevent="router.push('/veterinario/agenda')" class="nav-item">
               <ion-icon :icon="calendarOutline"></ion-icon>
               <span>Agenda de Visitas</span>
             </a>
-            <a href="#" class="nav-item">
+            <a @click.prevent="router.push('/veterinario/reportes')" class="nav-item">
               <ion-icon :icon="documentTextOutline"></ion-icon>
               <span>Reportes Médicos</span>
             </a>
@@ -70,7 +70,8 @@
                 <ion-icon :icon="pawOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">34</span>
+                <span class="stat-value" v-if="!isLoading">{{ totalAnimales }}</span>
+                <span class="stat-value" v-else>...</span>
                 <span class="stat-label">Animales en Revisión</span>
               </div>
             </div>
@@ -80,7 +81,8 @@
                 <ion-icon :icon="businessOutline"></ion-icon>
               </div>
               <div class="stat-details">
-                <span class="stat-value">3</span>
+                <span class="stat-value" v-if="!isLoading">{{ totalFincas }}</span>
+                <span class="stat-value" v-else>...</span>
                 <span class="stat-label">Fincas Asignadas</span>
               </div>
             </div>
@@ -106,27 +108,27 @@
               
               <div class="panel-body no-padding">
                 <div class="animal-list">
-                  <div class="animal-row">
-                    <div class="animal-avatar warning">
-                      <ion-icon :icon="alertOutline"></ion-icon>
-                    </div>
-                    <div class="animal-info">
-                      <h4 class="animal-name">Toro #402 (Brahman)</h4>
-                      <span class="animal-tag">Finca "El Rosario" | Último peso: 380 kg</span>
-                    </div>
-                    <ion-button fill="outline" size="small" color="primary">Ver Caso</ion-button>
+                  <div v-if="isLoading" style="padding: 16px; text-align: center; color: #5c6e58;">
+                    Cargando seguimiento...
                   </div>
-
-                  <div class="animal-row">
-                    <div class="animal-avatar normal">
-                      <ion-icon :icon="checkmarkOutline"></ion-icon>
-                    </div>
-                    <div class="animal-info">
-                      <h4 class="animal-name">Vaca #105 (Angus)</h4>
-                      <span class="animal-tag">Finca "La pradera" | Último peso: 450 kg</span>
-                    </div>
-                    <ion-button fill="outline" size="small" color="primary">Ver Caso</ion-button>
+                  <div v-else-if="error" style="padding: 16px; text-align: center; color: #d97706;">
+                    {{ error }}
                   </div>
+                  <div v-else-if="seguimientoPrioritario.length === 0" style="padding: 16px; text-align: center; color: #5c6e58;">
+                    No hay animales en seguimiento.
+                  </div>
+                  <template v-else>
+                    <div class="animal-row" v-for="animal in seguimientoPrioritario" :key="animal.id">
+                      <div class="animal-avatar" :class="animal.ultima_estimacion_kg && animal.ultima_estimacion_kg < 350 ? 'warning' : 'normal'">
+                        <ion-icon :icon="animal.ultima_estimacion_kg && animal.ultima_estimacion_kg < 350 ? alertOutline : checkmarkOutline"></ion-icon>
+                      </div>
+                      <div class="animal-info">
+                        <h4 class="animal-name">{{ animal.nombre }} #{{ animal.numero_arete }} ({{ animal.raza }})</h4>
+                        <span class="animal-tag">Finca "{{ animal.finca }}" | Último peso: {{ animal.ultima_estimacion_kg ? animal.ultima_estimacion_kg + ' kg' : 'Sin registro' }}</span>
+                      </div>
+                      <ion-button fill="outline" size="small" color="primary" @click="goToAnimalDetail(animal.id)">Ver Caso</ion-button>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
@@ -148,8 +150,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, 
   IonIcon, IonButtons
@@ -172,9 +175,15 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const router = useRouter();
 const usuarioSesion = ref<any>(null);
 const sessionStr = localStorage.getItem('usuario_sesion');
+
+// 1. Buscamos el token en los nombres más comunes que suele usar Laravel/Vue
+let token = localStorage.getItem('token') || localStorage.getItem('access_token') || '';
+
 if (sessionStr) {
   try {
     usuarioSesion.value = JSON.parse(sessionStr);
+    // 2. Si no estaba suelto, lo buscamos dentro del objeto de sesión
+    token = token || usuarioSesion.value.token || usuarioSesion.value.access_token || '';
   } catch (e) {
     console.error('Error parseando usuario_sesion:', e);
   }
@@ -182,7 +191,68 @@ if (sessionStr) {
 
 const logout = () => {
   localStorage.removeItem('usuario_sesion');
+  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
   router.push('/login');
+};
+
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const totalFincas = ref(0);
+const totalAnimales = ref(0);
+const seguimientoPrioritario = ref<any[]>([]);
+
+const fetchDashboardData = async () => {
+  isLoading.value = true;
+  error.value = null;
+
+  const sessionStr = localStorage.getItem('usuario_sesion');
+  if (!sessionStr) {
+    error.value = 'No se encontró una sesión activa.';
+    isLoading.value = false;
+    return;
+  }
+  
+  let userId = '';
+  let userRole = '';
+  try {
+      const parsedSession = JSON.parse(sessionStr);
+      userId = parsedSession.id;
+      userRole = parsedSession.rol || 'veterinario';
+  } catch(e) {}
+
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    
+    const response = await axios.get(`${apiUrl}/veterinario/dashboard`, {
+      headers: {
+        'X-User-Id': userId,
+        'X-User-Role': userRole,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (response.data && response.data.success) {
+      const data = response.data.data;
+      totalFincas.value = data.total_fincas || 0;
+      totalAnimales.value = data.total_animales || 0;
+      seguimientoPrioritario.value = data.seguimiento_prioritario || [];
+    }
+  } catch (err: any) {
+    console.error('Error:', err);
+    error.value = err.response?.data?.message || 'Error cargando datos del panel.';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  // Forzamos la petición siempre. Si hay error de seguridad, Laravel nos tirará un 401 o 403 real.
+  fetchDashboardData();
+});
+
+const goToAnimalDetail = (id: string | number) => {
+  router.push(`/veterinario/animal/${id}`);
 };
 
 // Chart Data Dummy

@@ -25,4 +25,11 @@ class Finca extends Model
     {
         return $this->hasMany(Animal::class, 'finca_id');
     }
+
+    public function veterinariosAutorizados(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Usuario::class, 'finca_veterinario', 'finca_id', 'veterinario_id')
+                    ->using(FincaVeterinario::class)
+                    ->withTimestamps();
+    }
 }

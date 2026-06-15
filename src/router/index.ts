@@ -4,7 +4,7 @@
  */
 
 import { createRouter, createWebHistory } from '@ionic/vue-router';
-import { RouteRecordRaw } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
 
 // Definición de las rutas de la aplicación con metadatos de acceso y roles permitidos
 const routes: Array<RouteRecordRaw> = [
@@ -63,6 +63,30 @@ const routes: Array<RouteRecordRaw> = [
     path: '/veterinario',
     name: 'VeterinarioDashboard',
     component: () => import('../modules/veterinario/pages/VeterinarioDashboard.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['veterinario'] }
+  },
+  {
+    path: '/veterinario/animales',
+    name: 'VeterinarioAnimales',
+    component: () => import('../modules/veterinario/pages/VeterinarioAnimales.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['veterinario'] }
+  },
+  {
+    path: '/veterinario/agenda',
+    name: 'VeterinarioAgenda',
+    component: () => import('../modules/veterinario/pages/VeterinarioAgenda.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['veterinario'] }
+  },
+  {
+    path: '/veterinario/reportes',
+    name: 'VeterinarioReportes',
+    component: () => import('../modules/veterinario/pages/VeterinarioReportes.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['veterinario'] }
+  },
+  {
+    path: '/veterinario/animal/:id',
+    name: 'VeterinarioAnimalDetail',
+    component: () => import('../modules/veterinario/pages/VeterinarioAnimalDetail.vue'),
     meta: { requiresAuth: true, allowedRoles: ['veterinario'] }
   },
   {

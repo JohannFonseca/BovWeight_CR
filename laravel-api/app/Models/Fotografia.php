@@ -1,24 +1,22 @@
 <?php
-// app/Models/EstimacionPeso.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class EstimacionPeso extends Model
+class Fotografia extends Model
 {
     use HasFactory;
 
-    protected $table = 'estimaciones_peso';
+    protected $table = 'fotografias';
 
     protected $fillable = [
         'animal_id',
-        'fotografia_id',
-        'peso_estimado_kg',
-        'peso_corregido_kg',
         'ruta_imagen',
+        'fecha_captura',
     ];
 
     public function animal(): BelongsTo
@@ -26,8 +24,8 @@ class EstimacionPeso extends Model
         return $this->belongsTo(Animal::class, 'animal_id');
     }
 
-    public function fotografia(): BelongsTo
+    public function estimacionesPeso(): HasMany
     {
-        return $this->belongsTo(Fotografia::class, 'fotografia_id');
+        return $this->hasMany(EstimacionPeso::class, 'fotografia_id');
     }
 }

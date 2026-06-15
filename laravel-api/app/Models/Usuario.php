@@ -56,8 +56,15 @@ class Usuario extends Authenticatable
         return $this->hasMany(Usuario::class, 'ganadero_id');
     }
 
-    public function fincasAsignadas(): HasMany
+    public function fincasAsignadas(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->hasMany(FincaVeterinario::class, 'veterinario_id');
+        return $this->belongsToMany(Finca::class, 'finca_veterinario', 'veterinario_id', 'finca_id')
+                    ->using(FincaVeterinario::class)
+                    ->withTimestamps();
+    }
+
+    public function isVeterinario(): bool
+    {
+        return $this->rol && strtolower($this->rol->nombre) === 'veterinario';
     }
 }

@@ -40,4 +40,5 @@ class Animal extends Model
     {
         return $this->hasMany(EstimacionPeso::class, 'animal_id');
     }
+
 }
