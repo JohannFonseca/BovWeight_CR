@@ -30,3 +30,8 @@ npm-debug.log*
 /platforms
 /plugins
 /www
+
+# Vite temporary config files
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+

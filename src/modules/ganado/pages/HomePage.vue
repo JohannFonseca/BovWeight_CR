@@ -1,5 +1,6 @@
 <template>
   <ion-page>
+    <!-- MOBILE-OPTIMIZED HEADER -->
     <ion-header class="ion-no-border">
       <ion-toolbar class="header-toolbar">
         <ion-title>
@@ -7,175 +8,240 @@
             <span class="logo-icon">🐄</span>
             <span class="app-logo">BovWeight CR</span>
             <span class="badge-ganadero">GANADERO</span>
-            <span v-if="isOffline" class="offline-badge">
-              <ion-icon :icon="cloudOfflineOutline" style="margin-right: 4px; font-size: 14px;"></ion-icon>
-              Offline
-            </span>
           </div>
         </ion-title>
         <ion-buttons slot="end">
-          <div class="user-profile">
-            <div class="avatar ganadero">
-              {{ usuarioSesion?.nombre_completo ? usuarioSesion.nombre_completo.charAt(0).toUpperCase() : 'G' }}
-            </div>
-            <div class="user-info">
-              <span class="name">{{ usuarioSesion?.nombre_completo || 'Pedro Ganadero' }}</span>
-              <span class="role">{{ usuarioSesion?.usuario || 'Finca "El Rosario"' }}</span>
-            </div>
+          <div v-if="isOffline" class="offline-indicator animate-pulse">
+            <ion-icon :icon="cloudOfflineOutline"></ion-icon>
+            <span>Sin Conexión</span>
           </div>
-          <ion-button @click="logout" class="logout-btn">
+          <div v-else class="online-indicator">
+            <span class="pulse-dot"></span>
+            <span>Online</span>
+          </div>
+          <button @click="logout" class="logout-btn-custom" title="Cerrar Sesión">
             <ion-icon :icon="logOutOutline"></ion-icon>
-          </ion-button>
+          </button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="dashboard-content">
-      <div class="dashboard-layout">
-        <!-- Sidebar -->
-        <aside class="sidebar desktop-only">
-          <nav class="nav-menu">
-            <a href="#" class="nav-item active">
-              <ion-icon :icon="gridOutline"></ion-icon>
-              <span>Mi Finca</span>
-            </a>
-            <router-link to="/ganado/animales" class="nav-item">
-              <ion-icon :icon="pawOutline"></ion-icon>
-              <span>Mis Animales</span>
-            </router-link>
-            <router-link to="/ganado/estimacion-ia" class="nav-item ai-highlight">
-              <ion-icon :icon="cameraOutline"></ion-icon>
-              <span>Estimar Peso IA</span>
-            </router-link>
-            <router-link to="/ganado/reportes" class="nav-item">
-              <ion-icon :icon="barChartOutline"></ion-icon>
-              <span>Reportes</span>
-            </router-link>
-          </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-          <div class="page-header">
-            <div>
-              <h1 class="page-title">Resumen de Finca</h1>
-              <p class="page-subtitle">Monitorea la salud y el peso de tu rebaño</p>
-            </div>
-            <ion-button class="ai-primary-btn" router-link="/ganado/estimacion-ia">
-              <ion-icon :icon="cameraOutline" slot="start"></ion-icon>
-              NUEVO PESAJE IA
-            </ion-button>
+      <!-- CENTERED MOBILE CONTAINER -->
+      <div class="mobile-app-container">
+        
+        <!-- BIENVENIDA & PERFIL -->
+        <div class="user-greeting-card">
+          <div class="greeting-info">
+            <h1>Hola, {{ usuarioSesion?.nombre_completo || 'Ganadero' }}</h1>
+            <p>Finca: <strong>{{ usuarioSesion?.usuario || 'Mi Finca' }}</strong></p>
           </div>
-
-          <!-- Stats Grid -->
-          <div class="stats-grid">
-            <div class="stat-card anim-1">
-              <div class="stat-icon-wrapper green">
-                <ion-icon :icon="pawOutline"></ion-icon>
-              </div>
-              <div class="stat-details">
-                <span class="stat-value">{{ animals.length || 0 }}</span>
-                <span class="stat-label">Total Animales</span>
-              </div>
-            </div>
-
-            <div class="stat-card anim-2">
-              <div class="stat-icon-wrapper orange">
-                <ion-icon :icon="scaleOutline"></ion-icon>
-              </div>
-              <div class="stat-details">
-                <span class="stat-value">{{ pesoPromedio }} <small>kg</small></span>
-                <span class="stat-label">Peso Promedio</span>
-              </div>
-            </div>
-
-            <div class="stat-card anim-3">
-              <div class="stat-icon-wrapper blue">
-                <ion-icon :icon="cameraOutline"></ion-icon>
-              </div>
-              <div class="stat-details">
-                <span class="stat-value">{{ pesajesHoy }}</span>
-                <span class="stat-label">Pesajes del Rebaño</span>
-              </div>
-            </div>
+          <div class="greeting-avatar">
+            {{ usuarioSesion?.nombre_completo ? usuarioSesion.nombre_completo.charAt(0).toUpperCase() : 'G' }}
           </div>
+        </div>
 
-          <div class="content-grid">
-            <!-- Animals List -->
-            <div class="panel-card animals-panel">
-              <div class="panel-header">
-                <h3>Mi Rebaño</h3>
-                <ion-button fill="clear" size="small" router-link="/ganado/animales">Ver todos</ion-button>
-              </div>
-              
-              <div class="panel-body no-padding">
-                <div v-if="loading" class="loading-state">
-                  <ion-spinner name="crescent"></ion-spinner>
-                  <p>Cargando rebaño...</p>
+        <!-- INDICADOR OFFLINE BANNER -->
+        <div v-if="isOffline" class="offline-banner animate-fade-in">
+          <div class="banner-icon">
+            <ion-icon :icon="cloudOfflineOutline"></ion-icon>
+          </div>
+          <div class="banner-text">
+            <h4>Modo Offline Activo</h4>
+            <p>Puedes tomar fotografías en el campo. Se guardarán localmente y se calcularán automáticamente al detectar internet.</p>
+          </div>
+        </div>
+
+        <!-- COLA DE ESTIMACIONES PENDIENTES -->
+        <div v-if="offlineQueue.length > 0" class="panel-card pending-panel animate-fade-in">
+          <div class="panel-header pending-header">
+            <div class="header-title-group">
+              <ion-icon :icon="cloudUploadOutline" class="pending-header-icon"></ion-icon>
+              <h3>Estimaciones Pendientes ({{ pendingCount }})</h3>
+            </div>
+            <button v-if="hasCompletedItems" class="clear-btn" @click="clearCompleted">
+              Limpiar
+            </button>
+          </div>
+          
+          <div class="panel-body no-padding">
+            <div class="pending-list">
+              <div v-for="item in offlineQueue" :key="item.id" class="pending-row">
+                <div class="pending-thumb-wrapper">
+                  <img :src="item.fotoBase64" class="pending-thumb" />
+                  <span class="status-badge" :class="item.estado">
+                    {{ getStatusLabel(item.estado) }}
+                  </span>
                 </div>
                 
-                <div v-else-if="error" class="error-state">
-                  <ion-icon :icon="cloudOfflineOutline"></ion-icon>
-                  <p>{{ error }}</p>
-                  <ion-button @click="load" size="small" color="success">Reintentar</ion-button>
-                </div>
+                <div class="pending-info">
+                  <h4>{{ item.animalNombre }}</h4>
+                  <p class="pending-meta">Arete: #{{ item.animalArete }} &middot; {{ item.fecha.split(',')[0] }}</p>
+                  
+                  <!-- Progress Bar -->
+                  <div class="progress-wrapper" v-if="item.estado === 'sincronizando' || item.estado === 'procesando'">
+                    <div class="progress-outer">
+                      <div class="progress-inner" :style="{ width: item.progreso + '%' }"></div>
+                    </div>
+                    <span class="progress-val">{{ item.progreso }}%</span>
+                  </div>
 
-                <div v-else class="animal-list">
-                  <router-link
-                    v-for="a in animals.slice(0, 5)"
-                    :key="a.id"
-                    :to="`/animal/${a.id}`"
-                    class="animal-row"
+                  <!-- Error message -->
+                  <span v-if="item.estado === 'error'" class="status-msg error-msg">
+                    ⚠️ {{ item.mensajeError || 'Error al conectar' }}
+                  </span>
+
+                  <!-- Success result -->
+                  <span v-if="item.estado === 'completado'" class="status-msg success-msg">
+                    🎉 Estimado: <strong>{{ item.pesoEstimado }} kg</strong>
+                  </span>
+                </div>
+                
+                <div class="pending-actions">
+                  <button 
+                    v-if="item.estado === 'error'" 
+                    class="action-icon-btn retry" 
+                    @click="retrySync"
+                    title="Reintentar"
                   >
-                    <div class="animal-avatar">
-                      <ion-icon :icon="pawOutline"></ion-icon>
-                    </div>
-                    <div class="animal-info">
-                      <h4 class="animal-name">{{ a.nombre }}</h4>
-                      <span class="animal-tag">Arete: #{{ a.arete || 'N/A' }} | {{ a.raza }}</span>
-                    </div>
-                    <div class="animal-weight">
-                      <span class="weight-val">{{ a.pesoActual > 0 ? `${a.pesoActual} kg` : 'S/P' }}</span>
-                      <ion-icon :icon="chevronForwardOutline" class="go-icon"></ion-icon>
-                    </div>
-                  </router-link>
+                    <ion-icon :icon="refreshOutline"></ion-icon>
+                  </button>
+                  <button 
+                    v-if="item.estado === 'pendiente_local' || item.estado === 'error' || item.estado === 'completado'" 
+                    class="action-icon-btn delete" 
+                    @click="removePending(item.id)"
+                    title="Eliminar"
+                  >
+                    <ion-icon :icon="trashOutline"></ion-icon>
+                  </button>
                 </div>
-              </div>
-            </div>
-
-            <!-- AI Promotion / Chart -->
-            <div class="panel-card chart-panel">
-              <div class="panel-header">
-                <h3>Evolución de Peso (Promedio)</h3>
-              </div>
-              <div class="panel-body">
-                <LineChart :data="chartData" :options="chartOptions" class="chart-container" />
               </div>
             </div>
           </div>
-        </main>
+        </div>
+
+        <!-- ACCIÓN RÁPIDA: ESTIMACIÓN IA -->
+        <div class="action-card-container">
+          <button class="big-action-card" @click="router.push('/ganado/estimacion-ia')">
+            <div class="action-icon-bg">
+              <ion-icon :icon="cameraOutline"></ion-icon>
+            </div>
+            <div class="action-text">
+              <h3>Estimar Peso con IA</h3>
+              <p>Toma una foto en campo o sube una imagen para calcular el peso</p>
+            </div>
+            <ion-icon :icon="chevronForwardOutline" class="action-arrow"></ion-icon>
+          </button>
+        </div>
+
+        <!-- STATS GRID -->
+        <div class="stats-grid">
+          <div class="stat-card green">
+            <div class="stat-icon-circle">
+              <ion-icon :icon="pawOutline"></ion-icon>
+            </div>
+            <div class="stat-data">
+              <span class="val">{{ animals.length || 0 }}</span>
+              <span class="lbl">Total Bovinos</span>
+            </div>
+          </div>
+
+          <div class="stat-card orange">
+            <div class="stat-icon-circle">
+              <ion-icon :icon="scaleOutline"></ion-icon>
+            </div>
+            <div class="stat-data">
+              <span class="val">{{ pesoPromedio }} <small>kg</small></span>
+              <span class="lbl">Peso Promedio</span>
+            </div>
+          </div>
+
+          <div class="stat-card blue">
+            <div class="stat-icon-circle">
+              <ion-icon :icon="cameraOutline"></ion-icon>
+            </div>
+            <div class="stat-data">
+              <span class="val">{{ pesajesHoy }}</span>
+              <span class="lbl">Historial Pesos</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE REBAÑO -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>Mi Rebaño</h3>
+            <button class="link-btn-custom" @click="router.push('/ganado/animales')">Ver todos</button>
+          </div>
+          
+          <div class="panel-body no-padding">
+            <div v-if="loading" class="loading-state-mobile">
+              <ion-spinner name="crescent"></ion-spinner>
+              <p>Cargando rebaño...</p>
+            </div>
+            
+            <div v-else-if="error" class="error-state-mobile">
+              <ion-icon :icon="cloudOfflineOutline"></ion-icon>
+              <p>{{ error }}</p>
+              <button class="retry-btn-custom" @click="load">Reintentar</button>
+            </div>
+
+            <div v-else class="animal-list-mobile">
+              <router-link
+                v-for="a in animals.slice(0, 5)"
+                :key="a.id"
+                :to="`/animal/${a.id}`"
+                class="animal-row-mobile"
+              >
+                <div class="animal-avatar-mobile">
+                  <span class="avatar-emoji">🐂</span>
+                </div>
+                <div class="animal-info-mobile">
+                  <h4>{{ a.nombre }}</h4>
+                  <span>Arete: #{{ a.arete || 'N/A' }} &middot; {{ a.raza }}</span>
+                </div>
+                <div class="animal-weight-mobile">
+                  <span class="weight-tag">{{ a.pesoActual > 0 ? `${a.pesoActual} kg` : 'S/P' }}</span>
+                  <ion-icon :icon="chevronForwardOutline" class="row-arrow"></ion-icon>
+                </div>
+              </router-link>
+            </div>
+          </div>
+        </div>
+
+        <!-- GRÁFICO EVOLUCIÓN -->
+        <div class="panel-card chart-panel-mobile">
+          <div class="panel-header">
+            <h3>Evolución de Peso Promedio</h3>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrapper">
+              <LineChart :data="chartData" :options="chartOptions" />
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- Bottom Navigation for mobile -->
+      <!-- Bottom Navigation always active -->
       <BottomNav />
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, 
-  IonIcon, IonButtons, IonSpinner
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonSpinner, IonIcon
 } from '@ionic/vue';
 import { 
   cloudOfflineOutline, pawOutline, chevronForwardOutline, logOutOutline,
-  gridOutline, cameraOutline, barChartOutline, scaleOutline
+  cameraOutline, scaleOutline, cloudUploadOutline, trashOutline, refreshOutline
 } from 'ionicons/icons';
 import BottomNav from '@/components/BottomNav.vue';
-
-import { animalRepository, type Animal } from '@/services';
+import { animalRepository, offlineSyncService, type Animal } from '@/services';
+import { useAutoRefresh } from '@/composables/useAutoRefresh';
 
 // Chart.js imports
 import { Line as LineChart } from 'vue-chartjs';
@@ -191,18 +257,48 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const router = useRouter();
 
-// Conectividad sin conexión
+// Conectividad
 const isOffline = ref(!navigator.onLine);
 const updateOnlineStatus = () => {
   isOffline.value = !navigator.onLine;
 };
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
+
 onUnmounted(() => {
   window.removeEventListener('online', updateOnlineStatus);
   window.removeEventListener('offline', updateOnlineStatus);
 });
 
+// Cola offline
+const offlineQueue = computed(() => offlineSyncService.queue.value);
+const pendingCount = computed(() => offlineQueue.value.filter(item => item.estado !== 'completado').length);
+const hasCompletedItems = computed(() => offlineQueue.value.some(item => item.estado === 'completado'));
+
+function clearCompleted() {
+  offlineSyncService.clearCompleted();
+}
+
+function removePending(id: string) {
+  offlineSyncService.removeEstimation(id);
+}
+
+function retrySync() {
+  offlineSyncService.syncQueue();
+}
+
+function getStatusLabel(status: string) {
+  switch (status) {
+    case 'pendiente_local': return 'Pendiente';
+    case 'sincronizando': return 'Subiendo...';
+    case 'procesando': return 'Procesando IA';
+    case 'completado': return 'Listo';
+    case 'error': return 'Error';
+    default: return status;
+  }
+}
+
+// Sesión usuario
 const usuarioSesion = ref<any>(null);
 const sessionStr = localStorage.getItem('usuario_sesion');
 if (sessionStr) {
@@ -241,10 +337,34 @@ async function load() {
   }
 }
 
+async function silentLoad() {
+  try {
+    animals.value = await animalRepository.getAllAnimals();
+  } catch (err) {
+    console.error('Error actualizando rebaño en background:', err);
+  }
+}
 
+// Configurar refresco automático cada 15 segundos en segundo plano (silencioso)
+useAutoRefresh(silentLoad, 15000);
 
-onMounted(load);
+// Escuchar cambios en la cola offline para refrescar el dashboard cuando termine una sincronización
+watch(
+  () => offlineQueue.value.map(item => item.estado),
+  (newStates, oldStates) => {
+    const hasNewCompletion = newStates.some((state, idx) => state === 'completado' && oldStates?.[idx] !== 'completado');
+    if (hasNewCompletion) {
+      silentLoad();
+    }
+  },
+  { deep: true }
+);
 
+onMounted(() => {
+  load();
+});
+
+// Gráfico
 const chartData = computed(() => {
   const recordsByDate: { [key: string]: { total: number; count: number } } = {};
   
@@ -286,11 +406,11 @@ const chartData = computed(() => {
     labels,
     datasets: [
       {
-        label: 'Peso Promedio (kg)',
-        backgroundColor: 'rgba(46, 125, 50, 0.1)',
+        label: 'Peso (kg)',
+        backgroundColor: 'rgba(46, 125, 50, 0.08)',
         borderColor: '#2E7D32',
         borderWidth: 2,
-        pointBackgroundColor: '#fff',
+        pointBackgroundColor: '#ffffff',
         pointBorderColor: '#2E7D32',
         pointRadius: 4,
         fill: true,
@@ -306,184 +426,662 @@ const chartOptions = ref({
   maintainAspectRatio: false,
   plugins: { legend: { display: false } },
   scales: {
-    y: { beginAtZero: false, grid: { color: '#f0f0f0' } },
+    y: { beginAtZero: false, grid: { color: '#f2f2f2' } },
     x: { grid: { display: false } }
   }
 });
 </script>
 
 <style scoped>
-/* ====== VARIABLES GLOBALES ====== */
 .dashboard-content {
-  --background: #f4f6f0; /* Soft warm green-beige */
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --background: #f4f6f0; /* Soft warm green-beige background */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* ====== HEADER ====== */
+/* APP SHELL WRAPPER FOR MOBILE AND WIDE SCREENS */
+.mobile-app-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px 16px 110px; /* safe bottom space for navigation */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* HEADER TOOLBAR */
 .header-toolbar {
-  --background: rgba(255, 255, 255, 0.85);
-  --min-height: 70px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 0 16px;
+  --background: rgba(255, 255, 255, 0.9);
+  --min-height: 64px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 0 12px;
   border-bottom: 1px solid rgba(46, 125, 50, 0.08);
 }
 
 .brand {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  font-size: 22px;
+}
+
+.app-logo {
+  font-weight: 800;
+  color: #1B5E20;
+  letter-spacing: -0.5px;
+  font-size: 17px;
+}
+
+.badge-ganadero {
+  background: linear-gradient(135deg, #2E7D32, #1B5E20);
+  color: white;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.logout-btn-custom {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #5c6e58;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.logout-btn-custom:active {
+  color: #c62828;
+}
+
+/* CONNECTIVITY INDICATORS */
+.online-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2e7d32;
+  background: #eaf8eb;
+  padding: 4px 8px;
+  border-radius: 8px;
+  margin-right: 8px;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: #2e7d32;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.5);
+  animation: dot-pulse 1.8s infinite;
+}
+
+@keyframes dot-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(46, 125, 50, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+}
+
+.offline-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #b75700;
+  background: #fff3e0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  margin-right: 8px;
+}
+
+.animate-pulse {
+  animation: pulse-op 1.5s infinite alternate;
+}
+
+@keyframes pulse-op {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+/* BIENVENIDA */
+.user-greeting-card {
+  background: white;
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  border: 1px solid rgba(46, 125, 50, 0.05);
+}
+
+.greeting-info h1 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1B5E20;
+  margin: 0 0 4px;
+}
+
+.greeting-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #5c6e58;
+}
+
+.greeting-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2E7D32, #1B5E20);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(46, 125, 50, 0.2);
+}
+
+/* OFFLINE BANNER */
+.offline-banner {
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  border: 1px solid #ffcc80;
+  border-radius: 18px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.banner-icon {
+  font-size: 22px;
+  color: #e65100;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.banner-text h4 {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #e65100;
+}
+
+.banner-text p {
+  margin: 0;
+  font-size: 11px;
+  color: #ef6c00;
+  line-height: 1.4;
+}
+
+/* TOUCH-FRIENDLY BIG ACTION CARD */
+.big-action-card {
+  width: 100%;
+  background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+  border: none;
+  border-radius: 20px;
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: white;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(46, 125, 50, 0.25);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.big-action-card:active {
+  transform: scale(0.97);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+}
+
+.action-icon-bg {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.action-text {
+  flex-grow: 1;
+}
+
+.action-text h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.action-text p {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.85;
+  line-height: 1.3;
+}
+
+.action-arrow {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+/* STATS GRID */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
 
-.logo-icon { font-size: 26px; filter: drop-shadow(0 2px 4px rgba(46, 125, 50, 0.2)); }
-.app-logo { font-weight: 800; color: #1B5E20; letter-spacing: -0.5px; font-size: 20px; }
-.badge-ganadero { background: linear-gradient(135deg, #2E7D32, #1B5E20); color: white; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 8px; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(46, 125, 50, 0.2); }
-
-.user-profile { display: flex; align-items: center; gap: 12px; margin-right: 12px; }
-.avatar.ganadero { background: linear-gradient(135deg, #2E7D32, #1B5E20); color: white; border-radius: 12px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; box-shadow: 0 4px 8px rgba(46,125,50,0.25); }
-.user-info { display: flex; flex-direction: column; text-align: left; }
-.user-info .name { font-size: 14px; font-weight: 700; color: #1B5E20; }
-.user-info .role { font-size: 12px; color: #5c6e58; font-weight: 500; }
-.logout-btn { --color: #5c6e58; }
-
-/* ====== LAYOUT ====== */
-.dashboard-layout { display: flex; min-height: 100%; }
-.sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #e2dcd0; padding: 24px 16px; }
-.nav-menu { display: flex; flex-direction: column; gap: 8px; }
-.nav-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; text-decoration: none; color: #5c6e58; font-weight: 600; transition: all 0.2s ease; }
-.nav-item:hover { background: #f4f1ea; color: #2c3e2d; }
-.nav-item.active { background: #eaf0e6; color: #1B5E20; }
-.nav-item.ai-highlight { background: #fdfbf7; color: #2E7D32; margin-top: 16px; border: 1px dashed #c0c5b1; }
-.nav-item ion-icon { font-size: 22px; }
-
-/* MAIN CONTENT */
-.main-content { flex: 1; padding: 24px; overflow-y: auto; }
-.page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
-.page-title { font-size: 30px; font-weight: 900; color: #1B5E20; margin: 0 0 6px; letter-spacing: -1px; }
-.page-subtitle { font-size: 14px; color: #5c6e58; margin: 0; font-weight: 500; }
-
-.ai-primary-btn {
-  --background: linear-gradient(135deg, #2E7D32, #1B5E20);
-  --border-radius: 14px;
-  --box-shadow: 0 10px 20px -10px rgba(46, 125, 50, 0.4);
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  height: 48px;
-}
-
-/* ====== STATS GRID ====== */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.stat-card { border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px -10px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease; border: 1px solid rgba(46, 125, 50, 0.05); }
-.stat-card:active { transform: scale(0.98); }
-.stat-card.anim-1 { background: linear-gradient(135deg, #eaf0e6 0%, #ffffff 100%); }
-.stat-card.anim-2 { background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); }
-.stat-card.anim-3 { background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 100%); }
-
-.stat-icon-wrapper { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-.stat-icon-wrapper.green { background: #ffffff; color: #2E7D32; border: 1px solid rgba(46, 125, 50, 0.1); }
-.stat-icon-wrapper.orange { background: #ffffff; color: #d97706; border: 1px solid rgba(217, 119, 6, 0.1); }
-.stat-icon-wrapper.blue { background: #ffffff; color: #475569; border: 1px solid rgba(71, 85, 105, 0.1); }
-
-.stat-details { display: flex; flex-direction: column; }
-.stat-value { font-size: 24px; font-weight: 800; color: #1B5E20; line-height: 1.2; }
-.stat-value small { font-size: 13px; color: #5c6e58; font-weight: 600; }
-.stat-label { font-size: 12px; color: #5c6e58; font-weight: 600; margin-top: 2px; }
-
-/* ====== PANELS GRID ====== */
-.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.panel-card { background: #FFFFFF; border-radius: 24px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); display: flex; flex-direction: column; overflow: hidden; }
-.panel-header { padding: 20px 24px; border-bottom: 1px solid #f4f1ea; display: flex; justify-content: space-between; align-items: center; }
-.panel-header h3 { margin: 0; font-size: 17px; font-weight: 800; color: #1B5E20; }
-.panel-body { padding: 20px; flex: 1; }
-.panel-body.no-padding { padding: 12px; background: #fdfdfd; }
-.chart-container { height: 260px; width: 100%; }
-
-/* ====== ANIMAL LIST ====== */
-.animal-list { display: flex; flex-direction: column; }
-.animal-row { 
-  display: flex; 
-  align-items: center; 
-  padding: 14px 16px; 
-  background: #FFFFFF;
-  border: 1px solid rgba(46, 125, 50, 0.06);
+.stat-card {
+  background: white;
   border-radius: 16px;
-  margin-bottom: 10px;
-  text-decoration: none; 
-  color: inherit; 
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.01);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
-}
-.animal-row:hover, .animal-row:active { 
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(46, 125, 50, 0.08);
-  border-color: #2E7D32;
-}
-.animal-row:last-child { margin-bottom: 0; }
-.animal-avatar { width: 40px; height: 40px; border-radius: 12px; background: #eaf0e6; color: #2E7D32; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; margin-right: 14px; }
-.animal-info { flex: 1; }
-.animal-name { margin: 0 0 2px; font-size: 15px; font-weight: 700; color: #1B5E20; }
-.animal-tag { font-size: 12px; color: #5c6e58; font-weight: 500; }
-.animal-weight { display: flex; align-items: center; gap: 8px; }
-.weight-val { font-weight: 800; color: #1B5E20; font-size: 14px; background: #eaf0e6; padding: 4px 8px; border-radius: 8px; }
-.go-icon { color: #c0c5b1; font-size: 18px; }
-
-/* LOADING & ERROR */
-.loading-state, .error-state { padding: 40px; text-align: center; color: #5c6e58; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.error-state ion-icon { font-size: 48px; color: #b71c1c; }
-
-/* ====== RESPONSIVE ====== */
-.mobile-only { display: none; }
-.ai-fab { 
-  --background: linear-gradient(135deg, #2E7D32, #1B5E20); 
-  --box-shadow: 0 8px 24px rgba(46, 125, 50, 0.4); 
-  animation: pulse-fab 2.5s infinite;
+  border: 1px solid rgba(46, 125, 50, 0.05);
 }
 
-@keyframes pulse-fab {
-  0% {
-    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7), 0 8px 24px rgba(46, 125, 50, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 12px rgba(46, 125, 50, 0), 0 8px 24px rgba(46, 125, 50, 0.4);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0), 0 8px 24px rgba(46, 125, 50, 0.4);
-  }
+.stat-icon-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
 }
 
-@media (max-width: 992px) {
-  .content-grid { grid-template-columns: 1fr; }
+.stat-card.green .stat-icon-circle { background: #eaf8eb; color: #2e7d32; }
+.stat-card.orange .stat-icon-circle { background: #fff3e0; color: #e65100; }
+.stat-card.blue .stat-icon-circle { background: #e3f2fd; color: #1565c0; }
+
+.stat-data {
+  display: flex;
+  flex-direction: column;
 }
 
-@media (max-width: 768px) {
-  .desktop-only { display: none; }
-  .mobile-only { display: block; }
-  .main-content { padding: 16px 16px 80px; }
-  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
-  .ai-primary-btn { display: none; }
-  .user-info { display: none; }
-  .page-title { font-size: 24px; }
-  .stats-grid { gap: 12px; margin-bottom: 20px; }
-  .content-grid { gap: 16px; }
+.stat-data .val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #2c3e2d;
 }
 
+.stat-data .val small {
+  font-size: 10px;
+  font-weight: 600;
+  color: #5c6e58;
+}
 
-.offline-badge {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeeba;
+.stat-data .lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #8fa086;
+  margin-top: 1px;
+}
+
+/* PANELS AND LISTS */
+.panel-card {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid rgba(46, 125, 50, 0.05);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f2f4ee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1B5E20;
+}
+
+.panel-body {
+  padding: 16px;
+}
+
+.panel-body.no-padding {
+  padding: 0;
+}
+
+/* ESTIMACIONES PENDIENTES COLA */
+.pending-panel {
+  border-color: #ffe0b2;
+  background: #fdfbf7;
+}
+
+.pending-header {
+  border-bottom-color: #ffe0b2;
+}
+
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pending-header-icon {
+  font-size: 18px;
+  color: #e65100;
+}
+
+.clear-btn {
+  background: transparent;
+  border: none;
+  color: #2e7d32;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.pending-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f6f3eb;
+  gap: 12px;
+}
+
+.pending-row:last-child {
+  border-bottom: none;
+}
+
+.pending-thumb-wrapper {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.pending-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e2e7da;
+}
+
+.status-badge {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: white;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-badge.pendiente_local { background-color: #795548; }
+.status-badge.sincronizando { background-color: #ff9800; }
+.status-badge.procesando { background-color: #2196f3; }
+.status-badge.completado { background-color: #4caf50; }
+.status-badge.error { background-color: #f44336; }
+
+.pending-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.pending-info h4 {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #2c3e2d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pending-meta {
+  margin: 0;
+  font-size: 10px;
+  color: #8fa086;
+}
+
+.progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.progress-outer {
+  flex-grow: 1;
+  height: 4px;
+  background: #e2e7da;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-inner {
+  height: 100%;
+  background: #2e7d32;
+  transition: width 0.3s ease;
+}
+
+.progress-val {
+  font-size: 8px;
+  font-weight: 700;
+  color: #5c6e58;
+}
+
+.status-msg {
+  font-size: 9px;
+  display: block;
+  margin-top: 4px;
+}
+
+.status-msg.error-msg { color: #d32f2f; font-weight: 600; }
+.status-msg.success-msg { color: #2e7d32; }
+
+.pending-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.action-icon-btn {
+  background: #f0f3eb;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #5c6e58;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.action-icon-btn:active {
+  background: #e2e7da;
+}
+
+.action-icon-btn.retry { color: #e65100; background: #fff3e0; }
+.action-icon-btn.delete { color: #c62828; background: #ffebee; }
+
+/* REBAÑO LIST MOBILE */
+.link-btn-custom {
+  background: transparent;
+  border: none;
+  color: #2E7D32;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.animal-list-mobile {
+  display: flex;
+  flex-direction: column;
+}
+
+.animal-row-mobile {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f2f4ee;
+  text-decoration: none;
+  color: inherit;
+}
+
+.animal-row-mobile:last-child {
+  border-bottom: none;
+}
+
+.animal-row-mobile:active {
+  background-color: #f7f9f4;
+}
+
+.animal-avatar-mobile {
+  width: 36px;
+  height: 36px;
+  background: #eaf0e6;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.avatar-emoji {
+  font-size: 16px;
+}
+
+.animal-info-mobile {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.animal-info-mobile h4 {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #2c3e2d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.animal-info-mobile span {
+  font-size: 10px;
+  color: #7c8e76;
+}
+
+.animal-weight-mobile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weight-tag {
+  font-size: 11px;
+  font-weight: 800;
+  color: #1B5E20;
+  background: #eaf0e6;
   padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.row-arrow {
+  color: #c0c5b1;
+  font-size: 14px;
+}
+
+/* CHART PANEL */
+.chart-panel-mobile {
+  margin-bottom: 16px;
+}
+
+.chart-wrapper {
+  height: 200px;
+  position: relative;
+}
+
+/* LOADING & ERROR STATES */
+.loading-state-mobile, .error-state-mobile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 16px;
+  color: #7c8e76;
+  gap: 12px;
+  text-align: center;
+}
+
+.loading-state-mobile p, .error-state-mobile p {
+  margin: 0;
+  font-size: 11px;
+}
+
+.error-state-mobile ion-icon {
+  font-size: 32px;
+  color: #c62828;
+}
+
+.retry-btn-custom {
+  background: #2E7D32;
+  color: white;
+  border: none;
+  padding: 6px 16px;
   border-radius: 8px;
   font-size: 11px;
   font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  margin-left: 8px;
-  animation: pulse-offline 2s infinite alternate;
+  cursor: pointer;
 }
 
-@keyframes pulse-offline {
-  0% { opacity: 0.8; }
-  100% { opacity: 1; }
+.retry-btn-custom:active {
+  background: #1b5e20;
+}
+
+/* ANIMATIONS */
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

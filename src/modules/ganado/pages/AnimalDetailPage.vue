@@ -196,6 +196,7 @@ import {
 import WeightChart from '@/components/WeightChart.vue';
 import { animalRepository, type Animal } from '@/services';
 import { useWeightStatus } from '@/composables/useWeightStatus';
+import { useAutoRefresh } from '@/composables/useAutoRefresh';
 
 // ── Ruta ──
 const route = useRoute();
@@ -221,6 +222,21 @@ async function loadAnimal() {
     loading.value = false;
   }
 }
+
+async function silentLoadAnimal() {
+  try {
+    const id = Number(route.params.id) || 1;
+    const data = await animalRepository.getAnimalById(id);
+    if (data) {
+      animal.value = data;
+    }
+  } catch (err) {
+    console.error('[AnimalDetailPage] Error al actualizar animal en background:', err);
+  }
+}
+
+// Configurar refresco automático cada 15 segundos en segundo plano (silencioso)
+useAutoRefresh(silentLoadAnimal, 15000);
 
 onMounted(loadAnimal);
 

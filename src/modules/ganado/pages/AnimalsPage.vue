@@ -178,6 +178,7 @@ import {
 } from 'ionicons/icons';
 import BottomNav from '@/components/BottomNav.vue';
 import { animalRepository, type Animal } from '@/services';
+import { useAutoRefresh } from '@/composables/useAutoRefresh';
 
 const animals = ref<Animal[]>([]);
 const loading = ref(true);
@@ -195,6 +196,17 @@ async function loadAnimals() {
     loading.value = false;
   }
 }
+
+async function silentLoadAnimals() {
+  try {
+    animals.value = await animalRepository.getAllAnimals();
+  } catch (e) {
+    console.error('[AnimalsPage] Error al actualizar animales silenciosamente:', e);
+  }
+}
+
+// Configurar refresco automático cada 15 segundos en segundo plano (silencioso)
+useAutoRefresh(silentLoadAnimals, 15000);
 
 // Obtener lista única de Fincas para el selector
 const uniqueFincaNames = computed(() => {

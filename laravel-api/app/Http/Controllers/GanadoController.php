@@ -797,22 +797,27 @@ class GanadoController extends Controller
             ->whereHas('rol', function ($q) {
                 $q->where('nombre', 'veterinario');
             })
-            ->with(['fincasAsignadas.finca'])
+            ->with(['fincasAsignadas'])
             ->orderBy('nombre_completo')
             ->get()
             ->map(function ($v) {
-                $fincasCount = $v->fincasAsignadas->where('activo', true)->count();
+                // Count only active assigned fincas
+                $fincasCount = $v->fincasAsignadas->filter(function ($fa) {
+                    return (bool)($fa->pivot->activo ?? false);
+                })->count();
+                
                 $animalesCount = 0;
                 $fincasDetails = [];
 
                 foreach ($v->fincasAsignadas as $fa) {
-                    if ($fa->activo && $fa->finca) {
-                        $authAnimals = $fa->animales_autorizados ?? [];
+                    $pivotActivo = (bool)($fa->pivot->activo ?? false);
+                    if ($pivotActivo) {
+                        $authAnimals = $fa->pivot->animales_autorizados ?? [];
                         $animalesCount += count($authAnimals);
                         $fincasDetails[] = [
-                            'id' => $fa->finca->id,
-                            'nombre' => $fa->finca->nombre,
-                            'activo' => (bool)$fa->activo,
+                            'id' => $fa->id,
+                            'nombre' => $fa->nombre,
+                            'activo' => $pivotActivo,
                             'animales_autorizados' => $authAnimals
                         ];
                     }

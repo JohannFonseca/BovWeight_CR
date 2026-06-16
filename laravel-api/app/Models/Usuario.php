@@ -60,6 +60,7 @@ class Usuario extends Authenticatable
     {
         return $this->belongsToMany(Finca::class, 'finca_veterinario', 'veterinario_id', 'finca_id')
                     ->using(FincaVeterinario::class)
+                    ->withPivot('activo', 'animales_autorizados')
                     ->withTimestamps();
     }
 

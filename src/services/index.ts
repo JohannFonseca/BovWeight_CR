@@ -23,6 +23,10 @@ export const authRepository: IAuthRepository = new LaravelAuthRepository();
 // Exponer el servicio adminApi para llamadas administrativas de Laravel
 export { adminApi } from './adminApi';
 
+// Exponer el servicio de sincronización offline
+export { offlineSyncService } from './offlineSyncService';
+export type { OfflineEstimation } from './offlineSyncService';
+
 // Alias de compatibilidad para el servicio de datos
 export const dataService = animalRepository;
 

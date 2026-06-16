@@ -388,7 +388,7 @@ import {
   scaleOutline, cameraOutline, alertCircleOutline, checkmarkCircleOutline,
   refreshOutline, sparklesOutline, trashOutline, addOutline, imageOutline
 } from 'ionicons/icons';
-import { animalRepository, type Animal } from '@/services';
+import { animalRepository, offlineSyncService, type Animal } from '@/services';
 
 const route = useRoute();
 const router = useRouter();
@@ -527,6 +527,49 @@ async function performEstimation() {
   loadingEstimation.value = true;
   error.value = null;
   estimatedWeight.value = null;
+
+  // Interceptar flujo si no hay conexión a Internet
+  if (!navigator.onLine) {
+    if (estimationMethod.value === 'photo') {
+      if (selectedFiles.value.length === 0) {
+        error.value = 'Por favor, selecciona o toma al menos una foto del animal.';
+        loadingEstimation.value = false;
+        return;
+      }
+      
+      try {
+        const animal = selectedAnimal.value;
+        const animalNombre = animal ? animal.nombre : 'Sin nombre';
+        const animalArete = animal ? (animal.arete || 'N/A') : 'N/A';
+        
+        // Agregar a la cola de sincronización local
+        await offlineSyncService.addEstimationToQueue(
+          selectedAnimalId.value!,
+          animalNombre,
+          animalArete,
+          selectedFiles.value[0]
+        );
+        
+        triggerToast('No tienes conexión. La estimación se realizará automáticamente cuando vuelva el internet.', 'warning');
+        resetEstimation();
+        
+        setTimeout(() => {
+          router.push('/home');
+        }, 1500);
+      } catch (err: any) {
+        error.value = 'Error al registrar la estimación localmente: ' + err.message;
+        triggerToast('Error al guardar estimación offline.', 'danger');
+      } finally {
+        loadingEstimation.value = false;
+      }
+      return;
+    } else {
+      error.value = 'La estimación manual requiere conexión a Internet.';
+      triggerToast('Sin conexión a Internet.', 'danger');
+      loadingEstimation.value = false;
+      return;
+    }
+  }
 
   try {
     let res: any;

@@ -1,5 +1,5 @@
 <template>
-  <div class="bottom-nav-container mobile-only">
+  <div class="bottom-nav-container">
     <div class="bottom-nav-bar">
       <!-- Pestaña Análisis -->
       <button 
@@ -231,13 +231,7 @@ const navigateTo = (path: string) => {
 }
 
 /* En pantallas grandes no se muestra el menú inferior */
-.mobile-only {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .mobile-only {
-    display: block;
-  }
+.bottom-nav-container {
+  display: block;
 }
 </style>

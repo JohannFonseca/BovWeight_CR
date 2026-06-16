@@ -341,6 +341,7 @@ import {
 } from 'ionicons/icons';
 import BottomNav from '@/components/BottomNav.vue';
 import { animalRepository } from '@/services';
+import { useAutoRefresh } from '@/composables/useAutoRefresh';
 
 // Datos de la sesión actual
 const usuarioSesion = ref<any>(null);
@@ -421,6 +422,26 @@ async function loadFincasAndAnimals() {
     console.error('Error al cargar fincas o animales:', e);
   }
 }
+
+async function silentLoad() {
+  try {
+    const data = await animalRepository.getVeterinariosGanadero();
+    veterinarios.value = data;
+    
+    // Si el modal de detalle del veterinario está abierto, refrescar también sus datos reactivos
+    if (showDetailModal.value && selectedVet.value) {
+      const updatedVet = data.find((v: any) => v.id === selectedVet.value.id);
+      if (updatedVet) {
+        selectedVet.value = { ...updatedVet };
+      }
+    }
+  } catch (e) {
+    console.error('[PersonalPage] Error al actualizar silenciosamente en background:', e);
+  }
+}
+
+// Configurar refresco automático cada 15 segundos en segundo plano (silencioso)
+useAutoRefresh(silentLoad, 15000);
 
 // Inicialización
 onMounted(() => {
