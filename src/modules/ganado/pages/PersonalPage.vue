@@ -581,6 +581,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
   IonSpinner, IonIcon, IonToast
@@ -736,11 +737,42 @@ async function silentLoad() {
 // Configurar refresco automático cada 10 segundos en segundo plano (para citas y alertas)
 useAutoRefresh(silentLoad, 10000);
 
+const route = useRoute();
+
+const checkRouteQueryParams = () => {
+  const action = route.query.action;
+  if (action === 'solicitar_cita') {
+    const vetId = Number(route.query.vetId);
+    const fincaId = String(route.query.fincaId);
+    const animalId = route.query.animalId ? Number(route.query.animalId) : null;
+    const motivo = route.query.motivo ? String(route.query.motivo) : '';
+
+    // Buscar el veterinario en la lista cargada
+    const vet = veterinarios.value.find(v => v.id === vetId);
+    if (vet) {
+      selectedVet.value = vet;
+      // Pre-llenar el formulario de cita
+      appointmentForm.value = {
+        vaterinario_id: vet.id,
+        finca_id: fincaId,
+        animal_id: animalId,
+        fecha: '',
+        hora: '',
+        motivo: motivo
+      };
+      showAppointmentModal.value = true;
+    }
+  }
+};
+
 // Inicialización
-onMounted(() => {
-  loadVeterinarios();
-  loadFincasAndAnimals();
-  loadCitas();
+onMounted(async () => {
+  await Promise.all([
+    loadVeterinarios(),
+    loadFincasAndAnimals(),
+    loadCitas()
+  ]);
+  checkRouteQueryParams();
 });
 
 // Filtrar veterinarios según búsqueda

@@ -98,6 +98,54 @@
             </div>
           </div>
 
+          <!-- Resumen de Reportes Médicos -->
+          <h2 class="section-title-dashboard" style="margin-top: 16px; margin-bottom: 16px; font-size: 18px; font-weight: 800; color: #2c3e2d;">Resumen de Reportes Clínicos</h2>
+          <div class="stats-grid reports-stats-grid">
+            <div class="stat-card report-card-stat">
+              <div class="stat-icon-wrapper reports-total">
+                <ion-icon :icon="documentTextOutline"></ion-icon>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value" v-if="!isLoading">{{ reportesCreados }}</span>
+                <span class="stat-value" v-else>...</span>
+                <span class="stat-label">Reportes Creados</span>
+              </div>
+            </div>
+
+            <div class="stat-card report-card-stat">
+              <div class="stat-icon-wrapper reports-open">
+                <ion-icon :icon="alertCircleOutline"></ion-icon>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value" v-if="!isLoading">{{ reportesAbiertos }}</span>
+                <span class="stat-value" v-else>...</span>
+                <span class="stat-label">Casos Abiertos</span>
+              </div>
+            </div>
+
+            <div class="stat-card report-card-stat">
+              <div class="stat-icon-wrapper reports-progress">
+                <ion-icon :icon="timeOutline"></ion-icon>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value" v-if="!isLoading">{{ reportesEnSeguimiento }}</span>
+                <span class="stat-value" v-else>...</span>
+                <span class="stat-label">En Seguimiento</span>
+              </div>
+            </div>
+
+            <div class="stat-card report-card-stat">
+              <div class="stat-icon-wrapper reports-resolved">
+                <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
+              </div>
+              <div class="stat-details">
+                <span class="stat-value" v-if="!isLoading">{{ reportesResueltos }}</span>
+                <span class="stat-value" v-else>...</span>
+                <span class="stat-label">Casos Resueltos</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Content Grid -->
           <div class="content-grid">
             <!-- Animals List -->
@@ -160,7 +208,7 @@ import {
 import { 
   logOutOutline, medkitOutline, pawOutline, calendarOutline, 
   documentTextOutline, addOutline, businessOutline, alertCircleOutline,
-  alertOutline, checkmarkOutline
+  alertOutline, checkmarkOutline, checkmarkCircleOutline, timeOutline
 } from 'ionicons/icons';
 
 // Chart.js imports
@@ -201,6 +249,10 @@ const error = ref<string | null>(null);
 const totalFincas = ref(0);
 const totalAnimales = ref(0);
 const seguimientoPrioritario = ref<any[]>([]);
+const reportesCreados = ref(0);
+const reportesAbiertos = ref(0);
+const reportesEnSeguimiento = ref(0);
+const reportesResueltos = ref(0);
 
 const fetchDashboardData = async () => {
   isLoading.value = true;
@@ -237,6 +289,10 @@ const fetchDashboardData = async () => {
       totalFincas.value = data.total_fincas || 0;
       totalAnimales.value = data.total_animales || 0;
       seguimientoPrioritario.value = data.seguimiento_prioritario || [];
+      reportesCreados.value = data.reportes_creados || 0;
+      reportesAbiertos.value = data.reportes_abiertos || 0;
+      reportesEnSeguimiento.value = data.reportes_en_seguimiento || 0;
+      reportesResueltos.value = data.reportes_resueltos || 0;
     }
   } catch (err: any) {
     console.error('Error:', err);
@@ -476,6 +532,17 @@ const chartOptions = ref({
 .stat-icon-wrapper.teal { background: #fdfbf7; color: #8ba888; }
 .stat-icon-wrapper.orange { background: #fff7ed; color: #d97706; }
 .stat-icon-wrapper.blue { background: #f0f4f8; color: #475569; }
+
+/* Color wrappers for reports */
+.stat-icon-wrapper.reports-total { background: #f4f6f0; color: #5c6e58; }
+.stat-icon-wrapper.reports-open { background: #ffebee; color: #c62828; }
+.stat-icon-wrapper.reports-progress { background: #fffde7; color: #f57f17; }
+.stat-icon-wrapper.reports-resolved { background: #e8f5e9; color: #2e7d32; }
+
+.reports-stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 10px;
+}
 
 .stat-details { display: flex; flex-direction: column; }
 .stat-value { font-size: 26px; font-weight: 800; color: #2c3e2d; }

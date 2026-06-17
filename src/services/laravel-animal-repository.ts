@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import type { Animal, WeightRecord, IAnimalRepository, Cita } from './interfaces';
+import type { Animal, WeightRecord, IAnimalRepository, Cita, ReporteVeterinario } from './interfaces';
 
 export class LaravelAnimalRepository implements IAnimalRepository {
   private getHeaders() {
@@ -449,6 +449,47 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     } catch (err: any) {
       console.error('Error en actualizarCita con Laravel:', err.message);
       throw new Error(err.response?.data?.message || 'Error al actualizar la cita');
+    }
+  }
+
+  async getReportesVeterinarios(animalId?: number): Promise<ReporteVeterinario[]> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const params = animalId ? { animal_id: animalId } : {};
+      const response = await axios.get(`${apiUrl}/reportes-veterinarios`, {
+        headers: this.getHeaders(),
+        params,
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getReportesVeterinarios con Laravel:', err.message);
+      throw new Error('Error al obtener los reportes veterinarios');
+    }
+  }
+
+  async crearReporteVeterinario(reporte: { animal_id: number; observaciones: string; diagnostico_preliminar: string; recomendaciones: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad: string; estado: string }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/reportes-veterinarios`, reporte, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en crearReporteVeterinario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al registrar el reporte veterinario');
+    }
+  }
+
+  async actualizarReporteVeterinario(id: number, payload: { observaciones?: string; diagnostico_preliminar?: string; recomendaciones?: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad?: string; estado?: string }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.put(`${apiUrl}/reportes-veterinarios/${id}`, payload, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en actualizarReporteVeterinario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al actualizar el reporte veterinario');
     }
   }
 }

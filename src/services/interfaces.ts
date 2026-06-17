@@ -131,6 +131,15 @@ export interface IAnimalRepository {
 
   /** Actualiza el estado o reprograma una cita. */
   actualizarCita(id: number, payload: { fecha?: string; hora?: string; estado?: string; comentario_rechazo?: string | null }): Promise<any>;
+
+  /** Obtiene la lista de reportes veterinarios. */
+  getReportesVeterinarios(animalId?: number): Promise<ReporteVeterinario[]>;
+
+  /** Crea un nuevo reporte veterinario. */
+  crearReporteVeterinario(reporte: { animal_id: number; observaciones: string; diagnostico_preliminar: string; recomendaciones: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad: string; estado: string }): Promise<any>;
+
+  /** Actualiza un reporte veterinario. */
+  actualizarReporteVeterinario(id: number, payload: { observaciones?: string; diagnostico_preliminar?: string; recomendaciones?: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad?: string; estado?: string }): Promise<any>;
 }
 
 /**
@@ -155,7 +164,29 @@ export interface Cita {
   animal?: { id: number; nombre: string; numero_arete: string };
 }
 
-
+/**
+ * Reporte clínico veterinario.
+ */
+export interface ReporteVeterinario {
+  id: number;
+  veterinario_id: number;
+  ganadero_id: number;
+  finca_id: number;
+  animal_id: number;
+  observaciones: string;
+  diagnostico_preliminar: string;
+  recomendaciones: string;
+  medicamentos_sugeridos?: string | null;
+  proxima_revision?: string | null;
+  prioridad: 'baja' | 'media' | 'alta' | 'urgente';
+  estado: 'abierto' | 'en_seguimiento' | 'resuelto';
+  created_at?: string;
+  updated_at?: string;
+  veterinario?: { id: number; nombre_completo: string; correo: string };
+  ganadero?: { id: number; nombre_completo: string; correo: string };
+  finca?: { id: number; nombre: string; ubicacion: string };
+  animal?: { id: number; nombre: string; numero_arete: string };
+}
 
 /**
  * Interfaz para la autenticación y control de accesos.

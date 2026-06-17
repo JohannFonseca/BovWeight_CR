@@ -57,6 +57,12 @@ Route::get('/citas', [\App\Http\Controllers\CitaController::class, 'index']);
 Route::post('/citas', [\App\Http\Controllers\CitaController::class, 'store']);
 Route::put('/citas/{id}', [\App\Http\Controllers\CitaController::class, 'update']);
 
+// Reportes Veterinarios Routes
+Route::get('/reportes-veterinarios', [\App\Http\Controllers\ReporteVeterinarioController::class, 'index']);
+Route::post('/reportes-veterinarios', [\App\Http\Controllers\ReporteVeterinarioController::class, 'store']);
+Route::put('/reportes-veterinarios/{id}', [\App\Http\Controllers\ReporteVeterinarioController::class, 'update']);
+
+
 
 
 

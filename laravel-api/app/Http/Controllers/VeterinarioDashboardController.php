@@ -54,12 +54,23 @@ class VeterinarioDashboardController extends Controller
             ];
         });
 
+        // Contadores de reportes veterinarios
+        $reportesQuery = \App\Models\ReporteVeterinario::where('veterinario_id', $userId);
+        $reportesCreados = (clone $reportesQuery)->count();
+        $reportesAbiertos = (clone $reportesQuery)->where('estado', 'abierto')->count();
+        $reportesEnSeguimiento = (clone $reportesQuery)->where('estado', 'en_seguimiento')->count();
+        $reportesResueltos = (clone $reportesQuery)->where('estado', 'resuelto')->count();
+
         return response()->json([
             'success' => true,
             'data' => [
                 'total_fincas' => $totalFincas,
                 'total_animales' => $totalAnimales,
                 'seguimiento_prioritario' => $seguimientoFormateado,
+                'reportes_creados' => $reportesCreados,
+                'reportes_abiertos' => $reportesAbiertos,
+                'reportes_en_seguimiento' => $reportesEnSeguimiento,
+                'reportes_resueltos' => $reportesResueltos,
             ]
         ]);
     }

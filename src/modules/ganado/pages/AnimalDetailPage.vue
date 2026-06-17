@@ -108,6 +108,47 @@
           <WeightChart :weight-data="animal.historialPeso" />
         </div>
 
+        <!-- Tarjeta de Reportes Veterinarios -->
+        <div class="chart-card">
+          <h2 class="section-title text-green-title">
+            <ion-icon :icon="medkitOutline"></ion-icon>
+            Reportes Veterinarios
+          </h2>
+          
+          <div v-if="loadingReportes" class="loading-reportes">
+            <ion-spinner name="crescent"></ion-spinner>
+            <span>Cargando reportes clínicos...</span>
+          </div>
+
+          <div v-else-if="reportesVeterinarios.length === 0" class="no-reportes">
+            <ion-icon :icon="documentTextOutline" class="no-rep-icon"></ion-icon>
+            <p>No hay reportes de seguimiento registrados para este animal.</p>
+          </div>
+
+          <div v-else class="reportes-list">
+            <div 
+              v-for="rep in reportesVeterinarios" 
+              :key="rep.id" 
+              class="reporte-item-card"
+              :class="rep.prioridad"
+              @click="openReporteDetail(rep)"
+            >
+              <div class="rep-header">
+                <span class="priority-badge" :class="rep.prioridad">{{ rep.prioridad.toUpperCase() }}</span>
+                <span class="rep-date">{{ formatDateShort(rep.created_at) }}</span>
+              </div>
+              <div class="rep-body">
+                <h5>🩺 {{ rep.veterinario?.nombre_completo || 'Veterinario' }}</h5>
+                <p class="diag-text"><strong>Diag:</strong> {{ rep.diagnostico_preliminar }}</p>
+              </div>
+              <div class="rep-footer">
+                <span class="status-indicator-badge" :class="rep.estado">{{ formatEstadoText(rep.estado) }}</span>
+                <span class="read-more">Ver reporte completo &rarr;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Botones de acción -->
         <div class="action-buttons">
           <ion-button expand="block" class="action-btn primary-action" size="large" :router-link="`/ganado/estimacion-ia?animalId=${animal.id}`">
@@ -161,12 +202,80 @@
         </div>
       </ion-content>
     </ion-modal>
+
+    <!-- MODAL DE DETALLE DE REPORTE VETERINARIO -->
+    <ion-modal :is-open="showReporteModal" @didDismiss="showReporteModal = false">
+      <ion-header>
+        <ion-toolbar class="modal-toolbar font-vet">
+          <ion-title>🩺 Reporte Clínico</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showReporteModal = false" class="close-modal-btn">Cerrar</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding modal-history-content">
+        <div v-if="selectedReporte" class="reporte-detail-container">
+          <div class="reporte-meta-header" :class="selectedReporte.prioridad">
+            <div class="prio-row">
+              <span class="priority-badge" :class="selectedReporte.prioridad">PRIORIDAD {{ selectedReporte.prioridad.toUpperCase() }}</span>
+              <span class="status-indicator-badge" :class="selectedReporte.estado">{{ formatEstadoText(selectedReporte.estado).toUpperCase() }}</span>
+            </div>
+            <h3>{{ selectedReporte.animal?.nombre }}</h3>
+            <p class="meta-date">Fecha del reporte: {{ formatDateLong(selectedReporte.created_at) }}</p>
+          </div>
+
+          <div class="reporte-detail-body">
+            <div class="detail-block">
+              <label>Veterinario Responsable</label>
+              <p class="value">Dr/a. {{ selectedReporte.veterinario?.nombre_completo }} ({{ selectedReporte.veterinario?.correo }})</p>
+            </div>
+
+            <div class="detail-block">
+              <label>Observaciones Clínicas</label>
+              <p class="value text-italic">"{{ selectedReporte.observaciones }}"</p>
+            </div>
+
+            <div class="detail-block">
+              <label>Diagnóstico Preliminar</label>
+              <p class="value highlight-text">{{ selectedReporte.diagnostico_preliminar }}</p>
+            </div>
+
+            <div class="detail-block">
+              <label>Recomendaciones del Profesional</label>
+              <p class="value">{{ selectedReporte.recomendaciones }}</p>
+            </div>
+
+            <div class="detail-block" v-if="selectedReporte.medicamentos_sugeridos">
+              <label>Sugerencia de Medicamentos / Suplementación</label>
+              <p class="value med-value">{{ selectedReporte.medicamentos_sugeridos }}</p>
+            </div>
+
+            <div class="detail-block" v-if="selectedReporte.proxima_revision">
+              <label>Próxima Revisión Sugerida</label>
+              <p class="value font-bold">📅 {{ formatDateLong(selectedReporte.proxima_revision) }}</p>
+            </div>
+
+            <!-- Integración con Citas -->
+            <div 
+              v-if="selectedReporte.prioridad === 'alta' || selectedReporte.prioridad === 'urgente'" 
+              class="appointment-integration-box"
+            >
+              <p>⚠️ Este reporte tiene prioridad crítica. Se aconseja programar una revisión clínica formal.</p>
+              <button class="request-visit-btn" @click="solicitarVisitaDesdeReporte(selectedReporte)">
+                <ion-icon :icon="calendarOutline"></ion-icon>
+                Solicitar Visita Veterinaria
+              </button>
+            </div>
+          </div>
+        </div>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
   IonPage,
   IonHeader,
@@ -178,6 +287,7 @@ import {
   IonBackButton,
   IonIcon,
   IonModal,
+  IonSpinner
 } from '@ionic/vue';
 import {
   cloudOfflineOutline,
@@ -191,6 +301,7 @@ import {
   trendingUpOutline,
   addCircleOutline,
   documentTextOutline,
+  medkitOutline
 } from 'ionicons/icons';
 
 import WeightChart from '@/components/WeightChart.vue';
@@ -200,12 +311,31 @@ import { useAutoRefresh } from '@/composables/useAutoRefresh';
 
 // ── Ruta ──
 const route = useRoute();
+const router = useRouter();
 
 // ── Estado ──
 const animal = ref<Animal | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const showHistoryModal = ref(false);
+
+// ── Reportes Veterinarios ──
+const reportesVeterinarios = ref<any[]>([]);
+const loadingReportes = ref(true);
+const showReporteModal = ref(false);
+const selectedReporte = ref<any>(null);
+
+async function loadReportes() {
+  loadingReportes.value = true;
+  try {
+    const id = Number(route.params.id) || 1;
+    reportesVeterinarios.value = await animalRepository.getReportesVeterinarios(id);
+  } catch (err) {
+    console.error('Error al cargar reportes veterinarios:', err);
+  } finally {
+    loadingReportes.value = false;
+  }
+}
 
 // ── Cargar datos ──
 async function loadAnimal() {
@@ -215,6 +345,7 @@ async function loadAnimal() {
   try {
     const id = Number(route.params.id) || 1;
     animal.value = await animalRepository.getAnimalById(id);
+    await loadReportes();
   } catch (err: any) {
     error.value = err.message || 'Error al cargar los datos del animal';
     animal.value = null;
@@ -230,6 +361,9 @@ async function silentLoadAnimal() {
     if (data) {
       animal.value = data;
     }
+    // Cargar reportes silenciosamente en background
+    const dataReps = await animalRepository.getReportesVeterinarios(id);
+    reportesVeterinarios.value = dataReps;
   } catch (err) {
     console.error('[AnimalDetailPage] Error al actualizar animal en background:', err);
   }
@@ -247,6 +381,46 @@ const diffClass = computed(() => ({
   loss: weightDiff.value < 0,
   stable: weightDiff.value === 0,
 }));
+
+const openReporteDetail = (reporte: any) => {
+  selectedReporte.value = reporte;
+  showReporteModal.value = true;
+};
+
+const solicitarVisitaDesdeReporte = (reporte: any) => {
+  showReporteModal.value = false;
+  router.push({
+    path: '/ganado/personal',
+    query: {
+      action: 'solicitar_cita',
+      vetId: String(reporte.veterinario_id),
+      fincaId: String(reporte.finca_id),
+      animalId: String(reporte.animal_id),
+      motivo: `Revisión por reporte: ${reporte.diagnostico_preliminar}`
+    }
+  });
+};
+
+const formatEstadoText = (estado: string): string => {
+  const map: Record<string, string> = {
+    abierto: 'Abierto',
+    en_seguimiento: 'En Seguimiento',
+    resuelto: 'Resuelto'
+  };
+  return map[estado] || estado;
+};
+
+const formatDateShort = (dateString?: string) => {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  return d.toLocaleDateString();
+};
+
+const formatDateLong = (dateString?: string) => {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 </script>
 
 <style scoped>
@@ -678,5 +852,243 @@ const diffClass = computed(() => ({
   color: #7c8e78;
   padding: 24px !important;
   font-style: italic;
+}
+
+/* ── Reportes Veterinarios ── */
+.text-green-title {
+  color: #1B5E20 !important;
+}
+
+.loading-reportes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: #5c6e58;
+}
+
+.no-reportes {
+  text-align: center;
+  padding: 24px 16px;
+  color: #7c8e78;
+}
+
+.no-rep-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+  color: #cbd4c3;
+}
+
+.reportes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.reporte-item-card {
+  background: #fdfdfd;
+  border: 1px solid #cbd4c3;
+  border-radius: 16px;
+  padding: 14px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reporte-item-card:active {
+  transform: scale(0.98);
+}
+
+.reporte-item-card.baja { border-left: 4px solid #455a64; }
+.reporte-item-card.media { border-left: 4px solid #00897b; }
+.reporte-item-card.alta { border-left: 4px solid #d97706; }
+.reporte-item-card.urgente { border-left: 4px solid #c62828; }
+
+.rep-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.priority-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.priority-badge.baja { background: #eceff1; color: #455a64; }
+.priority-badge.media { background: #e0f2f1; color: #00897b; }
+.priority-badge.alta { background: #fff7ed; color: #d97706; }
+.priority-badge.urgente { background: #ffebee; color: #c62828; }
+
+.status-indicator-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 8px;
+  text-transform: uppercase;
+}
+
+.status-indicator-badge.abierto { background: #e3f2fd; color: #1565c0; }
+.status-indicator-badge.en_seguimiento { background: #fffde7; color: #f57f17; }
+.status-indicator-badge.resuelto { background: #e8f5e9; color: #2e7d32; }
+
+.rep-date {
+  font-size: 11px;
+  color: #7c8e78;
+}
+
+.reporte-item-card h5 {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #1B5E20;
+}
+
+.diag-text {
+  font-size: 12px;
+  color: #5c6e58;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rep-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f3ed;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.read-more {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2e7d32;
+}
+
+/* ── Detalle de Reporte Modal ── */
+.font-vet {
+  --background: #00897b;
+  --color: #ffffff;
+}
+
+.reporte-detail-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.reporte-meta-header {
+  border-radius: 16px;
+  padding: 16px;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.reporte-meta-header.baja { background: linear-gradient(135deg, #455a64, #37474f); }
+.reporte-meta-header.media { background: linear-gradient(135deg, #00897b, #00695c); }
+.reporte-meta-header.alta { background: linear-gradient(135deg, #d97706, #b45309); }
+.reporte-meta-header.urgente { background: linear-gradient(135deg, #c62828, #b71c1c); }
+
+.prio-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.reporte-meta-header h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.meta-date {
+  font-size: 12px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.reporte-detail-body {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  border: 1px solid #cbd4c3;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-block label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #7c8e78;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.detail-block .value {
+  font-size: 13.5px;
+  color: #2c3e2d;
+  margin: 0;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.detail-block .value.text-italic {
+  font-style: italic;
+  color: #5c6e58;
+}
+
+.detail-block .value.highlight-text {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1B5E20;
+}
+
+.detail-block .value.med-value {
+  background: #f4f6f0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 3px solid #00897b;
+}
+
+.appointment-integration-box {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px dashed #cbd4c3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.appointment-integration-box p {
+  margin: 0;
+  font-size: 11.5px;
+  color: #d97706;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.request-visit-btn {
+  background: linear-gradient(135deg, #00897b, #00695c);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 10px rgba(0, 137, 123, 0.2);
+  cursor: pointer;
 }
 </style>
