@@ -168,17 +168,21 @@ class GanadoController extends Controller
                 ->where('activo', true)
                 ->get();
             
-            $authorizedFincaIds = $assignments->pluck('finca_id')->toArray();
-            
-            $authorizedAnimalIds = [];
-            foreach ($assignments as $asg) {
-                if ($asg->animales_autorizados) {
-                    $authorizedAnimalIds = array_merge($authorizedAnimalIds, $asg->animales_autorizados);
+            $query->where(function ($q) use ($assignments) {
+                if ($assignments->isEmpty()) {
+                    $q->where('id', -1);
+                    return;
                 }
-            }
-
-            $query->whereIn('finca_id', $authorizedFincaIds)
-                  ->whereIn('id', $authorizedAnimalIds);
+                
+                foreach ($assignments as $asg) {
+                    $q->orWhere(function ($sub) use ($asg) {
+                        $sub->where('finca_id', $asg->finca_id);
+                        if (!empty($asg->animales_autorizados)) {
+                            $sub->whereIn('id', $asg->animales_autorizados);
+                        }
+                    });
+                }
+            });
         }
 
         $animales = $query->get()->map(function ($a) {
@@ -245,13 +249,16 @@ class GanadoController extends Controller
         }
 
         if ($userRole === 'veterinario' && $userId) {
-            $hasAccess = \App\Models\FincaVeterinario::where('veterinario_id', $userId)
+            $assignment = \App\Models\FincaVeterinario::where('veterinario_id', $userId)
                 ->where('finca_id', $a->finca_id)
                 ->where('activo', true)
-                ->whereJsonContains('animales_autorizados', (int)$a->id)
-                ->exists();
+                ->first();
 
-            if (!$hasAccess) {
+            if (!$assignment) {
+                return response()->json(['message' => 'No tiene permisos para ver este animal.'], 403);
+            }
+
+            if (!empty($assignment->animales_autorizados) && !in_array((int)$a->id, $assignment->animales_autorizados)) {
                 return response()->json(['message' => 'No tiene permisos para ver este animal.'], 403);
             }
         }
@@ -314,13 +321,16 @@ class GanadoController extends Controller
         }
 
         if ($userRole === 'veterinario' && $userId) {
-            $hasAccess = \App\Models\FincaVeterinario::where('veterinario_id', $userId)
+            $assignment = \App\Models\FincaVeterinario::where('veterinario_id', $userId)
                 ->where('finca_id', $animal->finca_id)
                 ->where('activo', true)
-                ->whereJsonContains('animales_autorizados', (int)$animal->id)
-                ->exists();
+                ->first();
 
-            if (!$hasAccess) {
+            if (!$assignment) {
+                return response()->json(['message' => 'No tiene permisos para ver el historial de este animal.'], 403);
+            }
+
+            if (!empty($assignment->animales_autorizados) && !in_array((int)$animal->id, $assignment->animales_autorizados)) {
                 return response()->json(['message' => 'No tiene permisos para ver el historial de este animal.'], 403);
             }
         }
@@ -793,11 +803,12 @@ class GanadoController extends Controller
             return response()->json(['message' => 'No autorizado'], 401);
         }
 
-        $vets = Usuario::where('ganadero_id', $userId)
-            ->whereHas('rol', function ($q) {
+        $vets = Usuario::whereHas('rol', function ($q) {
                 $q->where('nombre', 'veterinario');
             })
-            ->with(['fincasAsignadas'])
+            ->with(['fincasAsignadas' => function ($q) use ($userId) {
+                $q->where('propietario_id', $userId);
+            }])
             ->orderBy('nombre_completo')
             ->get()
             ->map(function ($v) {

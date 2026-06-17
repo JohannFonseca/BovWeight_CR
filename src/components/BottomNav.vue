@@ -32,14 +32,14 @@
         <span class="camera-label">Cámara</span>
       </div>
 
-      <!-- Pestaña Personal -->
+      <!-- Pestaña Veterinarios y Citas -->
       <button 
         class="nav-tab" 
         :class="{ active: currentRoute === '/ganado/personal' }" 
         @click="navigateTo('/ganado/personal')"
       >
-        <ion-icon :icon="peopleOutline"></ion-icon>
-        <span>Personal</span>
+        <ion-icon :icon="medkitOutline"></ion-icon>
+        <span>Veterinarios</span>
       </button>
 
       <!-- Pestaña Reportes -->
@@ -73,7 +73,7 @@ import {
   barChartOutline, 
   addCircleOutline, 
   cameraOutline, 
-  peopleOutline,
+  medkitOutline,
   documentTextOutline,
   settingsOutline 
 } from 'ionicons/icons';

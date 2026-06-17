@@ -5,7 +5,7 @@
         <ion-title>
           <div class="brand">
             <span class="logo-icon">🩺</span>
-            <span class="app-logo">Personal Técnico</span>
+            <span class="app-logo">Gestión Veterinaria</span>
           </div>
         </ion-title>
       </ion-toolbar>
@@ -13,80 +13,201 @@
 
     <ion-content class="personal-content">
       <div class="page-container">
-        <!-- PAGE HEADER -->
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">Médicos Veterinarios</h1>
-            <p class="page-subtitle">Administra los accesos y permisos del personal en tus fincas</p>
-          </div>
+        <!-- TOP SEGMENT CONTROL FOR TABS -->
+        <div class="custom-segments">
           <button 
-            v-if="usuarioSesion?.rol === 'ganadero' || usuarioSesion?.rol === 'admin'" 
-            class="primary-btn" 
-            @click="openAddVetModal"
+            class="segment-btn" 
+            :class="{ active: activeTab === 'veterinarios' }"
+            @click="activeTab = 'veterinarios'"
           >
-            <ion-icon :icon="addOutline"></ion-icon>
-            NUEVO VET
+            Veterinarios
+          </button>
+          <button 
+            class="segment-btn" 
+            :class="{ active: activeTab === 'citas' }"
+            @click="activeTab = 'citas'"
+          >
+            Mis Citas
+            <span v-if="pendingCitasCount > 0" class="badge-count">{{ pendingCitasCount }}</span>
           </button>
         </div>
 
-        <!-- SEARCH BAR -->
-        <div class="search-bar-container">
-          <input 
-            type="text" 
-            v-model="searchQuery" 
-            placeholder="Buscar por nombre o correo..." 
-            class="search-input"
-          />
-        </div>
-
-        <!-- LOADING STATE -->
-        <div v-if="loading" class="loading-state">
-          <ion-spinner name="crescent"></ion-spinner>
-          <p>Cargando lista de veterinarios...</p>
-        </div>
-
-        <!-- EMPTY STATE -->
-        <div v-else-if="filteredVeterinarios.length === 0" class="empty-state animate-fade-in">
-          <span class="empty-icon">🩺</span>
-          <h3>No se encontraron veterinarios</h3>
-          <p>No hay veterinarios registrados, o no coinciden con los términos de búsqueda.</p>
-        </div>
-
-        <!-- VETERINARIOS LIST -->
-        <div v-else class="vet-list-container animate-fade-in">
-          <div 
-            v-for="v in filteredVeterinarios" 
-            :key="v.id" 
-            class="vet-mobile-card"
-            @click="openDetailModal(v)"
-          >
-            <div class="vet-card-header">
-              <div class="vet-avatar">
-                {{ v.nombre_completo ? v.nombre_completo.charAt(0).toUpperCase() : 'V' }}
-              </div>
-              <div class="vet-meta">
-                <div class="vet-name-row">
-                  <h3>{{ v.nombre_completo }}</h3>
-                  <span class="status-indicator" :class="v.activo ? 'active' : 'inactive'"></span>
-                </div>
-                <span class="vet-email">{{ v.correo }}</span>
-              </div>
-              <ion-icon :icon="eyeOutline" class="view-details-icon"></ion-icon>
+        <!-- TAB 1: VETERINARIOS -->
+        <div v-if="activeTab === 'veterinarios'" class="tab-content animate-fade-in">
+          <!-- PAGE HEADER -->
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Médicos Veterinarios</h1>
+              <p class="page-subtitle">Administra accesos de personal y agenda consultas</p>
             </div>
-            
-            <div class="vet-card-stats">
-              <div class="stat-box">
-                <span class="stat-num">{{ v.fincas_count || 0 }}</span>
-                <span class="stat-label">Fincas</span>
+            <button 
+              v-if="usuarioSesion?.rol === 'ganadero' || usuarioSesion?.rol === 'admin'" 
+              class="primary-btn" 
+              @click="openAddVetModal"
+            >
+              <ion-icon :icon="addOutline"></ion-icon>
+              NUEVO VET
+            </button>
+          </div>
+
+          <!-- SEARCH BAR -->
+          <div class="search-bar-container">
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="Buscar por nombre o correo..." 
+              class="search-input"
+            />
+          </div>
+
+          <!-- LOADING STATE -->
+          <div v-if="loading" class="loading-state">
+            <ion-spinner name="crescent"></ion-spinner>
+            <p>Cargando lista de veterinarios...</p>
+          </div>
+
+          <!-- EMPTY STATE -->
+          <div v-else-if="filteredVeterinarios.length === 0" class="empty-state animate-fade-in">
+            <span class="empty-icon">🩺</span>
+            <h3>No se encontraron veterinarios</h3>
+            <p>No hay veterinarios registrados en el sistema actualmente.</p>
+          </div>
+
+          <!-- VETERINARIOS LIST -->
+          <div v-else class="vet-list-container animate-fade-in">
+            <div 
+              v-for="v in filteredVeterinarios" 
+              :key="v.id" 
+              class="vet-mobile-card"
+              @click="openDetailModal(v)"
+            >
+              <div class="vet-card-header">
+                <div class="vet-avatar">
+                  {{ v.nombre_completo ? v.nombre_completo.charAt(0).toUpperCase() : 'V' }}
+                </div>
+                <div class="vet-meta">
+                  <div class="vet-name-row">
+                    <h3>{{ v.nombre_completo }}</h3>
+                    <span class="status-indicator" :class="v.activo ? 'active' : 'inactive'"></span>
+                  </div>
+                  <span class="vet-email">{{ v.correo }}</span>
+                </div>
+                <ion-icon :icon="eyeOutline" class="view-details-icon"></ion-icon>
               </div>
-              <div class="stat-box">
-                <span class="stat-num">{{ v.animales_count || 0 }}</span>
-                <span class="stat-label">Animales Autorizados</span>
+              
+              <div class="vet-card-stats">
+                <div class="stat-box">
+                  <span class="stat-num">{{ v.fincas_count || 0 }}</span>
+                  <span class="stat-label">Fincas compartidas</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-num">{{ v.animales_count || 0 }}</span>
+                  <span class="stat-label">Animales permitidos</span>
+                </div>
+                <div class="stat-box">
+                  <span class="status-badge-inline" :class="v.activo ? 'active' : 'inactive'">
+                    {{ v.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
               </div>
-              <div class="stat-box">
-                <span class="status-badge-inline" :class="v.activo ? 'active' : 'inactive'">
-                  {{ v.activo ? 'Activo' : 'Inactivo' }}
-                </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: CITAS -->
+        <div v-if="activeTab === 'citas'" class="tab-content animate-fade-in">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Historial de Citas</h1>
+              <p class="page-subtitle">Monitorea y responde a las solicitudes de visitas veterinarias</p>
+            </div>
+          </div>
+
+          <!-- SUB-SEGMENTS FOR APPOINTMENT STATUS -->
+          <div class="status-filter-bar">
+            <button 
+              v-for="status in ['todos', 'pendiente', 'aceptada', 'rechazada', 'completada']" 
+              :key="status"
+              class="status-filter-btn"
+              :class="{ active: activeStatusFilter === status }"
+              @click="activeStatusFilter = status"
+            >
+              {{ formatStatusText(status) }}
+            </button>
+          </div>
+
+          <!-- LOADING STATE -->
+          <div v-if="loadingCitas" class="loading-state">
+            <ion-spinner name="crescent"></ion-spinner>
+            <p>Cargando tus citas...</p>
+          </div>
+
+          <!-- EMPTY STATE FOR CITAS -->
+          <div v-else-if="filteredCitas.length === 0" class="empty-state animate-fade-in">
+            <span class="empty-icon">📅</span>
+            <h3>No tienes citas registradas</h3>
+            <p>Aquí verás las solicitudes de visitas que envíes a veterinarios o que ellos te propongan.</p>
+          </div>
+
+          <!-- CITAS LIST -->
+          <div v-else class="citas-list-container animate-fade-in">
+            <div 
+              v-for="c in filteredCitas" 
+              :key="c.id" 
+              class="cita-mobile-card"
+              :class="c.estado"
+            >
+              <div class="cita-card-header">
+                <div class="cita-badge" :class="c.estado">
+                  {{ formatStatusText(c.estado).toUpperCase() }}
+                </div>
+                <div class="cita-date-time">
+                  <ion-icon :icon="calendarOutline"></ion-icon>
+                  <span>{{ formatDate(c.fecha) }} &middot; {{ c.hora }}</span>
+                </div>
+              </div>
+
+              <div class="cita-card-body">
+                <h4 class="cita-vet-name">🩺 {{ c.veterinario?.nombre_completo || 'Médico Veterinario' }}</h4>
+                <p class="cita-detail"><strong>Finca:</strong> {{ c.finca?.nombre || 'Finca general' }}</p>
+                <p v-if="c.animal" class="cita-detail"><strong>Animal:</strong> {{ c.animal?.nombre }} (Arete: {{ c.animal?.numero_arete }})</p>
+                <p class="cita-reason"><strong>Motivo:</strong> "{{ c.motivo }}"</p>
+                
+                <!-- Comentario de rechazo -->
+                <div v-if="c.estado === 'rechazada' && c.comentario_rechazo" class="rejection-box">
+                  <strong>Comentario de rechazo:</strong>
+                  <p>{{ c.comentario_rechazo }}</p>
+                </div>
+              </div>
+
+              <!-- ACCIONES EN CITAS -->
+              <div class="cita-card-actions" v-if="c.estado === 'propuesta_veterinario' || c.estado === 'pendiente'">
+                <!-- Flujo cuando el Veterinario propone/reprograma -->
+                <template v-if="c.estado === 'propuesta_veterinario'">
+                  <div class="proposal-notice">
+                    ⚠️ El veterinario ha propuesto esta fecha/hora.
+                  </div>
+                  <div class="actions-buttons-row">
+                    <button class="action-btn accept-btn" @click="responderPropuesta(c.id, 'aceptada')">
+                      <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
+                      Aceptar
+                    </button>
+                    <button class="action-btn reject-btn" @click="responderPropuesta(c.id, 'rechazada')">
+                      <ion-icon :icon="closeCircleOutline"></ion-icon>
+                      Rechazar
+                    </button>
+                    <button class="action-btn reschedule-btn-outline" @click="openRescheduleModal(c)">
+                      Reprogramar
+                    </button>
+                  </div>
+                </template>
+
+                <!-- Cancelar solicitud del Ganadero -->
+                <template v-else-if="c.estado === 'pendiente'">
+                  <button class="action-btn-danger-outline" @click="responderPropuesta(c.id, 'rechazada', 'Cancelada por el ganadero')">
+                    Cancelar Solicitud
+                  </button>
+                </template>
               </div>
             </div>
           </div>
@@ -97,11 +218,11 @@
       <BottomNav />
     </ion-content>
 
-    <!-- MODAL 1: CREAR VETERINARIO -->
+    <!-- MODAL 1: REGISTRAR VETERINARIO -->
     <div v-if="showAddVetModal" class="modal-overlay animate-fade-in">
       <div class="modal-card">
         <div class="modal-header">
-          <h3>🩺 Nuevo Veterinario</h3>
+          <h3>🩺 Registrar Veterinario</h3>
           <button class="close-btn" @click="closeAddVetModal">×</button>
         </div>
         <form @submit.prevent="saveVeterinario">
@@ -141,7 +262,7 @@
             <button type="button" class="cancel-btn" @click="closeAddVetModal">Cancelar</button>
             <button type="submit" class="submit-btn" :disabled="saving">
               <span v-if="saving">Guardando...</span>
-              <span v-else>Guardar Veterinario</span>
+              <span v-else>Guardar</span>
             </button>
           </div>
         </form>
@@ -167,7 +288,7 @@
             
             <!-- Active Toggle -->
             <div class="toggle-container">
-              <span class="toggle-label">Estado de Acceso:</span>
+              <span class="toggle-label">Acceso a fincas/ganado:</span>
               <button 
                 class="toggle-switch" 
                 :class="{ 'switch-active': selectedVet.activo }" 
@@ -177,21 +298,28 @@
                 <span class="switch-handle"></span>
               </button>
               <span class="toggle-status-text" :class="selectedVet.activo ? 'text-active' : 'text-inactive'">
-                {{ selectedVet.activo ? 'Permitido' : 'Bloqueado' }}
+                {{ selectedVet.activo ? 'Habilitado' : 'Deshabilitado' }}
               </span>
             </div>
+          </div>
+
+          <div class="vet-actions-box">
+            <button class="appointment-btn" @click="openRequestAppointmentModal">
+              <ion-icon :icon="calendarOutline"></ion-icon>
+              SOLICITAR CITA / VISITA
+            </button>
           </div>
 
           <hr class="divider" />
 
           <!-- Assigned Fincas list -->
           <div class="section-title-row">
-            <h4>Fincas Asignadas ({{ selectedVet.fincas?.length || 0 }})</h4>
+            <h4>Fincas Compartidas ({{ selectedVet.fincas?.length || 0 }})</h4>
           </div>
 
           <div v-if="!selectedVet.fincas || selectedVet.fincas.length === 0" class="no-assignments">
             <ion-icon :icon="businessOutline" class="empty-asg-icon"></ion-icon>
-            <p>Este veterinario no tiene fincas asignadas todavía.</p>
+            <p>No has compartido ninguna finca con este veterinario.</p>
           </div>
 
           <div v-else class="assigned-fincas-list">
@@ -199,7 +327,7 @@
               <div class="asg-info">
                 <h5>{{ fa.nombre }}</h5>
                 <span class="auth-count">
-                  {{ fa.animales_autorizados ? fa.animales_autorizados.length : 0 }} animales autorizados
+                  {{ fa.animales_autorizados && fa.animales_autorizados.length > 0 ? `${fa.animales_autorizados.length} animales autorizados (Lectura)` : 'Acceso completo a la finca' }}
                 </span>
               </div>
               <div class="asg-actions">
@@ -224,7 +352,8 @@
 
           <!-- Add Finca Assignment form -->
           <div class="assign-new-finca-box">
-            <h5>Asignar Nueva Finca</h5>
+            <h5>Compartir Finca Completa (Opción A)</h5>
+            <p class="assign-help">El veterinario podrá ver la finca y todos los animales que pertenecen a ella.</p>
             <div class="assign-input-group">
               <select v-model="selectedFincaToAssign" class="form-select">
                 <option value="" disabled>Seleccione una finca...</option>
@@ -242,7 +371,7 @@
                 :disabled="!selectedFincaToAssign || assigningFinca"
               >
                 <span v-if="assigningFinca">...</span>
-                <span v-else>Asignar</span>
+                <span v-else>Compartir</span>
               </button>
             </div>
           </div>
@@ -250,12 +379,12 @@
       </div>
     </div>
 
-    <!-- MODAL 3: CONFIGURAR GANADO AUTORIZADO -->
+    <!-- MODAL 3: CONFIGURAR GANADO AUTORIZADO (Opción B) -->
     <div v-if="showPermissionsModal" class="modal-overlay animate-fade-in z-index-top">
       <div class="modal-card permissions-modal-card">
         <div class="modal-header">
           <div>
-            <h3>🛡️ Permisos de Ganado</h3>
+            <h3>🛡️ Compartir Animales Específicos (Opción B)</h3>
             <p class="modal-subtitle">Finca: {{ selectedFincaForPermissions?.nombre }}</p>
           </div>
           <button class="close-btn" @click="closePermissionsModal">×</button>
@@ -263,13 +392,13 @@
 
         <div class="modal-body scrollable-modal-body flex-column-body">
           <p class="perm-help-text">
-            Selecciona qué animales de la finca podrá visualizar el médico veterinario:
+            Selecciona qué animales podrá consultar el veterinario (Acceso de solo lectura: historial de pesajes, evolución y reportes). Si no seleccionas ninguno, se mantendrá acceso completo a la finca.
           </p>
 
           <!-- Select All / Deselect All Row -->
           <div class="select-all-row">
             <button type="button" class="link-btn" @click="selectAllAnimals">Autorizar Todos</button>
-            <button type="button" class="link-btn text-red" @click="deselectAllAnimals">Quitar Todos</button>
+            <button type="button" class="link-btn text-red" @click="deselectAllAnimals">Quitar Todos / Acceso Total</button>
           </div>
 
           <!-- Animal list checklist -->
@@ -312,9 +441,130 @@
             :disabled="savingPermissions"
           >
             <span v-if="savingPermissions">Guardando...</span>
-            <span v-else>Guardar Permisos</span>
+            <span v-else>Guardar</span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4: SOLICITAR CITA -->
+    <div v-if="showAppointmentModal" class="modal-overlay animate-fade-in z-index-top">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>📅 Solicitar Cita Médica</h3>
+          <button class="close-btn" @click="closeRequestAppointmentModal">×</button>
+        </div>
+        <form @submit.prevent="saveAppointment">
+          <div class="modal-body scrollable-modal-body">
+            <div class="form-group">
+              <label class="form-label">Veterinario</label>
+              <input 
+                type="text" 
+                :value="selectedVet?.nombre_completo" 
+                disabled 
+                class="form-input disabled-input" 
+              />
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Finca *</label>
+              <select v-model="appointmentForm.finca_id" required class="form-select" @change="onAppointmentFincaChange">
+                <option value="" disabled>Seleccione una finca...</option>
+                <option v-for="f in fincaOptions" :key="f.id" :value="f.id">{{ f.nombre }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Animal Asociado (Opcional)</label>
+              <select v-model="appointmentForm.animal_id" class="form-select" :disabled="!appointmentForm.finca_id">
+                <option :value="null">Ninguno (Revisión general de la finca)</option>
+                <option v-for="a in appointmentAnimalOptions" :key="a.id" :value="a.id">
+                  {{ a.nombre }} (Arete: {{ a.arete }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group-row">
+              <div class="form-group flex-1">
+                <label class="form-label">Fecha *</label>
+                <input 
+                  type="date" 
+                  v-model="appointmentForm.fecha" 
+                  required 
+                  class="form-input" 
+                />
+              </div>
+              <div class="form-group flex-1">
+                <label class="form-label">Hora *</label>
+                <input 
+                  type="time" 
+                  v-model="appointmentForm.hora" 
+                  required 
+                  class="form-input" 
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Motivo de la Visita *</label>
+              <select v-model="appointmentForm.motivo" required class="form-select">
+                <option value="" disabled>Seleccione un motivo...</option>
+                <option value="Revisión general">Revisión general</option>
+                <option value="Pérdida de peso">Pérdida de peso</option>
+                <option value="Vacunación">Vacunación</option>
+                <option value="Control sanitario">Control sanitario</option>
+                <option value="Consulta personalizada">Consulta personalizada</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="cancel-btn" @click="closeRequestAppointmentModal">Cancelar</button>
+            <button type="submit" class="submit-btn" :disabled="savingAppointment">
+              <span v-if="savingAppointment">Enviando solicitud...</span>
+              <span v-else>Confirmar Solicitud</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 5: REPROGRAMAR CITA (Ganadero) -->
+    <div v-if="showRescheduleModal" class="modal-overlay animate-fade-in z-index-top">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>📅 Reprogramar Cita</h3>
+          <button class="close-btn" @click="closeRescheduleModal">×</button>
+        </div>
+        <form @submit.prevent="saveReschedule">
+          <div class="modal-body">
+            <p class="reschedule-info">Ingresa una nueva fecha y hora propuesta para la visita médica.</p>
+            <div class="form-group">
+              <label class="form-label">Nueva Fecha *</label>
+              <input 
+                type="date" 
+                v-model="rescheduleForm.fecha" 
+                required 
+                class="form-input" 
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nueva Hora *</label>
+              <input 
+                type="time" 
+                v-model="rescheduleForm.hora" 
+                required 
+                class="form-input" 
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="cancel-btn" @click="closeRescheduleModal">Cancelar</button>
+            <button type="submit" class="submit-btn" :disabled="savingReschedule">
+              <span v-if="savingReschedule">Actualizando...</span>
+              <span v-else>Guardar Nueva Fecha</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -337,11 +587,16 @@ import {
 } from '@ionic/vue';
 import { 
   addOutline, businessOutline, shieldCheckmarkOutline, 
-  trashOutline, eyeOutline 
+  trashOutline, eyeOutline, calendarOutline, checkmarkCircleOutline,
+  closeCircleOutline
 } from 'ionicons/icons';
 import BottomNav from '@/components/BottomNav.vue';
 import { animalRepository } from '@/services';
 import { useAutoRefresh } from '@/composables/useAutoRefresh';
+
+// Control de Pestañas
+const activeTab = ref<'veterinarios' | 'citas'>('veterinarios');
+const activeStatusFilter = ref<string>('todos');
 
 // Datos de la sesión actual
 const usuarioSesion = ref<any>(null);
@@ -358,24 +613,45 @@ if (sessionStr) {
 const veterinarios = ref<any[]>([]);
 const fincas = ref<any[]>([]);
 const animals = ref<any[]>([]);
+const citas = ref<any[]>([]);
 const loading = ref(true);
+const loadingCitas = ref(false);
 const searchQuery = ref('');
 
 // Modales
 const showAddVetModal = ref(false);
 const showDetailModal = ref(false);
 const showPermissionsModal = ref(false);
+const showAppointmentModal = ref(false);
+const showRescheduleModal = ref(false);
 
 const saving = ref(false);
 const statusUpdating = ref(false);
 const assigningFinca = ref(false);
 const savingPermissions = ref(false);
+const savingAppointment = ref(false);
+const savingReschedule = ref(false);
 
 // Formularios
 const vetForm = ref({
   nombre_completo: '',
   correo: '',
   contrasena: ''
+});
+
+const appointmentForm = ref({
+  vaterinario_id: 0,
+  finca_id: '',
+  animal_id: null as number | null,
+  fecha: '',
+  hora: '',
+  motivo: ''
+});
+
+const rescheduleForm = ref({
+  citaId: 0,
+  fecha: '',
+  hora: ''
 });
 
 // Veterinario seleccionado
@@ -399,14 +675,14 @@ const showToast = (message: string, color: 'success' | 'danger' = 'success') => 
   toast.value.show = true;
 };
 
-// Cargar veterinarios asociados al ganadero actual
+// Cargar veterinarios disponibles en el sistema
 async function loadVeterinarios() {
   loading.value = true;
   try {
     const data = await animalRepository.getVeterinariosGanadero();
     veterinarios.value = data;
   } catch (e) {
-    console.error('Error al cargar veterinarios del ganadero:', e);
+    console.error('Error al cargar veterinarios:', e);
     showToast('Error al cargar veterinarios.', 'danger');
   } finally {
     loading.value = false;
@@ -423,14 +699,31 @@ async function loadFincasAndAnimals() {
   }
 }
 
+// Cargar citas
+async function loadCitas() {
+  loadingCitas.value = true;
+  try {
+    const data = await animalRepository.getCitas();
+    citas.value = data;
+  } catch (e) {
+    console.error('Error al cargar citas:', e);
+    showToast('Error al cargar citas.', 'danger');
+  } finally {
+    loadingCitas.value = false;
+  }
+}
+
 async function silentLoad() {
   try {
-    const data = await animalRepository.getVeterinariosGanadero();
-    veterinarios.value = data;
+    const dataVets = await animalRepository.getVeterinariosGanadero();
+    veterinarios.value = dataVets;
+    
+    const dataCitas = await animalRepository.getCitas();
+    citas.value = dataCitas;
     
     // Si el modal de detalle del veterinario está abierto, refrescar también sus datos reactivos
     if (showDetailModal.value && selectedVet.value) {
-      const updatedVet = data.find((v: any) => v.id === selectedVet.value.id);
+      const updatedVet = dataVets.find((v: any) => v.id === selectedVet.value.id);
       if (updatedVet) {
         selectedVet.value = { ...updatedVet };
       }
@@ -440,13 +733,14 @@ async function silentLoad() {
   }
 }
 
-// Configurar refresco automático cada 15 segundos en segundo plano (silencioso)
-useAutoRefresh(silentLoad, 15000);
+// Configurar refresco automático cada 10 segundos en segundo plano (para citas y alertas)
+useAutoRefresh(silentLoad, 10000);
 
 // Inicialización
 onMounted(() => {
   loadVeterinarios();
   loadFincasAndAnimals();
+  loadCitas();
 });
 
 // Filtrar veterinarios según búsqueda
@@ -457,6 +751,17 @@ const filteredVeterinarios = computed(() => {
     (v.nombre_completo || '').toLowerCase().includes(query) ||
     (v.correo || '').toLowerCase().includes(query)
   );
+});
+
+// Filtrar citas según sub-pestaña de estado
+const filteredCitas = computed(() => {
+  if (activeStatusFilter.value === 'todos') return citas.value;
+  return citas.value.filter(c => c.estado === activeStatusFilter.value);
+});
+
+// Conteo de citas pendientes de aprobación (o propuestas por el vet)
+const pendingCitasCount = computed(() => {
+  return citas.value.filter(c => c.estado === 'pendiente' || c.estado === 'propuesta_veterinario').length;
 });
 
 // Fincas disponibles para asignar (aquellas que el vet no tiene asignadas aún)
@@ -470,6 +775,17 @@ const availableFincas = computed(() => {
 const fincaAnimals = computed(() => {
   if (!selectedFincaForPermissions.value || !animals.value) return [];
   return animals.value.filter(a => a.finca_id === selectedFincaForPermissions.value.id);
+});
+
+// Selector de fincas asociadas al ganadero (para agendar cita)
+const fincaOptions = computed(() => {
+  return fincas.value;
+});
+
+// Selector de animales asociados a la finca seleccionada en la solicitud de cita
+const appointmentAnimalOptions = computed(() => {
+  if (!appointmentForm.value.finca_id || !animals.value) return [];
+  return animals.value.filter(a => a.finca_id === Number(appointmentForm.value.finca_id));
 });
 
 // ACCIONES: Crear Veterinario
@@ -552,7 +868,7 @@ const toggleVetStatus = async () => {
   }
 };
 
-// Asignar Finca
+// Asignar Finca (Opción A)
 const assignFinca = async () => {
   if (!selectedVet.value || !selectedFincaToAssign.value) return;
   assigningFinca.value = true;
@@ -573,9 +889,9 @@ const assignFinca = async () => {
     }
     
     selectedFincaToAssign.value = '';
-    showToast('Finca asignada correctamente.');
+    showToast('Finca compartida correctamente (Acceso total).');
   } catch (e: any) {
-    showToast(e.message || 'Error al asignar finca.', 'danger');
+    showToast(e.message || 'Error al compartir finca.', 'danger');
   } finally {
     assigningFinca.value = false;
   }
@@ -602,7 +918,7 @@ const revokeFinca = async (fincaId: number) => {
   }
 };
 
-// ACCIONES: Configurar Permisos Ganado
+// ACCIONES: Configurar Permisos Ganado (Opción B)
 const openPermissionsModal = (fincaAssignment: any) => {
   selectedFincaForPermissions.value = fincaAssignment;
   // Clonar animales autorizados actuales
@@ -630,7 +946,7 @@ const selectAllAnimals = () => {
 };
 
 const deselectAllAnimals = () => {
-  selectedAnimalIds.value = [];
+  selectedAnimalIds.value = []; // Vacío significa que se tiene acceso a toda la finca (Option A)
 };
 
 const saveCattlePermissions = async () => {
@@ -653,12 +969,143 @@ const saveCattlePermissions = async () => {
     }
 
     closePermissionsModal();
-    showToast('Permisos de ganado actualizados correctamente.');
+    showToast('Permisos de ganado actualizados (Acceso restringido).');
   } catch (e: any) {
     showToast(e.message || 'Error al actualizar permisos.', 'danger');
   } finally {
     savingPermissions.value = false;
   }
+};
+
+// ACCIONES: Solicitar Cita
+const openRequestAppointmentModal = () => {
+  appointmentForm.value = {
+    vaterinario_id: selectedVet.value.id,
+    finca_id: '',
+    animal_id: null,
+    fecha: '',
+    hora: '',
+    motivo: ''
+  };
+  showAppointmentModal.value = true;
+};
+
+const closeRequestAppointmentModal = () => {
+  showAppointmentModal.value = false;
+};
+
+const onAppointmentFincaChange = () => {
+  appointmentForm.value.animal_id = null;
+};
+
+const saveAppointment = async () => {
+  if (!appointmentForm.value.finca_id || !appointmentForm.value.fecha || !appointmentForm.value.hora || !appointmentForm.value.motivo) {
+    showToast('Por favor completa todos los campos requeridos.', 'danger');
+    return;
+  }
+
+  savingAppointment.value = true;
+  try {
+    await animalRepository.crearCita({
+      veterinario_id: selectedVet.value.id,
+      finca_id: Number(appointmentForm.value.finca_id),
+      animal_id: appointmentForm.value.animal_id ? Number(appointmentForm.value.animal_id) : null,
+      fecha: appointmentForm.value.fecha,
+      hora: appointmentForm.value.hora,
+      motivo: appointmentForm.value.motivo,
+      estado: 'pendiente'
+    });
+
+    showToast('Solicitud de cita enviada con éxito.');
+    closeRequestAppointmentModal();
+    closeDetailModal();
+    // Cambiar a la pestaña de citas para verla
+    activeTab.value = 'citas';
+    activeStatusFilter.value = 'pendiente';
+    await loadCitas();
+  } catch (e: any) {
+    showToast(e.message || 'Error al enviar solicitud de cita.', 'danger');
+  } finally {
+    savingAppointment.value = false;
+  }
+};
+
+// ACCIONES: Responder Propuestas de Veterinario / Cancelar Cita
+const responderPropuesta = async (citaId: number, estado: 'aceptada' | 'rechazada', comentario?: string) => {
+  try {
+    const payload: any = { estado };
+    if (comentario) {
+      payload.comentario_rechazo = comentario;
+    } else if (estado === 'rechazada') {
+      payload.comentario_rechazo = 'Cancelada/Rechazada por el ganadero';
+    }
+
+    await animalRepository.actualizarCita(citaId, payload);
+    showToast(estado === 'aceptada' ? 'Cita confirmada correctamente.' : 'Cita rechazada/cancelada.');
+    await loadCitas();
+  } catch (e: any) {
+    showToast(e.message || 'Error al responder a la cita.', 'danger');
+  }
+};
+
+// ACCIONES: Reprogramar Cita (Ganadero)
+const openRescheduleModal = (cita: any) => {
+  rescheduleForm.value = {
+    citaId: cita.id,
+    fecha: cita.fecha,
+    hora: cita.hora
+  };
+  showRescheduleModal.value = true;
+};
+
+const closeRescheduleModal = () => {
+  showRescheduleModal.value = false;
+};
+
+const saveReschedule = async () => {
+  if (!rescheduleForm.value.fecha || !rescheduleForm.value.hora) {
+    showToast('Ingresa fecha y hora válidas.', 'danger');
+    return;
+  }
+
+  savingReschedule.value = true;
+  try {
+    await animalRepository.actualizarCita(rescheduleForm.value.citaId, {
+      fecha: rescheduleForm.value.fecha,
+      hora: rescheduleForm.value.hora,
+      estado: 'pendiente' // Vuelve a pendiente de aprobación del veterinario
+    });
+
+    showToast('Propuesta de reprogramación enviada.');
+    closeRescheduleModal();
+    await loadCitas();
+  } catch (e: any) {
+    showToast(e.message || 'Error al reprogramar cita.', 'danger');
+  } finally {
+    savingReschedule.value = false;
+  }
+};
+
+// Helpers de formato
+const formatStatusText = (status: string): string => {
+  const map: Record<string, string> = {
+    todos: 'Todas',
+    pendiente: 'Pendientes',
+    aceptada: 'Aceptadas',
+    rechazada: 'Rechazadas',
+    completada: 'Completadas',
+    propuesta_veterinario: 'Sugeridas'
+  };
+  return map[status] || status;
+};
+
+const formatDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
 };
 </script>
 
@@ -687,10 +1134,57 @@ const saveCattlePermissions = async () => {
 .logo-icon { font-size: 26px; }
 .app-logo { font-weight: 800; color: #1B5E20; letter-spacing: -0.5px; font-size: 20px; }
 
+/* Custom Segments */
+.custom-segments {
+  display: flex;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 4px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(46, 125, 50, 0.05);
+}
+
+.segment-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #5c6e58;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.segment-btn.active {
+  background: white;
+  color: #1B5E20;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.badge-count {
+  background: #d32f2f;
+  color: white;
+  font-size: 10px;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
 /* Page Shell Container */
 .page-container {
   padding: 20px 16px 100px;
-  max-width: 800px;
+  max-width: 500px;
   margin: 0 auto;
 }
 
@@ -703,15 +1197,15 @@ const saveCattlePermissions = async () => {
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 900;
   color: #1B5E20;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   letter-spacing: -0.5px;
 }
 
 .page-subtitle {
-  font-size: 13px;
+  font-size: 12px;
   color: #5c6e58;
   margin: 0;
   font-weight: 500;
@@ -722,9 +1216,9 @@ const saveCattlePermissions = async () => {
   background: linear-gradient(135deg, #2E7D32, #1B5E20);
   color: white;
   border: none;
-  padding: 10px 18px;
+  padding: 10px 16px;
   border-radius: 14px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -789,14 +1283,14 @@ const saveCattlePermissions = async () => {
 }
 
 .empty-state h3 {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   color: #1B5E20;
   margin: 0 0 8px;
 }
 
 .empty-state p {
-  font-size: 13px;
+  font-size: 12px;
   color: #5c6e58;
   margin: 0 auto;
   max-width: 300px;
@@ -909,19 +1403,19 @@ const saveCattlePermissions = async () => {
 }
 
 .stat-num {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   color: #2e7d32;
 }
 
 .stat-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: #8a9883;
 }
 
 .status-badge-inline {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   padding: 3px 8px;
   border-radius: 12px;
@@ -937,7 +1431,220 @@ const saveCattlePermissions = async () => {
   color: #c62828;
 }
 
-/* MODAL OVERLAYS */
+/* ==========================================
+ * STATUS FILTER BAR (CITAS)
+ * ==========================================
+ */
+.status-filter-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0 16px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE */
+}
+
+.status-filter-bar::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+.status-filter-btn {
+  background: white;
+  border: 1px solid #e2e7da;
+  color: #5c6e58;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.status-filter-btn.active {
+  background: #2E7D32;
+  color: white;
+  border-color: #2E7D32;
+  box-shadow: 0 4px 10px rgba(46, 125, 50, 0.15);
+}
+
+/* ==========================================
+ * CITAS LIST CARDS
+ * ==========================================
+ */
+.citas-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cita-mobile-card {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e7da;
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.cita-mobile-card.pendiente { border-left: 5px solid #d97706; }
+.cita-mobile-card.aceptada { border-left: 5px solid #2e7d32; }
+.cita-mobile-card.rechazada { border-left: 5px solid #c62828; }
+.cita-mobile-card.completada { border-left: 5px solid #455a64; }
+.cita-mobile-card.propuesta_veterinario { border-left: 5px solid #00897b; }
+
+.cita-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cita-badge {
+  font-size: 9px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.cita-badge.pendiente { background: #fff7ed; color: #d97706; }
+.cita-badge.aceptada { background: #eaf8eb; color: #2e7d32; }
+.cita-badge.rechazada { background: #ffebee; color: #c62828; }
+.cita-badge.completada { background: #eceff1; color: #455a64; }
+.cita-badge.propuesta_veterinario { background: #e0f2f1; color: #00897b; }
+
+.cita-date-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5c6e58;
+}
+
+.cita-date-time ion-icon {
+  font-size: 14px;
+  color: #1B5E20;
+}
+
+.cita-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cita-vet-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1B5E20;
+  margin: 0 0 6px;
+}
+
+.cita-detail {
+  font-size: 12px;
+  color: #5c6e58;
+  margin: 0;
+}
+
+.cita-reason {
+  font-size: 12px;
+  color: #2c3e2d;
+  margin: 4px 0 0;
+  background: #f7f9f4;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-style: italic;
+}
+
+.rejection-box {
+  margin-top: 8px;
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 11px;
+}
+
+.rejection-box strong {
+  color: #c62828;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.rejection-box p {
+  margin: 0;
+  color: #b71c1c;
+}
+
+.cita-card-actions {
+  border-top: 1px solid #f2f4ee;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.proposal-notice {
+  font-size: 11px;
+  font-weight: 700;
+  color: #00897b;
+  margin-bottom: 4px;
+}
+
+.actions-buttons-row {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  flex: 1;
+  border: none;
+  padding: 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.action-btn.accept-btn {
+  background: #2e7d32;
+  color: white;
+}
+
+.action-btn.reject-btn {
+  background: #c62828;
+  color: white;
+}
+
+.action-btn.reschedule-btn-outline {
+  background: white;
+  border: 1px solid #c0c5b1;
+  color: #5c6e58;
+}
+
+.action-btn-danger-outline {
+  background: white;
+  border: 1px solid #c62828;
+  color: #c62828;
+  padding: 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* ==========================================
+ * MODALS & BOTTOM SHEET STYLES
+ * ==========================================
+ */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1016,7 +1723,7 @@ const saveCattlePermissions = async () => {
 }
 
 .modal-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: #6d7e68;
   margin: 2px 0 0;
   font-weight: 500;
@@ -1044,7 +1751,7 @@ const saveCattlePermissions = async () => {
 }
 
 .scrollable-modal-body {
-  max-height: calc(80vh - 120px);
+  max-height: calc(85vh - 140px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -1054,13 +1761,13 @@ const saveCattlePermissions = async () => {
   flex-direction: column;
 }
 
-/* Vet Profile Summary Inside Modal */
+/* Vet Profile Summary */
 .vet-profile-summary {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 8px 0;
+  padding: 8px 0 16px;
 }
 
 .large-avatar {
@@ -1084,7 +1791,31 @@ const saveCattlePermissions = async () => {
   margin-bottom: 14px;
 }
 
-/* Switch Styles */
+/* Vet Actions Box */
+.vet-actions-box {
+  width: 100%;
+  padding: 0 0 10px;
+}
+
+.appointment-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #00897b, #00695c);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 10px rgba(0, 137, 123, 0.15);
+  cursor: pointer;
+  outline: none;
+}
+
+/* Toggle Styles */
 .toggle-container {
   display: flex;
   align-items: center;
@@ -1210,7 +1941,7 @@ const saveCattlePermissions = async () => {
 }
 
 .auth-count {
-  font-size: 11px;
+  font-size: 10px;
   color: #5c6e58;
   font-weight: 600;
 }
@@ -1258,10 +1989,16 @@ const saveCattlePermissions = async () => {
 }
 
 .assign-new-finca-box h5 {
-  margin: 0 0 10px;
+  margin: 0 0 4px;
   font-size: 12px;
   font-weight: 800;
   color: #1B5E20;
+}
+
+.assign-help {
+  font-size: 10px;
+  color: #5c6e58;
+  margin: 0 0 10px;
 }
 
 .assign-input-group {
@@ -1438,6 +2175,15 @@ const saveCattlePermissions = async () => {
   margin-bottom: 16px;
 }
 
+.form-group-row {
+  display: flex;
+  gap: 12px;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
 .form-label {
   font-size: 12px;
   font-weight: 700;
@@ -1458,6 +2204,12 @@ const saveCattlePermissions = async () => {
 .form-input:focus {
   border-color: #2E7D32;
   background: white;
+}
+
+.disabled-input {
+  background: #eceff1;
+  color: #78909c;
+  border-color: #cfd8dc;
 }
 
 .modal-footer {
@@ -1494,6 +2246,13 @@ const saveCattlePermissions = async () => {
 
 .submit-btn:disabled {
   opacity: 0.7;
+}
+
+.reschedule-info {
+  font-size: 12px;
+  color: #5c6e58;
+  margin-bottom: 16px;
+  line-height: 1.4;
 }
 
 /* Custom top index overlays */

@@ -52,6 +52,12 @@ Route::post('/reportes-ganadero', [ReporteController::class, 'guardarReporte']);
 Route::get('/reportes-ganadero/{id}', [ReporteController::class, 'getReporteDetalle']);
 Route::delete('/reportes-ganadero/{id}', [ReporteController::class, 'eliminarReporte']);
 
+// Citas Routes
+Route::get('/citas', [\App\Http\Controllers\CitaController::class, 'index']);
+Route::post('/citas', [\App\Http\Controllers\CitaController::class, 'store']);
+Route::put('/citas/{id}', [\App\Http\Controllers\CitaController::class, 'update']);
+
+
 
 
 // Dashboard & Weight Analysis Routes

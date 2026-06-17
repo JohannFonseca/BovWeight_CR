@@ -122,7 +122,39 @@ export interface IAnimalRepository {
 
   /** Activa/Desactiva el estado de un veterinario. */
   toggleEstadoVeterinario(vetId: number): Promise<any>;
+
+  /** Obtiene la lista de citas. */
+  getCitas(): Promise<Cita[]>;
+
+  /** Crea una nueva cita (solicitud o propuesta). */
+  crearCita(cita: { veterinario_id: number; finca_id: number; animal_id?: number | null; fecha: string; hora: string; motivo: string; estado?: string }): Promise<any>;
+
+  /** Actualiza el estado o reprograma una cita. */
+  actualizarCita(id: number, payload: { fecha?: string; hora?: string; estado?: string; comentario_rechazo?: string | null }): Promise<any>;
 }
+
+/**
+ * Cita médica veterinaria.
+ */
+export interface Cita {
+  id: number;
+  ganadero_id: number;
+  veterinario_id: number;
+  finca_id: number;
+  animal_id?: number | null;
+  fecha: string;
+  hora: string;
+  motivo: string;
+  estado: 'pendiente' | 'aceptada' | 'rechazada' | 'completada' | 'propuesta_veterinario';
+  comentario_rechazo?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  veterinario?: { id: number; nombre_completo: string; correo: string };
+  ganadero?: { id: number; nombre_completo: string; correo: string };
+  finca?: { id: number; nombre: string; ubicacion: string };
+  animal?: { id: number; nombre: string; numero_arete: string };
+}
+
 
 
 /**

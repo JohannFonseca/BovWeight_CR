@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import type { Animal, WeightRecord, IAnimalRepository } from './interfaces';
+import type { Animal, WeightRecord, IAnimalRepository, Cita } from './interfaces';
 
 export class LaravelAnimalRepository implements IAnimalRepository {
   private getHeaders() {
@@ -410,6 +410,45 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     } catch (err: any) {
       console.error('Error en toggleEstadoVeterinario con Laravel:', err.message);
       throw new Error(err.response?.data?.message || 'Error al cambiar estado del veterinario');
+    }
+  }
+
+  async getCitas(): Promise<Cita[]> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.get(`${apiUrl}/citas`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getCitas con Laravel:', err.message);
+      throw new Error('Error al obtener la lista de citas');
+    }
+  }
+
+  async crearCita(cita: { veterinario_id: number; finca_id: number; animal_id?: number | null; fecha: string; hora: string; motivo: string; estado?: string }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/citas`, cita, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en crearCita con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al registrar la cita');
+    }
+  }
+
+  async actualizarCita(id: number, payload: { fecha?: string; hora?: string; estado?: string; comentario_rechazo?: string | null }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.put(`${apiUrl}/citas/${id}`, payload, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en actualizarCita con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al actualizar la cita');
     }
   }
 }
