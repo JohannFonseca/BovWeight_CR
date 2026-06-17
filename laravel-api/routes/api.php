@@ -9,6 +9,7 @@ use App\Http\Controllers\ReporteController;
 
 // Auth Routes
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/cambiar-password', [AuthController::class, 'cambiarPassword']);
 
 // Roles and Razas Routes
 Route::get('/roles', [AdminController::class, 'getRoles']);
@@ -21,6 +22,7 @@ Route::post('/usuarios', [AdminController::class, 'crearUsuario']);
 Route::put('/usuarios/{id}', [AdminController::class, 'editarUsuario']);
 Route::delete('/usuarios/{id}', [AdminController::class, 'eliminarUsuario']);
 Route::put('/usuarios/{id}/toggle-activo', [AdminController::class, 'toggleEstadoUsuario']);
+Route::post('/usuarios/{id}/reenviar-credenciales', [AdminController::class, 'reenviarCredenciales']);
 
 // Veterinarians & Permissions Routes (within Ganadero space)
 Route::get('/ganadero/veterinarios', [GanadoController::class, 'getVeterinariosGanadero']);

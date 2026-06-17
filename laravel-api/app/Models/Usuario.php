@@ -22,6 +22,8 @@ class Usuario extends Authenticatable
         'rol_id',
         'ganadero_id',
         'activo',
+        'debe_cambiar_password',
+        'password_expira_en',
     ];
 
     protected $hidden = [

@@ -350,16 +350,6 @@
                 class="form-input" 
               />
             </div>
-            <div class="form-group">
-              <label class="form-label">Contraseña *</label>
-              <input 
-                type="password" 
-                v-model="vetForm.contrasena" 
-                required 
-                placeholder="Mínimo 4 caracteres"
-                class="form-input" 
-              />
-            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="cancel-btn" @click="closeAddVetModal">Cancelar</button>
@@ -861,8 +851,7 @@ const savingReschedule = ref(false);
 // Formularios
 const vetForm = ref({
   nombre_completo: '',
-  correo: '',
-  contrasena: ''
+  correo: ''
 });
 
 const appointmentForm = ref({
@@ -1161,8 +1150,7 @@ const solicitarCitaDesdeReporte = (reporte: ReporteVeterinario) => {
 const openAddVetModal = () => {
   vetForm.value = {
     nombre_completo: '',
-    correo: '',
-    contrasena: ''
+    correo: ''
   };
   showAddVetModal.value = true;
 };
@@ -1172,11 +1160,6 @@ const closeAddVetModal = () => {
 };
 
 const saveVeterinario = async () => {
-  if (vetForm.value.contrasena.length < 4) {
-    showToast('La contraseña debe tener al menos 4 caracteres.', 'danger');
-    return;
-  }
-  
   saving.value = true;
   try {
     const roles = await animalRepository.getRoles();
@@ -1188,7 +1171,7 @@ const saveVeterinario = async () => {
     await animalRepository.crearUsuario({
       nombre_completo: vetForm.value.nombre_completo,
       correo: vetForm.value.correo,
-      contrasena: vetForm.value.contrasena,
+      contrasena: '',
       rol_id: vetRole.id,
       ganadero_id: usuarioSesion.value?.id || null
     });

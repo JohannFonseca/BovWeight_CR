@@ -36,6 +36,7 @@ export interface User {
   usuario: string;
   rol: 'admin' | 'ganadero' | 'veterinario';
   nombre_completo?: string;
+  debe_cambiar_password?: boolean;
 }
 
 /**
@@ -95,6 +96,12 @@ export interface IAnimalRepository {
 
   /** Edita los datos de un usuario. */
   editarUsuario(id: number, data: { correo: string; nombre_completo: string; contrasena?: string }): Promise<any>;
+
+  /** Reenvía las credenciales temporales a un usuario. */
+  reenviarCredenciales(id: number): Promise<any>;
+
+  /** Cambia la contraseña temporal por una nueva. */
+  cambiarPassword(id: number, passwordActual: string, nuevoPassword: string, confirmarPassword: string): Promise<any>;
 
   /** Obtiene todos los reportes de ganadero guardados. */
   getReportesGanadero(): Promise<any[]>;

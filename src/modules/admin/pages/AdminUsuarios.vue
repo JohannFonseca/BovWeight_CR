@@ -92,6 +92,20 @@
                       <span v-else>{{ user.activo ? 'Activo' : 'Bloqueado' }}</span>
                     </button>
 
+                    <!-- Botón Reenviar Credenciales -->
+                    <ion-button 
+                      v-if="user.rol_nombre !== 'admin'"
+                      fill="clear" 
+                      size="small" 
+                      class="resend-btn" 
+                      @click="reenviarCredenciales(user.id)"
+                      :disabled="resendingId === user.id"
+                      title="Reenviar Credenciales Temporales"
+                    >
+                      <ion-spinner v-if="resendingId === user.id" name="crescent" size="small" class="resend-spinner"></ion-spinner>
+                      <ion-icon v-else :icon="mailUnreadOutline" slot="icon-only"></ion-icon>
+                    </ion-button>
+
                     <!-- Botón Detalles -->
                     <ion-button fill="clear" size="small" class="detail-btn" @click="verDetalle(user.id)">
                       <ion-icon :icon="chevronForwardOutline" slot="icon-only"></ion-icon>
@@ -155,17 +169,7 @@
             />
           </div>
 
-          <!-- Contraseña -->
-          <div class="input-group">
-            <label class="input-label">Contraseña</label>
-            <input
-              type="password"
-              v-model="form.contrasena"
-              placeholder="Mínimo 4 caracteres"
-              class="custom-input"
-              required
-            />
-          </div>
+
 
           <!-- Rol -->
           <div class="input-group">
@@ -217,12 +221,34 @@ import { useRouter } from 'vue-router';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton,
   IonIcon, IonSearchbar, IonList, IonItem, IonSpinner, IonText,
-  IonMenuButton, IonModal
+  IonMenuButton, IonModal, toastController
 } from '@ionic/vue';
-import { chevronForwardOutline, personAddOutline } from 'ionicons/icons';
+import { chevronForwardOutline, personAddOutline, mailUnreadOutline } from 'ionicons/icons';
 import { adminApi } from '@/services';
 
 const router = useRouter();
+
+const resendingId = ref<number | null>(null);
+
+const reenviarCredenciales = async (userId: number) => {
+  resendingId.value = userId;
+  const { error: apiError } = await adminApi.reenviarCredenciales(userId);
+  resendingId.value = null;
+
+  const message = apiError 
+    ? `Error: ${apiError}` 
+    : 'Credenciales temporales reenviadas con éxito.';
+    
+  const color = apiError ? 'danger' : 'success';
+
+  const toast = await toastController.create({
+    message,
+    duration: 3000,
+    color,
+    position: 'bottom'
+  });
+  await toast.present();
+};
 
 const loading = ref(true);
 const loadingMore = ref(false);
@@ -376,10 +402,6 @@ const guardarUsuario = async () => {
     formError.value = 'El correo electrónico no es válido.';
     return;
   }
-  if (!form.value.contrasena || form.value.contrasena.length < 4) {
-    formError.value = 'La contraseña debe tener al menos 4 caracteres.';
-    return;
-  }
   if (!form.value.rol_id) {
     formError.value = 'Debe seleccionar un tipo de usuario (rol).';
     return;
@@ -394,7 +416,6 @@ const guardarUsuario = async () => {
   const payload: any = {
     nombre_completo: form.value.nombre_completo.trim(),
     correo: form.value.correo.trim(),
-    contrasena: form.value.contrasena,
     rol_id: form.value.rol_id,
   };
 
@@ -670,6 +691,21 @@ onMounted(() => {
   --color: #556b2f;
   --border-color: #556b2f;
   height: 36px;
+}
+
+.resend-btn {
+  --color: #ff8f00;
+  margin-right: 4px;
+}
+
+.resend-btn:hover {
+  --color: #e65100;
+}
+
+.resend-spinner {
+  width: 16px;
+  height: 16px;
+  --color: #ff8f00;
 }
 
 .empty-box {

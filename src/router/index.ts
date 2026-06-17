@@ -19,6 +19,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/cambiar-contrasena',
+    name: 'CambiarContrasena',
+    component: () => import('../modules/auth/pages/CambiarContrasenaPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/admin',
     component: () => import('../modules/admin/layouts/AdminLayout.vue'),
     meta: { requiresAuth: true, allowedRoles: ['admin'] },
@@ -159,6 +165,26 @@ router.beforeEach((to, from, next) => {
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false);
   const allowedRoles = to.meta.allowedRoles as string[] | undefined;
+
+  // Forzar cambio de contraseña si está marcado (excepto admin)
+  if (userSession && userSession.debe_cambiar_password && userSession.rol !== 'admin') {
+    if (to.name !== 'CambiarContrasena') {
+      next({ name: 'CambiarContrasena' });
+      return;
+    }
+  }
+
+  // Si no requiere cambiar contraseña, evitar que entre a esa página
+  if (userSession && !userSession.debe_cambiar_password && to.name === 'CambiarContrasena') {
+    if (userSession.rol === 'admin') {
+      next({ name: 'AdminDashboard' });
+    } else if (userSession.rol === 'veterinario') {
+      next({ name: 'VeterinarioDashboard' });
+    } else {
+      next({ name: 'Home' });
+    }
+    return;
+  }
 
   if (requiresAuth) {
     if (!userSession) {

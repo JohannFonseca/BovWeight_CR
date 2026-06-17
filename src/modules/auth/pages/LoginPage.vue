@@ -230,8 +230,10 @@ const login = async () => {
     // Guardar la sesión del usuario
     localStorage.setItem('usuario_sesion', JSON.stringify(user));
     
-    // Redireccionar basado en el rol
-    if (user.rol === 'admin') {
+    // Redireccionar basado en el rol y estado de contraseña temporal
+    if (user.debe_cambiar_password && user.rol !== 'admin') {
+      router.push('/cambiar-contrasena');
+    } else if (user.rol === 'admin') {
       router.push('/admin');
     } else if (user.rol === 'veterinario') {
       router.push('/veterinario');

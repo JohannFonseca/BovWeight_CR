@@ -159,4 +159,49 @@ export const adminApi = {
       };
     }
   },
+
+  // Editar Usuario
+  async editarUsuario(id: number | string, userData: any) {
+    try {
+      const response = await axios.put(`${getApiUrl()}/usuarios/${id}`, userData, {
+        headers: getHeaders(),
+      });
+      return { data: response.data, error: null };
+    } catch (err: any) {
+      return {
+        data: null,
+        error: err.response?.data?.message || err.message || 'Error al editar usuario',
+      };
+    }
+  },
+
+  // Reenviar Credenciales
+  async reenviarCredenciales(id: number | string) {
+    try {
+      const response = await axios.post(`${getApiUrl()}/usuarios/${id}/reenviar-credenciales`, {}, {
+        headers: getHeaders(),
+      });
+      return { data: response.data, error: null };
+    } catch (err: any) {
+      return {
+        data: null,
+        error: err.response?.data?.message || err.message || 'Error al reenviar credenciales',
+      };
+    }
+  },
+
+  // Eliminar Usuario
+  async eliminarUsuario(id: number | string) {
+    try {
+      const response = await axios.delete(`${getApiUrl()}/usuarios/${id}`, {
+        headers: getHeaders(),
+      });
+      return { data: response.data, error: null };
+    } catch (err: any) {
+      return {
+        data: null,
+        error: err.response?.data?.message || err.message || 'Error al eliminar usuario',
+      };
+    }
+  },
 };

@@ -296,6 +296,37 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
+  async reenviarCredenciales(id: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/usuarios/${id}/reenviar-credenciales`, {}, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en reenviarCredenciales con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al reenviar credenciales');
+    }
+  }
+
+  async cambiarPassword(id: number, passwordActual: string, nuevoPassword: string, confirmarPassword: string): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/cambiar-password`, {
+        id,
+        password_actual: passwordActual,
+        nuevo_password: nuevoPassword,
+        confirmar_password: confirmarPassword
+      }, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en cambiarPassword con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al cambiar contraseña');
+    }
+  }
+
   async getReportesGanadero(): Promise<any[]> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {

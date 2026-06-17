@@ -116,7 +116,6 @@ class AdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'correo' => 'required|email',
-            'contrasena' => 'required|min:4',
             'rol_id' => 'required|exists:roles,id',
             'nombre_completo' => 'required|string|min:1',
             'ganadero_id' => 'nullable|exists:usuarios,id',
@@ -132,16 +131,27 @@ class AdminController extends Controller
             return response()->json(['message' => 'Ya existe un usuario con el correo: ' . $request->input('correo')], 409);
         }
 
+        // Generar contraseña temporal
+        $passwordTemporal = $this->generarContrasenaTemporal($request->input('rol_id'));
+
         $usuario = Usuario::create([
             'correo' => $request->input('correo'),
-            'contrasena_hash' => $request->input('contrasena'), // In plain text to match Supabase setup
+            'contrasena_hash' => \Illuminate\Support\Facades\Hash::make($passwordTemporal),
             'rol_id' => $request->input('rol_id'),
             'nombre_completo' => $request->input('nombre_completo'),
             'ganadero_id' => $request->input('ganadero_id'),
             'activo' => true,
+            'debe_cambiar_password' => true,
+            'password_expira_en' => now()->addHours(24),
         ]);
 
-        return response()->json(['message' => 'Usuario creado exitosamente.'], 201);
+        // Enviar correo de bienvenida
+        $enviado = $this->enviarCorreoCredenciales($usuario, $passwordTemporal);
+
+        return response()->json([
+            'message' => 'Usuario creado exitosamente.' . ($enviado ? ' Correo enviado.' : ' No se pudo enviar el correo.'),
+            'password_temporal_debug' => $passwordTemporal,
+        ], 201);
     }
 
     public function eliminarUsuario($id)
@@ -151,8 +161,35 @@ class AdminController extends Controller
             return response()->json(['message' => 'Usuario no encontrado.'], 404);
         }
 
-        $u->delete();
-        return response()->json(['message' => 'Usuario eliminado exitosamente.']);
+        if ($u->rol && strtolower($u->rol->nombre) === 'admin') {
+            return response()->json(['message' => 'No se puede eliminar un usuario administrador.'], 403);
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($u) {
+            // Eliminar tokens asociados
+            $u->tokens()->delete();
+            
+            // Si es un ganadero, eliminar explícitamente sus veterinarios y fincas asociadas
+            if ($u->rol && strtolower($u->rol->nombre) === 'ganadero') {
+                // Veterinarios contratados/asociados
+                $vets = Usuario::where('ganadero_id', $u->id)->get();
+                foreach ($vets as $vet) {
+                    $vet->tokens()->delete();
+                    $vet->delete();
+                }
+                
+                // Fincas (este borrado disparará cascadas de animales y estimaciones en DB)
+                $fincas = Finca::where('propietario_id', $u->id)->get();
+                foreach ($fincas as $finca) {
+                    $finca->delete();
+                }
+            }
+
+            // Finalmente, borrar al usuario
+            $u->delete();
+        });
+
+        return response()->json(['message' => 'Usuario y todos sus datos asociados eliminados exitosamente.']);
     }
 
     public function toggleEstadoUsuario(Request $request, $id)
@@ -187,6 +224,9 @@ class AdminController extends Controller
             'correo' => 'required|email',
             'nombre_completo' => 'required|string|min:1',
             'contrasena' => 'nullable|string|min:4',
+            'rol_id' => 'nullable|exists:roles,id',
+            'ganadero_id' => 'nullable|exists:usuarios,id',
+            'activo' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -204,8 +244,21 @@ class AdminController extends Controller
         $u->correo = $request->input('correo');
         $u->nombre_completo = $request->input('nombre_completo');
         if ($request->filled('contrasena')) {
-            $u->contrasena_hash = $request->input('contrasena');
+            $u->contrasena_hash = \Illuminate\Support\Facades\Hash::make($request->input('contrasena'));
         }
+        
+        if ($request->has('rol_id')) {
+            $u->rol_id = $request->input('rol_id');
+        }
+        
+        if ($request->has('ganadero_id')) {
+            $u->ganadero_id = $request->input('ganadero_id');
+        }
+        
+        if ($request->has('activo')) {
+            $u->activo = $request->input('activo');
+        }
+        
         $u->save();
 
         return response()->json(['message' => 'Usuario modificado exitosamente.']);
@@ -457,5 +510,61 @@ class AdminController extends Controller
                 'porcentajeInactivos' => $porcentajeInactivos,
             ]
         ]);
+    }
+
+    public function reenviarCredenciales($id)
+    {
+        $usuario = Usuario::find($id);
+        if (!$usuario) {
+            return response()->json(['message' => 'Usuario no encontrado.'], 404);
+        }
+
+        // Generar nueva contraseña temporal
+        $passwordTemporal = $this->generarContrasenaTemporal($usuario->rol_id);
+
+        $usuario->contrasena_hash = \Illuminate\Support\Facades\Hash::make($passwordTemporal);
+        $usuario->debe_cambiar_password = true;
+        $usuario->password_expira_en = now()->addHours(24);
+        $usuario->save();
+
+        // Enviar correo
+        $enviado = $this->enviarCorreoCredenciales($usuario, $passwordTemporal);
+
+        return response()->json([
+            'message' => 'Credenciales reenviadas exitosamente.' . ($enviado ? ' Correo enviado.' : ' No se pudo enviar el correo.'),
+            'password_temporal_debug' => $passwordTemporal,
+        ]);
+    }
+
+    private function generarContrasenaTemporal($rolId)
+    {
+        $rol = \App\Models\Role::find($rolId);
+        $rolNombre = $rol ? strtolower($rol->nombre) : 'default';
+        
+        $prefix = match ($rolNombre) {
+            'ganadero' => 'GAN',
+            'veterinario' => 'VET',
+            'admin' => 'ADM',
+            default => 'BW',
+        };
+        
+        return $prefix . rand(1000, 9999);
+    }
+
+    private function enviarCorreoCredenciales($usuario, $passwordTemporal)
+    {
+        try {
+            \Illuminate\Support\Facades\Mail::to($usuario->correo)->send(
+                new \App\Mail\WelcomeUserMail(
+                    $usuario->nombre_completo,
+                    $usuario->correo,
+                    $passwordTemporal
+                )
+            );
+            return true;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error al enviar correo de credenciales: ' . $e->getMessage());
+            return false;
+        }
     }
 }
