@@ -28,7 +28,8 @@ class ReporteVeterinarioController extends Controller
             'ganadero:id,nombre_completo,correo',
             'finca:id,nombre,ubicacion',
             'animal:id,nombre,numero_arete,raza_id',
-            'animal.raza:id,nombre'
+            'animal.raza:id,nombre',
+            'cita'
         ]);
 
         // Filtro por rol
@@ -74,7 +75,9 @@ class ReporteVeterinarioController extends Controller
             'medicamentos_sugeridos' => 'nullable|string',
             'proxima_revision' => 'nullable|date',
             'prioridad' => 'required|string|in:baja,media,alta,urgente',
-            'estado' => 'required|string|in:abierto,en_seguimiento,resuelto'
+            'estado' => 'required|string|in:abierto,en_seguimiento,resuelto',
+            'visita_recomendada' => 'nullable|boolean',
+            'cita_id' => 'nullable|integer'
         ]);
 
         if ($validator->fails()) {
@@ -104,13 +107,40 @@ class ReporteVeterinarioController extends Controller
             'proxima_revision' => $request->input('proxima_revision'),
             'prioridad' => $request->input('prioridad'),
             'estado' => $request->input('estado'),
+            'visita_recomendada' => $request->boolean('visita_recomendada', false),
+            'cita_id' => $request->input('cita_id'),
         ]);
+
+        // Crear notificaciones automáticas para el Ganadero
+        try {
+            \App\Models\Notificacion::create([
+                'usuario_id' => $finca->propietario_id,
+                'titulo' => 'Nuevo reporte veterinario disponible',
+                'descripcion' => "Nuevo reporte veterinario disponible para Animal {$animal->nombre} (Arete: {$animal->numero_arete}).",
+                'tipo' => 'reporte',
+                'leido' => false,
+            ]);
+
+            if ($reporte->visita_recomendada) {
+                \App\Models\Notificacion::create([
+                    'usuario_id' => $finca->propietario_id,
+                    'titulo' => 'El veterinario recomienda una visita',
+                    'descripcion' => "El veterinario recomienda una visita para el animal {$animal->nombre} (Arete: {$animal->numero_arete}).",
+                    'tipo' => 'cita',
+                    'leido' => false,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // No bloquear la respuesta si falla la notificación
+            \Log::error("Error al crear notificación de reporte: " . $e->getMessage());
+        }
 
         $reporte->load([
             'veterinario:id,nombre_completo,correo',
             'ganadero:id,nombre_completo,correo',
             'finca:id,nombre',
-            'animal:id,nombre,numero_arete'
+            'animal:id,nombre,numero_arete',
+            'cita'
         ]);
 
         return response()->json([

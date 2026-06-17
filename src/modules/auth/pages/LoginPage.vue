@@ -30,12 +30,20 @@
           <div class="input-wrapper">
             <ion-icon :icon="lockClosedOutline" class="input-icon"></ion-icon>
             <input 
-              type="password" 
+              :type="showPassword ? 'text' : 'password'" 
               v-model="password" 
               placeholder="Contraseña" 
-              class="custom-input" 
+              class="custom-input password-input" 
               @keyup.enter="login"
             />
+            <button 
+              type="button"
+              class="toggle-password-btn" 
+              @click="showPassword = !showPassword"
+              title="Mostrar/Ocultar contraseña"
+            >
+              <ion-icon :icon="showPassword ? eyeOffOutline : eyeOutline"></ion-icon>
+            </button>
           </div>
 
           <!-- Error Message -->
@@ -70,12 +78,13 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { IonPage, IonContent, IonIcon } from '@ionic/vue';
-import { personOutline, lockClosedOutline, alertCircleOutline } from 'ionicons/icons';
+import { personOutline, lockClosedOutline, alertCircleOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons';
 import { authRepository } from '@/services';
 
 const router = useRouter();
 const usuario = ref('');
 const password = ref('');
+const showPassword = ref(false);
 const loading = ref(false);
 const error = ref('');
 
@@ -255,6 +264,33 @@ const fillDemo = (email: string) => {
   outline: none;
   transition: all 0.3s ease;
   box-sizing: border-box;
+}
+
+.password-input {
+  padding-right: 54px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #8ba888;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 8px;
+  outline: none;
+  transition: color 0.2s ease;
+}
+
+.toggle-password-btn:hover {
+  color: #556b2f;
 }
 
 .custom-input::placeholder {

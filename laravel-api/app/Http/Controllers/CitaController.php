@@ -117,6 +117,40 @@ class CitaController extends Controller
             'estado' => $estado,
         ]);
 
+        // Crear notificación automática para el Ganadero si el Veterinario propone la cita
+        if ($userRole === 'veterinario') {
+            try {
+                $veterinario = Usuario::find($veterinarioId);
+                $vetNombre = $veterinario ? $veterinario->nombre_completo : 'El veterinario';
+                \App\Models\Notificacion::create([
+                    'usuario_id' => $ganaderoId,
+                    'titulo' => 'El veterinario recomienda una visita',
+                    'descripcion' => "El veterinario {$vetNombre} ha propuesto una visita clínica para la finca {$finca->nombre} el {$cita->fecha} a las {$cita->hora}.",
+                    'tipo' => 'cita',
+                    'leido' => false,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error("Error al crear notificación de propuesta de cita: " . $e->getMessage());
+            }
+        }
+
+        // Crear notificación automática para el Veterinario si el Ganadero solicita la cita
+        if ($userRole === 'ganadero') {
+            try {
+                $ganadero = Usuario::find($ganaderoId);
+                $ganaderoNombre = $ganadero ? $ganadero->nombre_completo : 'El ganadero';
+                \App\Models\Notificacion::create([
+                    'usuario_id' => $veterinarioId,
+                    'titulo' => 'Nueva solicitud de cita',
+                    'descripcion' => "El ganadero {$ganaderoNombre} ha solicitado una cita para la finca {$finca->nombre} el {$cita->fecha} a las {$cita->hora}.",
+                    'tipo' => 'cita',
+                    'leido' => false,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error("Error al crear notificación de solicitud de cita para el veterinario: " . $e->getMessage());
+            }
+        }
+
         // Cargar relaciones antes de retornar
         $cita->load([
             'ganadero:id,nombre_completo,correo',
@@ -164,6 +198,8 @@ class CitaController extends Controller
             return response()->json(['message' => $validator->errors()->first()], 422);
         }
 
+        $estadoAnterior = $cita->estado;
+
         // Reprogramación
         $rescheduled = false;
         if ($request->has('fecha') && $request->input('fecha') != $cita->fecha) {
@@ -206,6 +242,89 @@ class CitaController extends Controller
             'finca:id,nombre,ubicacion',
             'animal:id,nombre,numero_arete'
         ]);
+
+        // Crear notificaciones si fue actualizado por el veterinario o administrador
+        if ($userRole === 'veterinario' || $userRole === 'admin') {
+            try {
+                $vetNombre = $cita->veterinario ? $cita->veterinario->nombre_completo : 'El veterinario';
+
+                if ($rescheduled && $cita->estado === 'propuesta_veterinario') {
+                    // Notificación: Su cita ha sido reprogramada
+                    \App\Models\Notificacion::create([
+                        'usuario_id' => $cita->ganadero_id,
+                        'titulo' => 'Su cita ha sido reprogramada',
+                        'descripcion' => "El veterinario {$vetNombre} ha propuesto reprogramar la cita para el {$cita->fecha} a las {$cita->hora}.",
+                        'tipo' => 'cita',
+                        'leido' => false,
+                    ]);
+                } else if ($request->has('estado')) {
+                    $nuevoEstado = $request->input('estado');
+                    if ($nuevoEstado === 'aceptada' && $estadoAnterior !== 'aceptada') {
+                        // Notificación: Su cita ha sido aceptada
+                        \App\Models\Notificacion::create([
+                            'usuario_id' => $cita->ganadero_id,
+                            'titulo' => 'Su cita ha sido aceptada',
+                            'descripcion' => "El veterinario {$vetNombre} ha aceptado su solicitud de cita para el {$cita->fecha} a las {$cita->hora}.",
+                            'tipo' => 'cita',
+                            'leido' => false,
+                        ]);
+                    } else if ($nuevoEstado === 'rechazada' && $estadoAnterior !== 'rechazada') {
+                        // Notificación: Su cita ha sido rechazada
+                        $motivo = $cita->comentario_rechazo ? " Motivo: {$cita->comentario_rechazo}" : "";
+                        \App\Models\Notificacion::create([
+                            'usuario_id' => $cita->ganadero_id,
+                            'titulo' => 'Su cita ha sido rechazada',
+                            'descripcion' => "El veterinario {$vetNombre} ha rechazado su solicitud de cita.{$motivo}",
+                            'tipo' => 'cita',
+                            'leido' => false,
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error("Error al enviar notificación de actualización de cita: " . $e->getMessage());
+            }
+        }
+
+        // Crear notificaciones si fue actualizado por el ganadero
+        if ($userRole === 'ganadero') {
+            try {
+                $ganaderoNombre = $cita->ganadero ? $cita->ganadero->nombre_completo : 'El ganadero';
+
+                if ($rescheduled && $cita->estado === 'pendiente') {
+                    // Notificación: Solicitud de reprogramación
+                    \App\Models\Notificacion::create([
+                        'usuario_id' => $cita->veterinario_id,
+                        'titulo' => 'Solicitud de reprogramación de cita',
+                        'descripcion' => "El ganadero {$ganaderoNombre} ha propuesto reprogramar la cita para el {$cita->fecha} a las {$cita->hora}.",
+                        'tipo' => 'cita',
+                        'leido' => false,
+                    ]);
+                } else if ($request->has('estado')) {
+                    $nuevoEstado = $request->input('estado');
+                    if ($nuevoEstado === 'aceptada' && $estadoAnterior !== 'aceptada') {
+                        // Notificación: Cita aceptada
+                        \App\Models\Notificacion::create([
+                            'usuario_id' => $cita->veterinario_id,
+                            'titulo' => 'Cita aceptada por el ganadero',
+                            'descripcion' => "El ganadero {$ganaderoNombre} ha aceptado su propuesta de cita para el {$cita->fecha} a las {$cita->hora}.",
+                            'tipo' => 'cita',
+                            'leido' => false,
+                        ]);
+                    } else if ($nuevoEstado === 'rechazada' && $estadoAnterior !== 'rechazada') {
+                        // Notificación: Cita cancelada
+                        \App\Models\Notificacion::create([
+                            'usuario_id' => $cita->veterinario_id,
+                            'titulo' => 'Cita cancelada/rechazada',
+                            'descripcion' => "El ganadero {$ganaderoNombre} ha cancelado o rechazado la cita agendada para el {$cita->fecha}.",
+                            'tipo' => 'cita',
+                            'leido' => false,
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error("Error al enviar notificación de actualización de cita para el veterinario: " . $e->getMessage());
+            }
+        }
 
         return response()->json([
             'message' => 'Cita actualizada exitosamente.',

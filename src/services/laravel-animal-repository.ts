@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import type { Animal, WeightRecord, IAnimalRepository, Cita, ReporteVeterinario } from './interfaces';
+import type { Animal, WeightRecord, IAnimalRepository, Cita, ReporteVeterinario, Notificacion } from './interfaces';
 
 export class LaravelAnimalRepository implements IAnimalRepository {
   private getHeaders() {
@@ -467,7 +467,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
-  async crearReporteVeterinario(reporte: { animal_id: number; observaciones: string; diagnostico_preliminar: string; recomendaciones: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad: string; estado: string }): Promise<any> {
+  async crearReporteVeterinario(reporte: { animal_id: number; observaciones: string; diagnostico_preliminar: string; recomendaciones: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad: string; estado: string; visita_recomendada?: boolean; cita_id?: number | null }): Promise<any> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {
       const response = await axios.post(`${apiUrl}/reportes-veterinarios`, reporte, {
@@ -480,7 +480,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
-  async actualizarReporteVeterinario(id: number, payload: { observaciones?: string; diagnostico_preliminar?: string; recomendaciones?: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad?: string; estado?: string }): Promise<any> {
+  async actualizarReporteVeterinario(id: number, payload: { observaciones?: string; diagnostico_preliminar?: string; recomendaciones?: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad?: string; estado?: string; visita_recomendada?: boolean; cita_id?: number | null }): Promise<any> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {
       const response = await axios.put(`${apiUrl}/reportes-veterinarios/${id}`, payload, {
@@ -490,6 +490,71 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     } catch (err: any) {
       console.error('Error en actualizarReporteVeterinario con Laravel:', err.message);
       throw new Error(err.response?.data?.message || 'Error al actualizar el reporte veterinario');
+    }
+  }
+
+  async getNotificaciones(): Promise<Notificacion[]> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.get(`${apiUrl}/notificaciones`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getNotificaciones con Laravel:', err.message);
+      throw new Error('Error al obtener las notificaciones');
+    }
+  }
+
+  async marcarNotificacionLeida(id: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.put(`${apiUrl}/notificaciones/${id}/leer`, {}, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en marcarNotificacionLeida con Laravel:', err.message);
+      throw new Error('Error al marcar la notificación como leída');
+    }
+  }
+
+  async marcarTodasNotificacionesLeidas(): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.put(`${apiUrl}/notificaciones/leer-todas`, {}, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en marcarTodasNotificacionesLeidas con Laravel:', err.message);
+      throw new Error('Error al marcar todas las notificaciones como leídas');
+    }
+  }
+
+  async eliminarNotificacion(id: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.delete(`${apiUrl}/notificaciones/${id}`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en eliminarNotificacion con Laravel:', err.message);
+      throw new Error('Error al eliminar la notificación');
+    }
+  }
+
+  async getDashboardStats(): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.get(`${apiUrl}/dashboard-stats`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getDashboardStats con Laravel:', err.message);
+      throw new Error('Error al obtener estadísticas del dashboard');
     }
   }
 }

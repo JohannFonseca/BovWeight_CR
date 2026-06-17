@@ -24,7 +24,9 @@ class ReporteVeterinario extends Model
         'medicamentos_sugeridos',
         'proxima_revision',
         'prioridad',
-        'estado'
+        'estado',
+        'visita_recomendada',
+        'cita_id'
     ];
 
     public function veterinario(): BelongsTo
@@ -45,5 +47,10 @@ class ReporteVeterinario extends Model
     public function animal(): BelongsTo
     {
         return $this->belongsTo(Animal::class, 'animal_id');
+    }
+
+    public function cita(): BelongsTo
+    {
+        return $this->belongsTo(Cita::class, 'cita_id');
     }
 }

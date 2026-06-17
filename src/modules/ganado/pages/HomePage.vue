@@ -11,6 +11,12 @@
           </div>
         </ion-title>
         <ion-buttons slot="end">
+          <!-- BELL NOTIFICATION ICON -->
+          <button @click="openNotifications" class="bell-btn-custom animate-fade-in" title="Centro de Alertas">
+            <ion-icon :icon="notificationsOutline"></ion-icon>
+            <span v-if="unreadCount > 0" class="bell-badge">{{ unreadCount }}</span>
+          </button>
+
           <div v-if="isOffline" class="offline-indicator animate-pulse">
             <ion-icon :icon="cloudOfflineOutline"></ion-icon>
             <span>Sin Conexión</span>
@@ -134,6 +140,64 @@
           </button>
         </div>
 
+        <!-- PANEL DE TAREAS Y ESTADOS PENDIENTES -->
+        <div class="panel-card pending-tasks-panel animate-fade-in">
+          <div class="panel-header">
+            <h3>Estado y Tareas de Finca</h3>
+          </div>
+          <div class="panel-body grid-2x2">
+            <div class="task-indicator" @click="openNotifications">
+              <div class="indicator-icon notification">
+                <ion-icon :icon="notificationsOutline"></ion-icon>
+              </div>
+              <div class="indicator-details">
+                <span class="value">{{ dashboardStats.notificacionesSinLeer ?? 0 }}</span>
+                <span class="label">Alertas sin leer</span>
+              </div>
+            </div>
+
+            <div class="task-indicator" @click="goToAgenda">
+              <div class="indicator-icon cita">
+                <ion-icon :icon="calendarOutline"></ion-icon>
+              </div>
+              <div class="indicator-details">
+                <span class="value">{{ dashboardStats.citasProximas ?? 0 }}</span>
+                <span class="label">Próximas citas</span>
+              </div>
+            </div>
+
+            <div class="task-indicator" @click="goToAgendaPending">
+              <div class="indicator-icon pendiente-confirmar">
+                <ion-icon :icon="timeOutline"></ion-icon>
+              </div>
+              <div class="indicator-details">
+                <span class="value">{{ dashboardStats.citasPorConfirmar ?? 0 }}</span>
+                <span class="label">Citas por confirmar</span>
+              </div>
+            </div>
+
+            <div class="task-indicator" @click="goToReports">
+              <div class="indicator-icon reporte">
+                <ion-icon :icon="documentTextOutline"></ion-icon>
+              </div>
+              <div class="indicator-details">
+                <span class="value">{{ dashboardStats.reportesPendientes ?? 0 }}</span>
+                <span class="label">Reportes clínicos</span>
+              </div>
+            </div>
+
+            <div class="task-indicator" @click="goToWeightReminders">
+              <div class="indicator-icon recordatorio">
+                <ion-icon :icon="scaleOutline"></ion-icon>
+              </div>
+              <div class="indicator-details">
+                <span class="value">{{ dashboardStats.animalesPendientesPesaje ?? 0 }}</span>
+                <span class="label">Sin pesaje (30d)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- STATS GRID -->
         <div class="stats-grid">
           <div class="stat-card green">
@@ -163,6 +227,16 @@
             <div class="stat-data">
               <span class="val">{{ pesajesHoy }}</span>
               <span class="lbl">Historial Pesos</span>
+            </div>
+          </div>
+
+          <div class="stat-card purple">
+            <div class="stat-icon-circle">
+              <ion-icon :icon="homeOutline"></ion-icon>
+            </div>
+            <div class="stat-data">
+              <span class="val">{{ dashboardStats.fincas ?? 0 }}</span>
+              <span class="lbl">Mis Fincas</span>
             </div>
           </div>
         </div>
@@ -225,6 +299,14 @@
 
       <!-- Bottom Navigation always active -->
       <BottomNav />
+      
+      <!-- Notifications modal overlay -->
+      <NotificationsModal 
+        :is-open="isNotificationsOpen" 
+        :notifications="notifications" 
+        @close="isNotificationsOpen = false" 
+        @refresh="loadNotificationsAndStats" 
+      />
     </ion-content>
   </ion-page>
 </template>
@@ -237,10 +319,13 @@ import {
 } from '@ionic/vue';
 import { 
   cloudOfflineOutline, pawOutline, chevronForwardOutline, logOutOutline,
-  cameraOutline, scaleOutline, cloudUploadOutline, trashOutline, refreshOutline
+  cameraOutline, scaleOutline, cloudUploadOutline, trashOutline, refreshOutline,
+  notificationsOutline, calendarOutline, documentTextOutline, homeOutline, timeOutline
 } from 'ionicons/icons';
 import BottomNav from '@/components/BottomNav.vue';
+import NotificationsModal from '@/components/NotificationsModal.vue';
 import { animalRepository, offlineSyncService, type Animal } from '@/services';
+import type { Notificacion } from '@/services/interfaces';
 import { useAutoRefresh } from '@/composables/useAutoRefresh';
 
 // Chart.js imports
@@ -256,6 +341,44 @@ const animals = ref<Animal[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const router = useRouter();
+
+// Notificaciones y Estadísticas
+const notifications = ref<Notificacion[]>([]);
+const isNotificationsOpen = ref(false);
+const dashboardStats = ref<any>({});
+
+const unreadCount = computed(() => {
+  return notifications.value.filter(n => !n.leido).length;
+});
+
+async function loadNotificationsAndStats() {
+  try {
+    notifications.value = await animalRepository.getNotificaciones();
+    dashboardStats.value = await animalRepository.getDashboardStats();
+  } catch (err) {
+    console.error('Error al cargar alertas y estadísticas:', err);
+  }
+}
+
+function openNotifications() {
+  isNotificationsOpen.value = true;
+}
+
+function goToAgenda() {
+  router.push('/ganado/personal?tab=citas&filter=aceptada');
+}
+
+function goToAgendaPending() {
+  router.push('/ganado/personal?tab=citas&filter=pendiente');
+}
+
+function goToReports() {
+  router.push('/ganado/personal?tab=reportes');
+}
+
+function goToWeightReminders() {
+  router.push('/ganado/animales');
+}
 
 // Conectividad
 const isOffline = ref(!navigator.onLine);
@@ -330,6 +453,7 @@ async function load() {
   error.value = null;
   try {
     animals.value = await animalRepository.getAllAnimals();
+    await loadNotificationsAndStats();
   } catch (err: any) {
     error.value = err.message || 'Error al cargar animales';
   } finally {
@@ -340,6 +464,7 @@ async function load() {
 async function silentLoad() {
   try {
     animals.value = await animalRepository.getAllAnimals();
+    await loadNotificationsAndStats();
   } catch (err) {
     console.error('Error actualizando rebaño en background:', err);
   }
@@ -684,7 +809,7 @@ const chartOptions = ref({
 /* STATS GRID */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
@@ -712,6 +837,7 @@ const chartOptions = ref({
 .stat-card.green .stat-icon-circle { background: #eaf8eb; color: #2e7d32; }
 .stat-card.orange .stat-icon-circle { background: #fff3e0; color: #e65100; }
 .stat-card.blue .stat-icon-circle { background: #e3f2fd; color: #1565c0; }
+.stat-card.purple .stat-icon-circle { background: #f3e5f5; color: #8e24aa; }
 
 .stat-data {
   display: flex;
@@ -1083,5 +1209,104 @@ const chartOptions = ref({
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* BELL BUTTON AND BADGE */
+.bell-btn-custom {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  color: #5c6e58;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  cursor: pointer;
+  position: relative;
+  margin-right: 8px;
+  outline: none;
+}
+
+.bell-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #c62828;
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  border: 1.5px solid #ffffff;
+}
+
+/* PENDING TASKS PANEL */
+.pending-tasks-panel {
+  background: #ffffff;
+  border-color: rgba(46, 125, 50, 0.08);
+}
+
+.grid-2x2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.task-indicator {
+  background: #f4f6f0;
+  border: 1px solid rgba(46, 125, 50, 0.03);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.task-indicator:active {
+  transform: scale(0.97);
+  background-color: #eaf0e6;
+}
+
+.indicator-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.indicator-icon.notification { background: #e8f5e9; color: #2e7d32; }
+.indicator-icon.cita { background: #e3f2fd; color: #1565c0; }
+.indicator-icon.pendiente-confirmar { background: #efebe9; color: #5d4037; }
+.indicator-icon.reporte { background: #f3e5f5; color: #8e24aa; }
+.indicator-icon.recordatorio { background: #fff3e0; color: #e65100; }
+
+.indicator-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.indicator-details .value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #2c3e2d;
+  line-height: 1.2;
+}
+
+.indicator-details .label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #8fa086;
 }
 </style>

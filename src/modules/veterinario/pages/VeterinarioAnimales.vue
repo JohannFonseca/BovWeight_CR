@@ -16,12 +16,18 @@
           </div>
         </ion-title>
         <ion-buttons slot="end">
-          <div class="user-profile desktop-only">
-            <div class="avatar vet">V</div>
-            <div class="user-info">
-              <span class="name">Veterinario</span>
+          <div class="user-profile">
+            <div class="avatar vet">
+              {{ usuarioSesion?.nombre_completo ? usuarioSesion.nombre_completo.charAt(0).toUpperCase() : 'V' }}
+            </div>
+            <div class="user-info desktop-only">
+              <span class="name">{{ usuarioSesion?.nombre_completo || 'Ana Veterinaria' }}</span>
+              <span class="role" style="font-size: 10px; color: #7c8e76;">{{ usuarioSesion?.usuario || 'veterinario@test.com' }}</span>
             </div>
           </div>
+          <ion-button @click="logout" class="logout-btn">
+            <ion-icon :icon="logOutOutline"></ion-icon>
+          </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -135,10 +141,27 @@ import {
 } from '@ionic/vue';
 import {
   medkitOutline, pawOutline, calendarOutline, documentTextOutline,
-  searchOutline, chevronForwardOutline, arrowBackOutline
+  searchOutline, chevronForwardOutline, arrowBackOutline, logOutOutline
 } from 'ionicons/icons';
 
 const router = useRouter();
+
+const usuarioSesion = ref<any>(null);
+const sessionStr = localStorage.getItem('usuario_sesion');
+if (sessionStr) {
+  try {
+    usuarioSesion.value = JSON.parse(sessionStr);
+  } catch (e) {
+    console.error('Error parseando usuario_sesion:', e);
+  }
+}
+
+const logout = () => {
+  localStorage.removeItem('usuario_sesion');
+  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
+  router.push('/login');
+};
 
 const isLoading = ref(true);
 const error = ref<string | null>(null);
@@ -246,7 +269,9 @@ const filteredAnimales = computed(() => {
   width: 38px; height: 38px; display: flex; align-items: center;
   justify-content: center; font-weight: 700;
 }
+.user-info { display: flex; flex-direction: column; text-align: left; }
 .user-info .name { font-size: 14px; font-weight: 700; color: #2c3e2d; }
+.user-info .role { font-size: 10px; color: #7c8e76; }
 
 .dashboard-layout { display: flex; height: 100%; }
 
@@ -343,4 +368,5 @@ const filteredAnimales = computed(() => {
   .main-content { padding: 16px; }
   .filters-card { flex-direction: column; }
 }
+.logout-btn { --color: #5c6e58; }
 </style>

@@ -441,20 +441,93 @@ class GanadoController extends Controller
             $personal = Usuario::where('activo', true)->count();
             $bovinos = Animal::count();
             $fincas = Finca::count();
+
+            return response()->json([
+                'personalActivo' => $personal,
+                'bovinos' => $bovinos,
+                'fincas' => $fincas,
+            ]);
         } else {
             // Ganadero or Veterinario
-            $personal = 0;
             $fincas = Finca::where('propietario_id', $userId)->count();
             $bovinos = Animal::whereHas('finca', function ($q) use ($userId) {
                 $q->where('propietario_id', $userId);
             })->count();
-        }
 
-        return response()->json([
-            'personalActivo' => $personal,
-            'bovinos' => $bovinos,
-            'fincas' => $fincas,
-        ]);
+            // Personal activo (veterinarios asignados)
+            $personal = Usuario::where('activo', true)
+                ->whereHas('fincasAsignadas', function ($q) use ($userId) {
+                    $q->where('propietario_id', $userId);
+                })->count();
+
+            // Nuevas estadísticas para el Ganadero
+            $notificacionesSinLeer = \App\Models\Notificacion::where('usuario_id', $userId)
+                ->where('leido', false)
+                ->count();
+
+            $citasProximas = \App\Models\Cita::where('ganadero_id', $userId)
+                ->where('estado', 'aceptada')
+                ->count();
+
+            $citasPorConfirmar = \App\Models\Cita::where('ganadero_id', $userId)
+                ->whereIn('estado', ['pendiente', 'propuesta_veterinario'])
+                ->count();
+
+            $reportesPendientes = \App\Models\ReporteVeterinario::where('ganadero_id', $userId)
+                ->count();
+
+            // Animales pendientes de pesaje (sin pesajes en los últimos 30 días)
+            $treintaDiasAgo = Carbon::now()->subDays(30);
+            $animalesIds = Animal::whereHas('finca', function ($q) use ($userId) {
+                $q->where('propietario_id', $userId);
+            })->pluck('id')->toArray();
+
+            $animalesConPesajeReciente = \App\Models\EstimacionPeso::whereIn('animal_id', $animalesIds)
+                ->where('created_at', '>=', $treintaDiasAgo)
+                ->pluck('animal_id')
+                ->unique()
+                ->toArray();
+
+            $animalesPendientesPesaje = count($animalesIds) - count($animalesConPesajeReciente);
+
+            // Generar notificación de recordatorio automáticamente si hay pendientes
+            if ($animalesPendientesPesaje > 0) {
+                try {
+                    // Verificar si ya se envió un recordatorio en las últimas 24 horas
+                    $existeRecordatorioReciente = \App\Models\Notificacion::where('usuario_id', $userId)
+                        ->where('tipo', 'recordatorio')
+                        ->where('created_at', '>=', Carbon::now()->subDay())
+                        ->exists();
+
+                    if (!$existeRecordatorioReciente) {
+                        \App\Models\Notificacion::create([
+                            'usuario_id' => $userId,
+                            'titulo' => 'Tiene animales pendientes de pesaje',
+                            'descripcion' => "Tiene {$animalesPendientesPesaje} animales pendientes de pesaje en los últimos 30 días.",
+                            'tipo' => 'recordatorio',
+                            'leido' => false,
+                        ]);
+                        // Recargar conteo de notificaciones sin leer
+                        $notificacionesSinLeer = \App\Models\Notificacion::where('usuario_id', $userId)
+                            ->where('leido', false)
+                            ->count();
+                    }
+                } catch (\Exception $e) {
+                    \Log::error("Error al crear notificación de recordatorio de pesaje: " . $e->getMessage());
+                }
+            }
+
+            return response()->json([
+                'personalActivo' => $personal,
+                'bovinos' => $bovinos,
+                'fincas' => $fincas,
+                'notificacionesSinLeer' => $notificacionesSinLeer,
+                'citasProximas' => $citasProximas,
+                'citasPorConfirmar' => $citasPorConfirmar,
+                'reportesPendientes' => $reportesPendientes,
+                'animalesPendientesPesaje' => $animalesPendientesPesaje,
+            ]);
+        }
     }
 
     // ==========================================

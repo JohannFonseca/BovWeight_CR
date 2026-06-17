@@ -136,10 +136,25 @@ export interface IAnimalRepository {
   getReportesVeterinarios(animalId?: number): Promise<ReporteVeterinario[]>;
 
   /** Crea un nuevo reporte veterinario. */
-  crearReporteVeterinario(reporte: { animal_id: number; observaciones: string; diagnostico_preliminar: string; recomendaciones: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad: string; estado: string }): Promise<any>;
+  crearReporteVeterinario(reporte: { animal_id: number; observaciones: string; diagnostico_preliminar: string; recomendaciones: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad: string; estado: string; visita_recomendada?: boolean; cita_id?: number | null }): Promise<any>;
 
   /** Actualiza un reporte veterinario. */
-  actualizarReporteVeterinario(id: number, payload: { observaciones?: string; diagnostico_preliminar?: string; recomendaciones?: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad?: string; estado?: string }): Promise<any>;
+  actualizarReporteVeterinario(id: number, payload: { observaciones?: string; diagnostico_preliminar?: string; recomendaciones?: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad?: string; estado?: string; visita_recomendada?: boolean; cita_id?: number | null }): Promise<any>;
+
+  /** Obtiene las notificaciones del usuario. */
+  getNotificaciones(): Promise<Notificacion[]>;
+
+  /** Marca una notificación como leída. */
+  marcarNotificacionLeida(id: number): Promise<any>;
+
+  /** Marca todas las notificaciones como leídas. */
+  marcarTodasNotificacionesLeidas(): Promise<any>;
+
+  /** Elimina una notificación. */
+  eliminarNotificacion(id: number): Promise<any>;
+
+  /** Obtiene las estadísticas generales del dashboard. */
+  getDashboardStats(): Promise<any>;
 }
 
 /**
@@ -180,12 +195,29 @@ export interface ReporteVeterinario {
   proxima_revision?: string | null;
   prioridad: 'baja' | 'media' | 'alta' | 'urgente';
   estado: 'abierto' | 'en_seguimiento' | 'resuelto';
+  visita_recomendada?: boolean;
+  cita_id?: number | null;
   created_at?: string;
   updated_at?: string;
   veterinario?: { id: number; nombre_completo: string; correo: string };
   ganadero?: { id: number; nombre_completo: string; correo: string };
   finca?: { id: number; nombre: string; ubicacion: string };
   animal?: { id: number; nombre: string; numero_arete: string };
+  cita?: Cita | null;
+}
+
+/**
+ * Notificación del sistema.
+ */
+export interface Notificacion {
+  id: number;
+  usuario_id: number;
+  titulo: string;
+  descripcion: string;
+  tipo: 'reporte' | 'cita' | 'recordatorio' | 'sistema';
+  leido: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 /**

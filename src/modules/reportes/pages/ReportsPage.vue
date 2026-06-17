@@ -217,7 +217,7 @@
                   </p>
                 </div>
               </div>
-              <div class="report-card-actions">
+              <div class="report-card-actions" style="display: flex; gap: 4px; flex-wrap: wrap; width: 100%;">
                 <ion-button 
                   size="small" 
                   fill="clear"
@@ -234,6 +234,16 @@
                 >
                   <ion-icon :icon="downloadOutline" slot="start"></ion-icon>
                   EXPORTAR
+                </ion-button>
+                <ion-button
+                  size="small"
+                  color="primary"
+                  fill="clear"
+                  @click="shareReportPdfFile(r)"
+                  title="Compartir PDF"
+                  style="--padding-start: 4px; --padding-end: 4px;"
+                >
+                  <ion-icon :icon="shareSocialOutline" slot="icon-only"></ion-icon>
                 </ion-button>
                 <button 
                   class="delete-report-btn" 
@@ -337,13 +347,17 @@
           </div>
         </div>
         
-        <div class="modal-footer">
-          <ion-button fill="outline" @click="closePreviewModal" class="btn-footer-close">
+        <div class="modal-footer" style="flex-wrap: wrap; gap: 8px;">
+          <ion-button fill="outline" @click="closePreviewModal" class="btn-footer-close" style="flex: 1; min-width: 100px;">
             Cerrar
           </ion-button>
-          <ion-button @click="exportPreviewPdf" class="btn-footer-export" :disabled="!previewReport">
+          <ion-button @click="exportPreviewPdf" class="btn-footer-export" :disabled="!previewReport" style="flex: 1; min-width: 130px;">
             <ion-icon :icon="downloadOutline" slot="start"></ion-icon>
             Exportar PDF
+          </ion-button>
+          <ion-button v-if="previewReport" color="primary" @click="sharePreviewPdfFile" style="flex: 1; min-width: 130px;">
+            <ion-icon :icon="shareSocialOutline" slot="start"></ion-icon>
+            Compartir PDF
           </ion-button>
         </div>
       </div>
@@ -358,7 +372,8 @@ import {
   IonIcon, IonButtons, IonBackButton, IonSpinner, IonToast, IonModal
 } from '@ionic/vue';
 import { 
-  saveOutline, downloadOutline, checkmarkOutline, trashOutline, eyeOutline, closeOutline
+  saveOutline, downloadOutline, checkmarkOutline, trashOutline, eyeOutline, closeOutline,
+  logoWhatsapp, mailOutline, shareSocialOutline
 } from 'ionicons/icons';
 import BottomNav from '@/components/BottomNav.vue';
 import { animalRepository, type Animal } from '@/services';
@@ -556,7 +571,7 @@ async function getBase64ImageFromUrl(url: string): Promise<string> {
 }
 
 // Helper para generar el PDF a nivel cliente
-async function doGeneratePdf(title: string, description: string, destinatario: string, reportAnimals: any[]) {
+async function generatePdfObject(title: string, description: string, destinatario: string, reportAnimals: any[]): Promise<jsPDF> {
   showToast('Generando reporte PDF con fotografías...');
   const doc = new jsPDF();
   const userName = usuarioSesion.value?.nombre_completo || 'Ganadero BovWeight';
@@ -800,7 +815,12 @@ async function doGeneratePdf(title: string, description: string, destinatario: s
     doc.text(`Página ${i} de ${pageCount}`, 180, 285);
   }
 
-  // Guardar archivo
+  return doc;
+}
+
+async function doGeneratePdf(title: string, description: string, destinatario: string, reportAnimals: any[]) {
+  const doc = await generatePdfObject(title, description, destinatario, reportAnimals);
+  if (!doc) return;
   const safeTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '_');
   doc.save(`reporte_${safeTitle || 'ganado'}.pdf`);
   showToast('Reporte PDF descargado exitosamente.');
@@ -885,6 +905,50 @@ async function confirmDeleteReport(report: any) {
       showToast(e.message || 'Error al eliminar el reporte.', 'danger');
     }
   }
+}
+async function shareReportPdfFile(report: any) {
+  let reportAnimals = report.animales;
+  if (!reportAnimals) {
+    try {
+      const detail = await animalRepository.getReporteDetalleGanadero(report.id);
+      reportAnimals = detail.animales;
+    } catch (e: any) {
+      showToast('Error al obtener los detalles del reporte: ' + e.message, 'danger');
+      return;
+    }
+  }
+
+  showToast('Preparando archivo PDF...');
+  try {
+    const doc = await generatePdfObject(report.titulo, report.descripcion || '', report.destinatario || '', reportAnimals);
+    if (!doc) return;
+
+    const safeTitle = report.titulo.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'reporte';
+    const pdfBlob = doc.output('blob');
+    const file = new File([pdfBlob], `reporte_${safeTitle}.pdf`, { type: 'application/pdf' });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: report.titulo || 'Reporte de Pesaje',
+        text: 'Te comparto el reporte de pesaje en PDF desde BovWeight CR.'
+      });
+      showToast('¡Reporte compartido exitosamente!');
+    } else {
+      // Fallback: descargar el PDF
+      doc.save(`reporte_${safeTitle}.pdf`);
+      showToast('La API de compartir no está soportada en este navegador. Se ha descargado el PDF.', 'warning');
+    }
+  } catch (err: any) {
+    if (err.name !== 'AbortError') {
+      showToast('Error al compartir el archivo: ' + err.message, 'danger');
+    }
+  }
+}
+
+async function sharePreviewPdfFile() {
+  if (!previewReport.value) return;
+  await shareReportPdfFile(previewReport.value);
 }
 
 // Al montar el componente

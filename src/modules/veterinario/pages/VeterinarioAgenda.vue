@@ -16,15 +16,18 @@
           </div>
         </ion-title>
         <ion-buttons slot="end">
-          <div class="user-profile desktop-only">
+          <div class="user-profile">
             <div class="avatar vet">
               {{ usuarioSesion?.nombre_completo ? usuarioSesion.nombre_completo.charAt(0).toUpperCase() : 'V' }}
             </div>
-            <div class="user-info">
-              <span class="name">{{ usuarioSesion?.nombre_completo || 'Médico Veterinario' }}</span>
-              <span class="role">{{ usuarioSesion?.correo }}</span>
+            <div class="user-info desktop-only">
+              <span class="name">{{ usuarioSesion?.nombre_completo || 'Ana Veterinaria' }}</span>
+              <span class="role" style="font-size: 10px; color: #7c8e76;">{{ usuarioSesion?.usuario || 'veterinario@test.com' }}</span>
             </div>
           </div>
+          <ion-button @click="logout" class="logout-btn">
+            <ion-icon :icon="logOutOutline"></ion-icon>
+          </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -428,13 +431,20 @@ import {
 } from '@ionic/vue';
 import {
   medkitOutline, pawOutline, calendarOutline, documentTextOutline,
-  addOutline, arrowBackOutline, searchOutline, chevronForwardOutline
+  addOutline, arrowBackOutline, searchOutline, chevronForwardOutline, logOutOutline
 } from 'ionicons/icons';
 import { animalRepository } from '@/services';
 import { useAutoRefresh } from '@/composables/useAutoRefresh';
 
 const router = useRouter();
 const usuarioSesion = ref<any>(null);
+
+const logout = () => {
+  localStorage.removeItem('usuario_sesion');
+  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
+  router.push('/login');
+};
 
 // Variables de estado
 const citas = ref<any[]>([]);
@@ -1398,4 +1408,5 @@ const formatDate = (dateStr: string): string => {
   .filters-row { flex-direction: column; }
   .filter-box select { width: 100%; }
 }
+.logout-btn { --color: #5c6e58; }
 </style>
