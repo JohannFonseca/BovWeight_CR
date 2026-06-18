@@ -309,14 +309,13 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
-  async cambiarPassword(id: number, passwordActual: string, nuevoPassword: string, confirmarPassword: string): Promise<any> {
+  async cambiarPassword(id: number, passwordActual: string, nuevoPassword: string): Promise<any> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {
       const response = await axios.post(`${apiUrl}/cambiar-password`, {
         id,
         password_actual: passwordActual,
-        nuevo_password: nuevoPassword,
-        confirmar_password: confirmarPassword
+        nuevo_password: nuevoPassword
       }, {
         headers: this.getHeaders(),
       });

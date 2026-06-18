@@ -33,4 +33,17 @@ export class LaravelAuthRepository implements IAuthRepository {
       throw new Error(err.response?.data?.message || 'Correo o contraseña incorrectos');
     }
   }
+
+  async recuperarPassword(correo: string): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/recuperar-password`, {
+        correo: correo,
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error al solicitar recuperación de contraseña con Laravel:', err.response?.data?.message || err.message);
+      throw new Error(err.response?.data?.message || 'Error al procesar la solicitud de recuperación');
+    }
+  }
 }

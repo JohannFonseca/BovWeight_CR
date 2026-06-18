@@ -11,10 +11,6 @@ Este documento consolida únicamente las funcionalidades faltantes, riesgos de s
 *   **Descripción:** El backend en Laravel confía en las cabeceras `X-User-Id` y `X-User-Role` enviadas por Axios en texto plano desde el frontend sin verificación criptográfica. Cualquier usuario malintencionado podría falsificar estas cabeceras para acceder como otro usuario o rol.
 *   **Solución recomendada:** Implementar **Laravel Sanctum** o **JWT** para firmar y validar todas las solicitudes a la API a través de tokens seguros.
 
-### 🟡 Sistema de Recuperación de Acceso
-*   **Estado:** No implementada / Pendiente
-*   **Descripción:** No existe la opción de "Olvidé mi contraseña" en la pantalla de inicio de sesión (`LoginPage.vue`) ni los endpoints de generación de tokens de recuperación y restablecimiento de contraseña en el backend.
-*   **Solución recomendada:** Crear la interfaz de solicitud de recuperación, el endpoint en Laravel para enviar correos con enlace de restablecimiento firmado temporalmente, y la pantalla para ingresar la nueva contraseña.
 
 ### 🟡 Logs de Auditoría e Intentos Fallidos
 *   **Estado:** No implementada / Pendiente

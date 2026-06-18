@@ -101,7 +101,7 @@ export interface IAnimalRepository {
   reenviarCredenciales(id: number): Promise<any>;
 
   /** Cambia la contraseña temporal por una nueva. */
-  cambiarPassword(id: number, passwordActual: string, nuevoPassword: string, confirmarPassword: string): Promise<any>;
+  cambiarPassword(id: number, passwordActual: string, nuevoPassword: string): Promise<any>;
 
   /** Obtiene todos los reportes de ganadero guardados. */
   getReportesGanadero(): Promise<any[]>;
@@ -233,5 +233,8 @@ export interface Notificacion {
 export interface IAuthRepository {
   /** Autentica a un usuario mediante credenciales. */
   login(correo: string, password: string): Promise<User>;
+
+  /** Solicita la recuperación de la contraseña enviando una temporal por correo. */
+  recuperarPassword(correo: string): Promise<any>;
 }
 

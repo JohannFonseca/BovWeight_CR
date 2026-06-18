@@ -107,79 +107,135 @@
 
             <!-- Welcome message -->
             <div class="welcome-header">
-              <h2>¡Hola de nuevo!</h2>
-              <p>Inicie sesión para acceder a su cuenta</p>
+              <h2>{{ isRecoveryMode ? 'Recuperar Acceso' : '¡Hola de nuevo!' }}</h2>
+              <p>{{ isRecoveryMode ? 'Ingrese su correo para recibir una contraseña temporal' : 'Inicie sesión para acceder a su cuenta' }}</p>
             </div>
 
             <!-- Form Card Container -->
             <div class="form-card">
-              <div class="input-field-container">
-                <ion-icon :icon="personOutline" class="input-icon"></ion-icon>
-                <input 
-                  type="email" 
-                  v-model="usuario" 
-                  placeholder="Correo electrónico" 
-                  class="custom-input" 
-                />
-              </div>
+              <!-- LOGIN MODE -->
+              <div v-if="!isRecoveryMode">
+                <div class="input-field-container">
+                  <ion-icon :icon="personOutline" class="input-icon"></ion-icon>
+                  <input 
+                    type="email" 
+                    v-model="usuario" 
+                    placeholder="Correo electrónico" 
+                    class="custom-input" 
+                  />
+                </div>
 
-              <div class="input-field-container">
-                <ion-icon :icon="lockClosedOutline" class="input-icon"></ion-icon>
-                <input 
-                  :type="showPassword ? 'text' : 'password'" 
-                  v-model="password" 
-                  placeholder="Contraseña" 
-                  class="custom-input password-input" 
-                  @keyup.enter="login"
-                />
-                <button 
-                  type="button"
-                  class="toggle-password-btn" 
-                  @click="showPassword = !showPassword"
-                  title="Mostrar/Ocultar contraseña"
-                >
-                  <ion-icon :icon="showPassword ? eyeOffOutline : eyeOutline"></ion-icon>
+                <div class="input-field-container">
+                  <ion-icon :icon="lockClosedOutline" class="input-icon"></ion-icon>
+                  <input 
+                    :type="showPassword ? 'text' : 'password'" 
+                    v-model="password" 
+                    placeholder="Contraseña" 
+                    class="custom-input password-input" 
+                    @keyup.enter="login"
+                  />
+                  <button 
+                    type="button"
+                    class="toggle-password-btn" 
+                    @click="showPassword = !showPassword"
+                    title="Mostrar/Ocultar contraseña"
+                  >
+                    <ion-icon :icon="showPassword ? eyeOffOutline : eyeOutline"></ion-icon>
+                  </button>
+                </div>
+
+                <!-- Forgot Password Link -->
+                <div class="forgot-password-container">
+                  <button type="button" class="forgot-password-link" @click="toggleRecoveryMode(true)">
+                    ¿Olvidó su contraseña?
+                  </button>
+                </div>
+
+                <!-- Error Message -->
+                <transition name="fade">
+                  <div v-if="error" class="error-message">
+                    <ion-icon :icon="alertCircleOutline"></ion-icon>
+                    <span>{{ error }}</span>
+                  </div>
+                </transition>
+
+                <!-- Login Button -->
+                <button @click="login" class="login-btn" :disabled="loading">
+                  <span v-if="!loading" class="btn-content">
+                    INICIAR SESIÓN
+                    <ion-icon :icon="arrowForwardOutline" class="btn-arrow"></ion-icon>
+                  </span>
+                  <span class="spinner" v-else></span>
                 </button>
+
+                <!-- Demo accounts panel inside card -->
+                <div class="demo-section">
+                  <div class="demo-divider">
+                    <span>ACCESO RÁPIDO</span>
+                  </div>
+                  <p class="demo-description">Toque una cuenta para rellenar los datos:</p>
+                  <div class="demo-badges">
+                    <button class="demo-chip" @click="fillDemo('admin@test.com')">
+                      <span class="chip-dot admin"></span>
+                      <span class="chip-label">Admin</span>
+                    </button>
+                    <button class="demo-chip" @click="fillDemo('ganadero@test.com')">
+                      <span class="chip-dot ganadero"></span>
+                      <span class="chip-label">Ganadero</span>
+                    </button>
+                    <button class="demo-chip" @click="fillDemo('vet@test.com')">
+                      <span class="chip-dot vet"></span>
+                      <span class="chip-label">Veterinario</span>
+                    </button>
+                  </div>
+                  <p class="demo-password-hint">Contraseña por defecto: <strong>1234</strong></p>
+                </div>
               </div>
 
-              <!-- Error Message -->
-              <transition name="fade">
-                <div v-if="error" class="error-message">
-                  <ion-icon :icon="alertCircleOutline"></ion-icon>
-                  <span>{{ error }}</span>
+              <!-- RECOVERY MODE -->
+              <div v-else>
+                <div class="input-field-container">
+                  <ion-icon :icon="personOutline" class="input-icon"></ion-icon>
+                  <input 
+                    type="email" 
+                    v-model="recoveryEmail" 
+                    placeholder="Correo electrónico registrado" 
+                    class="custom-input" 
+                    @keyup.enter="requestRecovery"
+                  />
                 </div>
-              </transition>
 
-              <!-- Login Button -->
-              <button @click="login" class="login-btn" :disabled="loading">
-                <span v-if="!loading" class="btn-content">
-                  INICIAR SESIÓN
-                  <ion-icon :icon="arrowForwardOutline" class="btn-arrow"></ion-icon>
-                </span>
-                <span class="spinner" v-else></span>
-              </button>
+                <!-- Success Message -->
+                <transition name="fade">
+                  <div v-if="recoverySuccess" class="success-message">
+                    <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
+                    <span>{{ recoverySuccess }}</span>
+                  </div>
+                </transition>
 
-              <!-- Demo accounts panel inside card -->
-              <div class="demo-section">
-                <div class="demo-divider">
-                  <span>ACCESO RÁPIDO</span>
+                <!-- Error Message -->
+                <transition name="fade">
+                  <div v-if="recoveryError" class="error-message">
+                    <ion-icon :icon="alertCircleOutline"></ion-icon>
+                    <span>{{ recoveryError }}</span>
+                  </div>
+                </transition>
+
+                <!-- Send Code Button -->
+                <button @click="requestRecovery" class="login-btn" :disabled="recoveryLoading || !recoveryEmail">
+                  <span v-if="!recoveryLoading" class="btn-content">
+                    ENVIAR CONTRASEÑA TEMPORAL
+                    <ion-icon :icon="arrowForwardOutline" class="btn-arrow"></ion-icon>
+                  </span>
+                  <span class="spinner" v-else></span>
+                </button>
+
+                <!-- Back to Login Link -->
+                <div class="back-to-login-container">
+                  <button type="button" class="back-to-login-link" @click="toggleRecoveryMode(false)">
+                    Volver al Inicio de Sesión
+                  </button>
                 </div>
-                <p class="demo-description">Toque una cuenta para rellenar los datos:</p>
-                <div class="demo-badges">
-                  <button class="demo-chip" @click="fillDemo('admin@test.com')">
-                    <span class="chip-dot admin"></span>
-                    <span class="chip-label">Admin</span>
-                  </button>
-                  <button class="demo-chip" @click="fillDemo('ganadero@test.com')">
-                    <span class="chip-dot ganadero"></span>
-                    <span class="chip-label">Ganadero</span>
-                  </button>
-                  <button class="demo-chip" @click="fillDemo('vet@test.com')">
-                    <span class="chip-dot vet"></span>
-                    <span class="chip-label">Veterinario</span>
-                  </button>
-                </div>
-                <p class="demo-password-hint">Contraseña por defecto: <strong>1234</strong></p>
               </div>
             </div>
             
@@ -204,7 +260,8 @@ import {
   sparklesOutline,
   trendingUpOutline,
   cloudOfflineOutline,
-  arrowForwardOutline 
+  arrowForwardOutline,
+  checkmarkCircleOutline
 } from 'ionicons/icons';
 import { authRepository } from '@/services';
 
@@ -214,6 +271,41 @@ const password = ref('');
 const showPassword = ref(false);
 const loading = ref(false);
 const error = ref('');
+
+// Password recovery states
+const isRecoveryMode = ref(false);
+const recoveryEmail = ref('');
+const recoveryLoading = ref(false);
+const recoveryError = ref('');
+const recoverySuccess = ref('');
+
+const toggleRecoveryMode = (val: boolean) => {
+  isRecoveryMode.value = val;
+  recoveryEmail.value = '';
+  recoveryError.value = '';
+  recoverySuccess.value = '';
+  error.value = '';
+};
+
+const requestRecovery = async () => {
+  if (!recoveryEmail.value) {
+    recoveryError.value = 'Por favor, ingrese su correo electrónico.';
+    return;
+  }
+
+  recoveryLoading.value = true;
+  recoveryError.value = '';
+  recoverySuccess.value = '';
+
+  try {
+    const response = await authRepository.recuperarPassword(recoveryEmail.value);
+    recoverySuccess.value = response.message || 'Se ha enviado una contraseña temporal a su correo.';
+  } catch (err: any) {
+    recoveryError.value = err.message || 'Error al procesar la solicitud. Verifique el correo ingresado.';
+  } finally {
+    recoveryLoading.value = false;
+  }
+};
 
 const login = async () => {
   if (!usuario.value || !password.value) {
@@ -849,5 +941,65 @@ const fillDemo = (email: string) => {
     border-radius: 20px;
     margin-bottom: 20px;
   }
+}
+
+.forgot-password-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+  margin-bottom: 18px;
+}
+
+.forgot-password-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #2E7D32;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.25s ease;
+  outline: none;
+}
+
+.forgot-password-link:hover {
+  color: #1b5e20;
+  text-decoration: underline;
+}
+
+.back-to-login-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.back-to-login-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #5c6e58;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.25s ease;
+  outline: none;
+}
+
+.back-to-login-link:hover {
+  color: #1a2f1c;
+  text-decoration: underline;
+}
+
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2e7d32;
+  font-size: 13px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  background: rgba(46, 125, 50, 0.07);
+  border: 1px solid rgba(46, 125, 50, 0.12);
+  border-radius: 12px;
 }
 </style>

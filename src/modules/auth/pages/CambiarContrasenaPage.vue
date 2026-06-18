@@ -48,33 +48,11 @@
               </div>
             </div>
 
-            <!-- Confirm Password -->
-            <div class="input-group">
-              <label for="confirm-password">Confirmar Nueva Contraseña</label>
-              <div class="input-wrapper">
-                <ion-icon :icon="checkmarkCircleOutline" class="field-icon"></ion-icon>
-                <input 
-                  id="confirm-password"
-                  :type="showConfirm ? 'text' : 'password'" 
-                  v-model="confirmPassword" 
-                  placeholder="Repita la nueva contraseña"
-                  class="styled-input"
-                />
-                <button type="button" class="eye-toggle" @click="showConfirm = !showConfirm">
-                  <ion-icon :icon="showConfirm ? eyeOffOutline : eyeOutline"></ion-icon>
-                </button>
-              </div>
-            </div>
-
             <!-- Validation List -->
             <div class="validation-hints">
               <div class="hint-item" :class="{ valid: hasMinLength }">
                 <ion-icon :icon="hasMinLength ? checkmarkOutline : ellipseOutline"></ion-icon>
                 <span>Mínimo 6 caracteres</span>
-              </div>
-              <div class="hint-item" :class="{ valid: passwordsMatch }">
-                <ion-icon :icon="passwordsMatch ? checkmarkOutline : ellipseOutline"></ion-icon>
-                <span>Las contraseñas coinciden</span>
               </div>
               <div class="hint-item" :class="{ valid: isDifferent }">
                 <ion-icon :icon="isDifferent ? checkmarkOutline : ellipseOutline"></ion-icon>
@@ -139,11 +117,9 @@ import { animalRepository } from '@/services';
 const router = useRouter();
 const currentPassword = ref('');
 const newPassword = ref('');
-const confirmPassword = ref('');
 
 const showCurrent = ref(false);
 const showNew = ref(false);
-const showConfirm = ref(false);
 
 const loading = ref(false);
 const error = ref('');
@@ -166,14 +142,11 @@ const session = getSession();
 
 // Computed validations
 const hasMinLength = computed(() => newPassword.value.length >= 6);
-const passwordsMatch = computed(() => {
-  return newPassword.value.length > 0 && newPassword.value === confirmPassword.value;
-});
 const isDifferent = computed(() => {
   return newPassword.value.length > 0 && newPassword.value !== currentPassword.value;
 });
 const isValidForm = computed(() => {
-  return currentPassword.value.length > 0 && hasMinLength.value && passwordsMatch.value && isDifferent.value;
+  return currentPassword.value.length > 0 && hasMinLength.value && isDifferent.value;
 });
 
 const submitPasswordChange = async () => {
@@ -190,8 +163,7 @@ const submitPasswordChange = async () => {
     await animalRepository.cambiarPassword(
       session.id,
       currentPassword.value,
-      newPassword.value,
-      confirmPassword.value
+      newPassword.value
     );
 
     success.value = 'Contraseña cambiada con éxito. Redirigiendo...';

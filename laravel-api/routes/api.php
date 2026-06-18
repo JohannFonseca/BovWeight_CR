@@ -10,6 +10,7 @@ use App\Http\Controllers\ReporteController;
 // Auth Routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/cambiar-password', [AuthController::class, 'cambiarPassword']);
+Route::post('/recuperar-password', [AuthController::class, 'recuperarPassword']);
 
 // Roles and Razas Routes
 Route::get('/roles', [AdminController::class, 'getRoles']);
