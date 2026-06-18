@@ -123,6 +123,7 @@ const router = useRouter();
 // Datos de la sesión actual
 const usuarioSesion = ref<any>(null);
 const profilePhoto = ref<string | null>(null);
+const selectedPhotoBase64 = ref<string | null>(null);
 
 // Datos del formulario
 const profileForm = ref({
@@ -155,7 +156,7 @@ const triggerPhotoUpload = () => {
   }
 };
 
-// Convertir imagen seleccionada a Base64 y guardarla en el navegador
+// Convertir imagen seleccionada a Base64 para vista previa y envío
 const onPhotoSelected = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
@@ -172,11 +173,7 @@ const onPhotoSelected = (event: Event) => {
       if (e.target && e.target.result) {
         const base64Str = e.target.result as string;
         profilePhoto.value = base64Str;
-        // Save locally associated with user ID
-        if (usuarioSesion.value?.id) {
-          localStorage.setItem(`foto_perfil_usuario_${usuarioSesion.value.id}`, base64Str);
-          showToast('Foto de perfil actualizada.');
-        }
+        selectedPhotoBase64.value = base64Str;
       }
     };
     reader.readAsDataURL(file);
@@ -201,13 +198,26 @@ const updateProfile = async () => {
       payload.contrasena = profileForm.value.contrasena;
     }
 
-    await animalRepository.editarUsuario(usuarioSesion.value.id, payload);
+    if (selectedPhotoBase64.value) {
+      payload.foto_base64 = selectedPhotoBase64.value;
+    }
+
+    const res = await animalRepository.editarUsuario(usuarioSesion.value.id, payload);
     
     // Actualizar la sesión almacenada en el navegador
     usuarioSesion.value.nombre_completo = profileForm.value.nombre_completo;
     usuarioSesion.value.correo = profileForm.value.correo;
     usuarioSesion.value.usuario = profileForm.value.correo;
+    
+    if (res && res.foto_url) {
+      usuarioSesion.value.foto_url = res.foto_url;
+      profilePhoto.value = res.foto_url;
+      // Limpiar caché local obsoleta
+      localStorage.removeItem(`foto_perfil_usuario_${usuarioSesion.value.id}`);
+    }
+    
     localStorage.setItem('usuario_sesion', JSON.stringify(usuarioSesion.value));
+    selectedPhotoBase64.value = null; // resetear estado temporal
     
     showToast('Perfil actualizado con éxito.');
     profileForm.value.contrasena = ''; // clear password input
@@ -232,10 +242,14 @@ onMounted(() => {
       profileForm.value.nombre_completo = usuarioSesion.value.nombre_completo || '';
       profileForm.value.correo = usuarioSesion.value.correo || usuarioSesion.value.usuario || '';
       
-      // Load saved profile photo
-      const savedPhoto = localStorage.getItem(`foto_perfil_usuario_${usuarioSesion.value.id}`);
-      if (savedPhoto) {
-        profilePhoto.value = savedPhoto;
+      // Cargar foto de perfil priorizando la guardada en el servidor (foto_url)
+      if (usuarioSesion.value.foto_url) {
+        profilePhoto.value = usuarioSesion.value.foto_url;
+      } else {
+        const savedPhoto = localStorage.getItem(`foto_perfil_usuario_${usuarioSesion.value.id}`);
+        if (savedPhoto) {
+          profilePhoto.value = savedPhoto;
+        }
       }
     } catch (e) {
       console.error('Error parseando usuario_sesion:', e);

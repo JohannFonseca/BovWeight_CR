@@ -95,7 +95,7 @@ export interface IAnimalRepository {
   getRoles(): Promise<any[]>;
 
   /** Edita los datos de un usuario. */
-  editarUsuario(id: number, data: { correo: string; nombre_completo: string; contrasena?: string }): Promise<any>;
+  editarUsuario(id: number, data: { correo: string; nombre_completo: string; contrasena?: string; foto_base64?: string }): Promise<any>;
 
   /** Reenvía las credenciales temporales a un usuario. */
   reenviarCredenciales(id: number): Promise<any>;

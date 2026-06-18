@@ -74,6 +74,7 @@ class AuthController extends Controller
             'rol' => strtolower($usuario->rol->nombre),
             'nombre_completo' => $usuario->nombre_completo ?? 'Usuario de BovWeight',
             'debe_cambiar_password' => (bool)$usuario->debe_cambiar_password,
+            'foto_url' => $usuario->foto_url,
         ]);
     }
 

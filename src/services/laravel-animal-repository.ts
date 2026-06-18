@@ -283,7 +283,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     }
   }
 
-  async editarUsuario(id: number, data: { correo: string; nombre_completo: string; contrasena?: string }): Promise<any> {
+  async editarUsuario(id: number, data: { correo: string; nombre_completo: string; contrasena?: string; foto_base64?: string }): Promise<any> {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     try {
       const response = await axios.put(`${apiUrl}/usuarios/${id}`, data, {

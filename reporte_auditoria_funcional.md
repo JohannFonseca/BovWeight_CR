@@ -62,8 +62,3 @@ Este documento consolida únicamente las funcionalidades faltantes, riesgos de s
 *   **Estado:** No implementada / Pendiente
 *   **Descripción:** En caso de caída de la API de IA, el backend ejecuta el comando global `python` directamente en el shell. Esto requiere que el PATH global del servidor tenga instaladas dependencias críticas como `ultralytics` y `scikit-learn`, lo cual dificulta la portabilidad y el mantenimiento del servidor.
 *   **Solución recomendada:** Configurar y referenciar la ruta de ejecución dentro de un entorno virtual aislado (`virtualenv` de Python) configurado por variable de entorno.
-
-### 🟢 Fotos Base64 en Tabla de Usuarios
-*   **Estado:** No implementada / Pendiente
-*   **Descripción:** Guardar las imágenes de perfil o del hato codificadas en Base64 directamente dentro de campos de texto en la base de datos incrementa masivamente el tamaño de los respaldos de la BD y hace las consultas más lentas.
-*   **Solución recomendada:** Migrar el almacenamiento de archivos al sistema de almacenamiento de archivos físico (`Storage` de Laravel) y almacenar únicamente la ruta/URL en la base de datos.

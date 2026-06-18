@@ -24,6 +24,7 @@ class Usuario extends Authenticatable
         'activo',
         'debe_cambiar_password',
         'password_expira_en',
+        'foto_url',
     ];
 
     protected $hidden = [

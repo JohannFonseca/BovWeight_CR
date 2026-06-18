@@ -227,6 +227,8 @@ class AdminController extends Controller
             'rol_id' => 'nullable|exists:roles,id',
             'ganadero_id' => 'nullable|exists:usuarios,id',
             'activo' => 'nullable|boolean',
+            'foto_base64' => 'nullable|string',
+            'foto' => 'nullable|file|image|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -258,10 +260,34 @@ class AdminController extends Controller
         if ($request->has('activo')) {
             $u->activo = $request->input('activo');
         }
+
+        // Procesar foto de perfil
+        if ($request->hasFile('foto')) {
+            $path = $request->file('foto')->store('avatars', 'public');
+            $u->foto_url = asset('storage/' . $path);
+        } elseif ($request->filled('foto_base64')) {
+            $base64 = $request->input('foto_base64');
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64, $type)) {
+                $data = substr($base64, strpos($base64, ',') + 1);
+                $type = strtolower($type[1]); // jpg, png, etc
+
+                if (in_array($type, ['jpg', 'jpeg', 'gif', 'png', 'webp'])) {
+                    $decoded = base64_decode($data);
+                    if ($decoded !== false) {
+                        $fileName = uniqid() . '.' . $type;
+                        \Illuminate\Support\Facades\Storage::disk('public')->put('avatars/' . $fileName, $decoded);
+                        $u->foto_url = asset('storage/avatars/' . $fileName);
+                    }
+                }
+            }
+        }
         
         $u->save();
 
-        return response()->json(['message' => 'Usuario modificado exitosamente.']);
+        return response()->json([
+            'message' => 'Usuario modificado exitosamente.',
+            'foto_url' => $u->foto_url,
+        ]);
     }
 
     // ==========================================
