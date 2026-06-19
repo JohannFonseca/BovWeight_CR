@@ -31,21 +31,6 @@ Este documento consolida únicamente las funcionalidades faltantes, riesgos de s
 *   **Descripción:** Aunque la aplicación tiene un Centro de Notificaciones interno (campana en el header), no tiene soporte para notificaciones Push integradas al sistema operativo del dispositivo móvil (iOS/Android) cuando la aplicación está cerrada o en segundo plano.
 *   **Solución recomendada:** Integrar Firebase Cloud Messaging (FCM) y APNS para despachar alertas push nativas sobre citas propuestas, rechazos o reportes clínicos.
 
----
-
-## 3. MÓDULO CLÍNICO (VETERINARIO) (Prioridad: Media)
-
-### 🟡 Descarga de Reportes Clínicos en PDF
-*   **Estado:** No implementada / Pendiente
-*   **Descripción:** A diferencia del ganadero, el veterinario no cuenta con una opción para exportar en formato PDF las fichas de diagnósticos y recomendaciones clínicas que emite.
-*   **Solución recomendada:** Integrar la librería `jsPDF` en la pantalla `VeterinarioReportes.vue` para generar reportes clínicos en formato PDF descargable.
-
-### 🟡 Detección Dinámica de Pérdida de Peso
-*   **Estado:** No implementada / Pendiente
-*   **Descripción:** La detección de anomalías de peso en `VeterinarioDashboard.vue` se basa en un umbral estático y rígido (si el animal pesa menos de 350kg), lo cual no es clínicamente representativo para hatos jóvenes o razas de diferente contextura.
-*   **Solución recomendada:** Implementar un algoritmo dinámico que compare el último pesaje contra el histórico y alerte al veterinario si hay una pérdida de peso porcentual mayor al 10% en los últimos 30 días.
-
----
 
 ## 4. MÓDULO GANADERO (Prioridad: Media)
 
