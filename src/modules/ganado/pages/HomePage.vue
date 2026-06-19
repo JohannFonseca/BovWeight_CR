@@ -74,7 +74,10 @@
             <div class="pending-list">
               <div v-for="item in offlineQueue" :key="item.id" class="pending-row">
                 <div class="pending-thumb-wrapper">
-                  <img :src="item.fotoBase64" class="pending-thumb" />
+                  <img v-if="item.tipo !== 'manual' && item.fotoBase64" :src="item.fotoBase64" class="pending-thumb" />
+                  <div v-else class="pending-thumb-placeholder">
+                    <span class="placeholder-emoji">📏</span>
+                  </div>
                   <span class="status-badge" :class="item.estado">
                     {{ getStatusLabel(item.estado) }}
                   </span>
@@ -82,7 +85,10 @@
                 
                 <div class="pending-info">
                   <h4>{{ item.animalNombre }}</h4>
-                  <p class="pending-meta">Arete: #{{ item.animalArete }} &middot; {{ item.fecha.split(',')[0] }}</p>
+                  <p class="pending-meta">
+                    Arete: #{{ item.animalArete }} &middot; {{ item.fecha.split(',')[0] }}
+                    <span v-if="item.tipo === 'manual'"> &middot; Medidas: {{ item.girth }}x{{ item.length }}cm</span>
+                  </p>
                   
                   <!-- Progress Bar -->
                   <div class="progress-wrapper" v-if="item.estado === 'sincronizando' || item.estado === 'procesando'">
@@ -976,6 +982,21 @@ const chartOptions = ref({
   object-fit: cover;
   border-radius: 10px;
   border: 1px solid #e2e7da;
+}
+
+.pending-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  border: 1px solid #e2e7da;
+  background-color: #f0f4ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-emoji {
+  font-size: 20px;
 }
 
 .status-badge {

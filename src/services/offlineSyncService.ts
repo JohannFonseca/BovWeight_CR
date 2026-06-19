@@ -12,7 +12,10 @@ export interface OfflineEstimation {
   animalNombre: string;
   animalArete: string;
   fecha: string;
-  fotoBase64: string;
+  tipo: 'foto' | 'manual';
+  fotoBase64?: string;
+  girth?: number;
+  length?: number;
   estado: 'pendiente_local' | 'sincronizando' | 'procesando' | 'completado' | 'error';
   progreso: number;
   mensajeError?: string;
@@ -141,15 +144,20 @@ class OfflineSyncService {
     animalId: number,
     animalNombre: string,
     animalArete: string,
-    imageFile: File
+    tipo: 'foto' | 'manual',
+    imageFile?: File,
+    girth?: number,
+    length?: number
   ): Promise<OfflineEstimation> {
-    // 1. Comprimir la imagen
+    // 1. Comprimir la imagen si aplica
     let fotoBase64 = '';
-    try {
-      fotoBase64 = await this.compressImage(imageFile);
-    } catch (err) {
-      console.error('Error al comprimir la imagen, usando fallback base64 original:', err);
-      fotoBase64 = await this.fileToBase64(imageFile);
+    if (tipo === 'foto' && imageFile) {
+      try {
+        fotoBase64 = await this.compressImage(imageFile);
+      } catch (err) {
+        console.error('Error al comprimir la imagen, usando fallback base64 original:', err);
+        fotoBase64 = await this.fileToBase64(imageFile);
+      }
     }
 
     // 2. Crear el objeto de estimación
@@ -158,6 +166,7 @@ class OfflineSyncService {
       animalId,
       animalNombre,
       animalArete,
+      tipo,
       fecha: new Date().toLocaleDateString('es-CR', {
         day: '2-digit',
         month: '2-digit',
@@ -165,7 +174,9 @@ class OfflineSyncService {
         hour: '2-digit',
         minute: '2-digit'
       }),
-      fotoBase64,
+      fotoBase64: fotoBase64 || undefined,
+      girth,
+      length,
       estado: 'pendiente_local',
       progreso: 0
     };
@@ -227,22 +238,38 @@ class OfflineSyncService {
         // 1. Actualizar estado a Sincronizando
         this.updateItemState(item.id, 'sincronizando', 20);
 
-        // 2. Convertir base64 a archivo File
-        const file = this.base64ToFile(item.fotoBase64, `animal_${item.animalId}_sync.jpg`);
-        this.updateItemState(item.id, 'sincronizando', 40);
+        let res: any;
+        if (item.tipo === 'manual') {
+          this.updateItemState(item.id, 'sincronizando', 50);
+          
+          await new Promise(resolve => setTimeout(resolve, 800));
+          this.updateItemState(item.id, 'procesando', 70);
 
-        // 3. Subir e invocar la estimación con IA
-        // Simulamos un leve retraso para que los estados visuales sean apreciables
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        this.updateItemState(item.id, 'procesando', 60);
-        
-        const res = await animalRepository.estimateWeight(
-          item.animalId,
-          null,
-          null,
-          file
-        );
+          res = await animalRepository.estimateWeight(
+            item.animalId,
+            item.girth || null,
+            item.length || null
+          );
+        } else {
+          if (!item.fotoBase64) {
+            throw new Error('No hay imagen guardada para la estimación por foto.');
+          }
+          // 2. Convertir base64 a archivo File
+          const file = this.base64ToFile(item.fotoBase64, `animal_${item.animalId}_sync.jpg`);
+          this.updateItemState(item.id, 'sincronizando', 40);
+
+          // 3. Subir e invocar la estimación con IA
+          // Simulamos un leve retraso para que los estados visuales sean apreciables
+          await new Promise(resolve => setTimeout(resolve, 800));
+          this.updateItemState(item.id, 'procesando', 60);
+
+          res = await animalRepository.estimateWeight(
+            item.animalId,
+            null,
+            null,
+            file
+          );
+        }
         
         this.updateItemState(item.id, 'procesando', 80);
 
@@ -458,7 +485,8 @@ if (typeof window !== 'undefined') {
           fecha: '19/06/2026',
           fotoBase64: 'data:image/jpeg;base64,MOCK_LEGACY_IMAGE_DATA_1111111111111111111111111',
           estado: 'pendiente_local' as const,
-          progreso: 0
+          progreso: 0,
+          tipo: 'foto' as const
         },
         {
           id: 'mock_legacy_2',
@@ -469,7 +497,8 @@ if (typeof window !== 'undefined') {
           fotoBase64: 'data:image/jpeg;base64,MOCK_LEGACY_IMAGE_DATA_2222222222222222222222222',
           estado: 'error' as const,
           progreso: 0,
-          mensajeError: 'Error de prueba'
+          mensajeError: 'Error de prueba',
+          tipo: 'foto' as const
         }
       ];
       localStorage.setItem(legacyKey, JSON.stringify(mockLegacyData));
@@ -507,7 +536,8 @@ if (typeof window !== 'undefined') {
         fecha: '19/06/2026',
         fotoBase64: 'data:image/jpeg;base64,' + bigString,
         estado: 'pendiente_local' as const,
-        progreso: 0
+        progreso: 0,
+        tipo: 'foto' as const
       };
 
       console.log('   Guardando registro pesado en IndexedDB...');

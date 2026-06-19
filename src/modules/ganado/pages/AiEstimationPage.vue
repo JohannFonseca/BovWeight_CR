@@ -523,6 +523,7 @@ function removeFile(index: number) {
 }
 
 // Ejecutar estimación
+// Ejecutar estimación
 async function performEstimation() {
   loadingEstimation.value = true;
   error.value = null;
@@ -547,6 +548,7 @@ async function performEstimation() {
           selectedAnimalId.value!,
           animalNombre,
           animalArete,
+          'foto',
           selectedFiles.value[0]
         );
         
@@ -564,9 +566,40 @@ async function performEstimation() {
       }
       return;
     } else {
-      error.value = 'La estimación manual requiere conexión a Internet.';
-      triggerToast('Sin conexión a Internet.', 'danger');
-      loadingEstimation.value = false;
+      if (!isValidManualForm.value) {
+        error.value = 'Por favor, completa las medidas manualmente.';
+        loadingEstimation.value = false;
+        return;
+      }
+      
+      try {
+        const animal = selectedAnimal.value;
+        const animalNombre = animal ? animal.nombre : 'Sin nombre';
+        const animalArete = animal ? (animal.arete || 'N/A') : 'N/A';
+        
+        // Agregar a la cola de sincronización local
+        await offlineSyncService.addEstimationToQueue(
+          selectedAnimalId.value!,
+          animalNombre,
+          animalArete,
+          'manual',
+          undefined,
+          perimetroToracico.value!,
+          largoCuerpo.value!
+        );
+        
+        triggerToast('No tienes conexión. La estimación se realizará automáticamente cuando vuelva el internet.', 'warning');
+        resetEstimation();
+        
+        setTimeout(() => {
+          router.push('/home');
+        }, 1500);
+      } catch (err: any) {
+        error.value = 'Error al registrar la estimación localmente: ' + err.message;
+        triggerToast('Error al guardar estimación offline.', 'danger');
+      } finally {
+        loadingEstimation.value = false;
+      }
       return;
     }
   }
@@ -611,8 +644,46 @@ async function performEstimation() {
 
     triggerToast('¡Estimación calculada exitosamente por la IA!', 'success');
   } catch (err: any) {
-    error.value = err.message || 'Error al conectar con el motor de estimación IA.';
-    triggerToast('Error en la estimación de peso.', 'danger');
+    if (err.isNetworkError || !navigator.onLine) {
+      try {
+        const animal = selectedAnimal.value;
+        const animalNombre = animal ? animal.nombre : 'Sin nombre';
+        const animalArete = animal ? (animal.arete || 'N/A') : 'N/A';
+        
+        if (estimationMethod.value === 'photo') {
+          await offlineSyncService.addEstimationToQueue(
+            selectedAnimalId.value!,
+            animalNombre,
+            animalArete,
+            'foto',
+            selectedFiles.value[0]
+          );
+        } else {
+          await offlineSyncService.addEstimationToQueue(
+            selectedAnimalId.value!,
+            animalNombre,
+            animalArete,
+            'manual',
+            undefined,
+            perimetroToracico.value!,
+            largoCuerpo.value!
+          );
+        }
+        
+        triggerToast('Error de conexión. La estimación se guardó localmente y se procesará al detectar internet.', 'warning');
+        resetEstimation();
+        
+        setTimeout(() => {
+          router.push('/home');
+        }, 1500);
+      } catch (queueErr: any) {
+        error.value = 'Error al registrar la estimación localmente: ' + queueErr.message;
+        triggerToast('Error al guardar estimación offline.', 'danger');
+      }
+    } else {
+      error.value = err.message || 'Error al conectar con el motor de estimación IA.';
+      triggerToast('Error en la estimación de peso.', 'danger');
+    }
   } finally {
     loadingEstimation.value = false;
   }

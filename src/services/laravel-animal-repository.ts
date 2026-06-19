@@ -194,7 +194,23 @@ export class LaravelAnimalRepository implements IAnimalRepository {
       const response = await axios.get(`${apiUrl}/animales`, {
         headers: this.getHeaders(),
       });
-      return response.data;
+      const data = response.data;
+      if (Array.isArray(data)) {
+        try {
+          const promises = data.map(async (anim) => {
+            if (anim && anim.id) {
+              await this.cache.put(`animal_detail_${anim.id}`, anim);
+              if (anim.historialPeso) {
+                await this.cache.put(`weight_history_${anim.id}`, anim.historialPeso);
+              }
+            }
+          });
+          await Promise.all(promises);
+        } catch (cacheErr) {
+          console.error('[OfflineCache] Error al pre-cachear animales:', cacheErr);
+        }
+      }
+      return data;
     });
   }
 
@@ -257,7 +273,10 @@ export class LaravelAnimalRepository implements IAnimalRepository {
       };
     } catch (err: any) {
       console.error('Error en estimateWeight con Laravel:', err.message);
-      throw new Error('Error al estimar el peso con IA');
+      const isNetworkError = !err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error') || err.message?.includes('timeout');
+      const customErr = new Error(isNetworkError ? 'Error de conexión con el servidor' : 'Error al estimar el peso con IA');
+      (customErr as any).isNetworkError = isNetworkError;
+      throw customErr;
     }
   }
 
