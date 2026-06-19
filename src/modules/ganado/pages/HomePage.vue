@@ -195,6 +195,16 @@
                 <span class="label">Sin pesaje (30d)</span>
               </div>
             </div>
+
+            <div class="task-indicator" @click="goToHealthReminders">
+              <div class="indicator-icon recordatorio-sanitario">
+                <ion-icon :icon="calendarOutline"></ion-icon>
+              </div>
+              <div class="indicator-details">
+                <span class="value">{{ dashboardStats.recordatoriosPendientes ?? 0 }}</span>
+                <span class="label">Recordatorios</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -378,6 +388,10 @@ function goToReports() {
 
 function goToWeightReminders() {
   router.push('/ganado/animales');
+}
+
+function goToHealthReminders() {
+  router.push('/ganado/recordatorios');
 }
 
 // Conectividad
@@ -1291,6 +1305,7 @@ const chartOptions = ref({
 .indicator-icon.pendiente-confirmar { background: #efebe9; color: #5d4037; }
 .indicator-icon.reporte { background: #f3e5f5; color: #8e24aa; }
 .indicator-icon.recordatorio { background: #fff3e0; color: #e65100; }
+.indicator-icon.recordatorio-sanitario { background: #e8f5e9; color: #1B5E20; }
 
 .indicator-details {
   display: flex;

@@ -517,6 +517,15 @@ class GanadoController extends Controller
                 }
             }
 
+            // Recordatorios sanitarios pendientes
+            $fincaIdsForReminders = Finca::where('propietario_id', $userId)->pluck('id')->toArray();
+            $recordatoriosPendientes = \App\Models\RecordatorioSanitario::where('estado', 'pendiente')
+                ->where(function ($q) use ($userId, $fincaIdsForReminders) {
+                    $q->where('usuario_id', $userId)
+                      ->orWhereIn('finca_id', $fincaIdsForReminders);
+                })
+                ->count();
+
             return response()->json([
                 'personalActivo' => $personal,
                 'bovinos' => $bovinos,
@@ -526,6 +535,7 @@ class GanadoController extends Controller
                 'citasPorConfirmar' => $citasPorConfirmar,
                 'reportesPendientes' => $reportesPendientes,
                 'animalesPendientesPesaje' => $animalesPendientesPesaje,
+                'recordatoriosPendientes' => $recordatoriosPendientes,
             ]);
         }
     }

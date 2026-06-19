@@ -146,5 +146,30 @@ class DatabaseSeeder extends Seeder
             'animales_autorizados' => [$animal1->id, $animal2->id],
             'activo' => true,
         ]);
+
+        // 8. Seed Recordatorios Sanitarios
+        \App\Models\RecordatorioSanitario::create([
+            'usuario_id' => $ganadero->id,
+            'finca_id' => $finca1->id,
+            'animal_id' => $animal1->id,
+            'titulo' => 'Vacuna contra Brucelosis',
+            'descripcion' => 'Aplicar dosis de refuerzo anual a Clara.',
+            'tipo' => 'vacuna',
+            'fecha_programada' => Carbon::now()->addDays(2)->format('Y-m-d'),
+            'estado' => 'pendiente',
+            'notificado' => false,
+        ]);
+
+        \App\Models\RecordatorioSanitario::create([
+            'usuario_id' => $ganadero->id,
+            'finca_id' => $finca1->id,
+            'animal_id' => $animal2->id,
+            'titulo' => 'Desparasitación General',
+            'descripcion' => 'Aplicar antiparasitario oral de amplio espectro.',
+            'tipo' => 'desparasitacion',
+            'fecha_programada' => Carbon::now()->subDays(1)->format('Y-m-d'), // Vencido
+            'estado' => 'pendiente',
+            'notificado' => false,
+        ]);
     }
 }

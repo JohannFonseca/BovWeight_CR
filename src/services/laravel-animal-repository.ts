@@ -587,5 +587,86 @@ export class LaravelAnimalRepository implements IAnimalRepository {
       throw new Error('Error al obtener estadísticas del dashboard');
     }
   }
+
+  async getRecordatoriosSanitarios(): Promise<any[]> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.get(`${apiUrl}/recordatorios-sanitarios`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getRecordatoriosSanitarios con Laravel:', err.message);
+      throw new Error('Error al obtener los recordatorios sanitarios');
+    }
+  }
+
+  async crearRecordatorioSanitario(recordatorio: {
+    titulo: string;
+    descripcion?: string | null;
+    tipo: 'vacuna' | 'desparasitacion' | 'revision_medica' | 'otro';
+    fecha_programada: string;
+    finca_id?: number | null;
+    animal_id?: number | null;
+    estado?: 'pendiente' | 'completado';
+  }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/recordatorios-sanitarios`, recordatorio, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en crearRecordatorioSanitario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al crear el recordatorio sanitario');
+    }
+  }
+
+  async actualizarRecordatorioSanitario(id: number, payload: {
+    titulo?: string;
+    descripcion?: string | null;
+    tipo?: 'vacuna' | 'desparasitacion' | 'revision_medica' | 'otro';
+    fecha_programada?: string;
+    finca_id?: number | null;
+    animal_id?: number | null;
+    estado?: 'pendiente' | 'completado';
+  }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.put(`${apiUrl}/recordatorios-sanitarios/${id}`, payload, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en actualizarRecordatorioSanitario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al actualizar el recordatorio sanitario');
+    }
+  }
+
+  async eliminarRecordatorioSanitario(id: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.delete(`${apiUrl}/recordatorios-sanitarios/${id}`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en eliminarRecordatorioSanitario con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al eliminar el recordatorio sanitario');
+    }
+  }
+
+  async runRecordatoriosCheck(): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/recordatorios-sanitarios/run-check`, {}, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en runRecordatoriosCheck con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al ejecutar verificación de recordatorios');
+    }
+  }
 }
 

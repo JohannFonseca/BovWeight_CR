@@ -132,6 +132,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
   },
   {
+    path: '/ganado/recordatorios',
+    name: 'RecordatoriosGanado',
+    component: () => import('../modules/ganado/pages/RecordatoriosPage.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+  },
+  {
     path: '/ganado/reportes',
     name: 'GanaderoReportes',
     component: () => import('../modules/reportes/pages/ReportsPage.vue'),

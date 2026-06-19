@@ -88,6 +88,13 @@ Route::put('/notificaciones/leer-todas', [\App\Http\Controllers\NotificacionCont
 Route::put('/notificaciones/{id}/leer', [\App\Http\Controllers\NotificacionController::class, 'read']);
 Route::delete('/notificaciones/{id}', [\App\Http\Controllers\NotificacionController::class, 'destroy']);
 
+// Recordatorios Sanitarios Routes
+Route::get('/recordatorios-sanitarios', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'index']);
+Route::post('/recordatorios-sanitarios', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'store']);
+Route::put('/recordatorios-sanitarios/{id}', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'update']);
+Route::delete('/recordatorios-sanitarios/{id}', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'destroy']);
+Route::post('/recordatorios-sanitarios/run-check', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'runCheck']);
+
 // Veterinarian Dashboard Routes
 Route::middleware(['veterinario'])->prefix('veterinario')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\VeterinarioDashboardController::class, 'getDashboardData']);

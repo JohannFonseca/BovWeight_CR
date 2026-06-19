@@ -68,6 +68,19 @@ class ReporteController extends Controller
             'destinatario' => $request->input('destinatario') ? trim($request->input('destinatario')) : null,
         ]);
 
+        // Crear notificación automática al guardar un reporte
+        try {
+            \App\Models\Notificacion::create([
+                'usuario_id' => $userId,
+                'titulo' => 'Reporte generado',
+                'descripcion' => "Has generado exitosamente el reporte '{$reporte->titulo}' con " . count($reporte->animal_ids) . " animales.",
+                'tipo' => 'reporte',
+                'leido' => false,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error al crear notificación de reporte: " . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Reporte guardado exitosamente.',
             'reporte' => [

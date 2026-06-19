@@ -162,6 +162,58 @@ export interface IAnimalRepository {
 
   /** Obtiene las estadísticas generales del dashboard. */
   getDashboardStats(): Promise<any>;
+
+  /** Obtiene los recordatorios sanitarios del usuario. */
+  getRecordatoriosSanitarios(): Promise<RecordatorioSanitario[]>;
+
+  /** Crea un nuevo recordatorio sanitario. */
+  crearRecordatorioSanitario(recordatorio: {
+    titulo: string;
+    descripcion?: string | null;
+    tipo: 'vacuna' | 'desparasitacion' | 'revision_medica' | 'otro';
+    fecha_programada: string;
+    finca_id?: number | null;
+    animal_id?: number | null;
+    estado?: 'pendiente' | 'completado';
+  }): Promise<any>;
+
+  /** Actualiza un recordatorio sanitario. */
+  actualizarRecordatorioSanitario(id: number, payload: {
+    titulo?: string;
+    descripcion?: string | null;
+    tipo?: 'vacuna' | 'desparasitacion' | 'revision_medica' | 'otro';
+    fecha_programada?: string;
+    finca_id?: number | null;
+    animal_id?: number | null;
+    estado?: 'pendiente' | 'completado';
+  }): Promise<any>;
+
+  /** Elimina un recordatorio sanitario por ID. */
+  eliminarRecordatorioSanitario(id: number): Promise<any>;
+
+  /** Ejecuta manualmente la verificación y notificación de recordatorios sanitarios vencidos. */
+  runRecordatoriosCheck(): Promise<any>;
+}
+
+/**
+ * Recordatorio sanitario configurable.
+ */
+export interface RecordatorioSanitario {
+  id: number;
+  usuario_id: number;
+  finca_id?: number | null;
+  animal_id?: number | null;
+  titulo: string;
+  descripcion?: string | null;
+  tipo: 'vacuna' | 'desparasitacion' | 'revision_medica' | 'otro';
+  fecha_programada: string;
+  estado: 'pendiente' | 'completado';
+  notificado: boolean;
+  created_at?: string;
+  updated_at?: string;
+  usuario?: { id: number; nombre_completo: string; correo: string };
+  finca?: { id: number; nombre: string; ubicacion: string };
+  animal?: { id: number; nombre: string; numero_arete: string };
 }
 
 /**
