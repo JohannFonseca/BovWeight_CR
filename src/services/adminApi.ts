@@ -5,10 +5,14 @@ const getApiUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:8000/a
 const getHeaders = () => {
   const sessionStr = localStorage.getItem('usuario_sesion');
   let token = '';
+  let userId = '';
+  let userRole = '';
   if (sessionStr) {
     try {
       const user = JSON.parse(sessionStr);
       token = user.token || localStorage.getItem('token') || '';
+      userId = user.id ? String(user.id) : '';
+      userRole = user.rol ? String(user.rol) : '';
     } catch (e) {
       console.error('Error parsing session in adminApi:', e);
     }
@@ -16,6 +20,8 @@ const getHeaders = () => {
   return {
     'Authorization': token ? `Bearer ${token}` : '',
     'Content-Type': 'application/json',
+    'X-User-Id': userId,
+    'X-User-Role': userRole,
   };
 };
 
@@ -201,6 +207,25 @@ export const adminApi = {
       return {
         data: null,
         error: err.response?.data?.message || err.message || 'Error al eliminar usuario',
+      };
+    }
+  },
+
+  // Auditorías (Bitácora)
+  async getAuditLogs(page?: number, filters?: Record<string, any>) {
+    try {
+      const params: Record<string, any> = { ...filters };
+      if (page) params.page = page;
+
+      const response = await axios.get(`${getApiUrl()}/admin/auditorias`, {
+        headers: getHeaders(),
+        params,
+      });
+      return { data: response.data, error: null };
+    } catch (err: any) {
+      return {
+        data: null,
+        error: err.response?.data?.message || err.message || 'Error al obtener bitácora de auditoría',
       };
     }
   },

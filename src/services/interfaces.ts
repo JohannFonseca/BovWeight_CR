@@ -34,7 +34,7 @@ export interface Animal {
 export interface User {
   id: number;
   usuario: string;
-  rol: 'admin' | 'ganadero' | 'veterinario';
+  rol: 'admin' | 'ganadero' | 'veterinario' | 'ayudante';
   nombre_completo?: string;
   debe_cambiar_password?: boolean;
 }
@@ -193,6 +193,15 @@ export interface IAnimalRepository {
 
   /** Ejecuta manualmente la verificación y notificación de recordatorios sanitarios vencidos. */
   runRecordatoriosCheck(): Promise<any>;
+
+  /** Obtiene la lista de ayudantes del ganadero actual. */
+  getAyudantes(): Promise<any[]>;
+
+  /** Crea un ayudante. */
+  crearAyudante(ayudante: { correo: string; nombre_completo: string; contrasena: string }): Promise<any>;
+
+  /** Elimina un ayudante por ID. */
+  eliminarAyudante(id: number): Promise<any>;
 }
 
 /**

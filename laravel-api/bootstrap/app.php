@@ -13,9 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(\App\Http\Middleware\HandleAyudanteRole::class);
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'veterinario' => \App\Http\Middleware\EnsureVeterinarioAccess::class,
+            'audit.login' => \App\Http\Middleware\AuditLoginAttempts::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

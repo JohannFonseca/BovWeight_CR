@@ -57,6 +57,17 @@
             <ion-icon :icon="barChartOutline" slot="start"></ion-icon>
             <ion-label>Reportes</ion-label>
           </ion-item>
+
+          <ion-item
+            button
+            :detail="false"
+            @click="navegar('/admin/auditorias')"
+            class="menu-item"
+            :class="{ active: rutaActiva === '/admin/auditorias' }"
+          >
+            <ion-icon :icon="shieldCheckmarkOutline" slot="start"></ion-icon>
+            <ion-label>Bitácora</ion-label>
+          </ion-item>
         </ion-list>
 
         <div class="menu-footer">
@@ -82,7 +93,7 @@ import {
   IonIcon, IonLabel, menuController
 } from '@ionic/vue';
 import {
-  gridOutline, peopleOutline, businessOutline, barChartOutline, logOutOutline
+  gridOutline, peopleOutline, businessOutline, barChartOutline, logOutOutline, shieldCheckmarkOutline
 } from 'ionicons/icons';
 
 const route = useRoute();

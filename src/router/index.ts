@@ -63,6 +63,11 @@ const routes: Array<RouteRecordRaw> = [
         name: 'AdminReportes',
         component: () => import('../modules/admin/pages/AdminReportes.vue'),
       },
+      {
+        path: 'auditorias',
+        name: 'AdminAuditorias',
+        component: () => import('../modules/admin/pages/AdminAuditorias.vue'),
+      },
     ]
   },
   {
@@ -99,49 +104,49 @@ const routes: Array<RouteRecordRaw> = [
     path: '/home',
     name: 'Home',
     component: () => import('../modules/ganado/pages/HomePage.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin', 'ayudante'] }
   },
   {
     path: '/ganado/animales',
     name: 'MisAnimales',
     component: () => import('../modules/ganado/pages/AnimalsPage.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin', 'ayudante'] }
   },
   {
     path: '/ganado/estimacion-ia',
     name: 'AiEstimation',
     component: () => import('../modules/ganado/pages/AiEstimationPage.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin', 'ayudante'] }
   },
   {
     path: '/ganado/registrar',
     name: 'RegistrarGanado',
     component: () => import('../modules/ganado/pages/RegistrarPage.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin', 'ayudante'] }
   },
   {
     path: '/ganado/personal',
     name: 'PersonalGanado',
     component: () => import('../modules/ganado/pages/PersonalPage.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin', 'ayudante'] }
   },
   {
     path: '/ganado/ajustes',
     name: 'AjustesGanado',
     component: () => import('../modules/ganado/pages/AjustesPage.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin', 'ayudante'] }
   },
   {
     path: '/ganado/recordatorios',
     name: 'RecordatoriosGanado',
     component: () => import('../modules/ganado/pages/RecordatoriosPage.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin', 'ayudante'] }
   },
   {
     path: '/ganado/reportes',
     name: 'GanaderoReportes',
     component: () => import('../modules/reportes/pages/ReportsPage.vue'),
-    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin'] }
+    meta: { requiresAuth: true, allowedRoles: ['ganadero', 'admin', 'ayudante'] }
   },
   {
     path: '/animal/:id',

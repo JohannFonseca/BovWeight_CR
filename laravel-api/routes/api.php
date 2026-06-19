@@ -8,7 +8,7 @@ use App\Http\Controllers\GanadoController;
 use App\Http\Controllers\ReporteController;
 
 // Auth Routes
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('audit.login');
 Route::post('/cambiar-password', [AuthController::class, 'cambiarPassword']);
 Route::post('/recuperar-password', [AuthController::class, 'recuperarPassword']);
 
@@ -31,6 +31,11 @@ Route::post('/ganadero/veterinarios/asignar-finca', [GanadoController::class, 'a
 Route::post('/ganadero/veterinarios/guardar-permisos', [GanadoController::class, 'guardarPermisosVeterinario']);
 Route::delete('/ganadero/veterinarios/{vetId}/revocar-finca/{fincaId}', [GanadoController::class, 'revocarFincaVeterinario']);
 Route::put('/ganadero/veterinarios/{vetId}/toggle-estado', [GanadoController::class, 'toggleEstadoVeterinario']);
+
+// Ayudantes Routes (within Ganadero space)
+Route::get('/ganadero/ayudantes', [GanadoController::class, 'getAyudantes']);
+Route::post('/ganadero/ayudantes', [GanadoController::class, 'crearAyudante']);
+Route::delete('/ganadero/ayudantes/{id}', [GanadoController::class, 'eliminarAyudante']);
 
 // Fincas CRUD Routes
 Route::get('/fincas', [GanadoController::class, 'getFincas']);
@@ -70,14 +75,17 @@ Route::put('/reportes-veterinarios/{id}', [\App\Http\Controllers\ReporteVeterina
 
 
 // Dashboard & Weight Analysis Routes
-Route::get('/admin/dashboard', [AdminController::class, 'getDashboardStats']);
-Route::get('/admin/usuarios', [AdminController::class, 'getUsuarios']);
-Route::post('/admin/usuarios', [AdminController::class, 'crearUsuario']);
-Route::get('/admin/usuarios/{id}', [AdminController::class, 'getUsuario']);
-Route::patch('/admin/usuarios/{id}/status', [AdminController::class, 'toggleUsuarioStatus']);
-Route::get('/admin/fincas', [AdminController::class, 'getFincas']);
-Route::get('/admin/fincas/{id}', [AdminController::class, 'getFinca']);
-Route::get('/admin/reportes', [AdminController::class, 'getReportes']);
+Route::middleware(['admin'])->group(function () {
+    Route::get('/admin/dashboard', [AdminController::class, 'getDashboardStats']);
+    Route::get('/admin/usuarios', [AdminController::class, 'getUsuarios']);
+    Route::post('/admin/usuarios', [AdminController::class, 'crearUsuario']);
+    Route::get('/admin/usuarios/{id}', [AdminController::class, 'getUsuario']);
+    Route::patch('/admin/usuarios/{id}/status', [AdminController::class, 'toggleUsuarioStatus']);
+    Route::get('/admin/fincas', [AdminController::class, 'getFincas']);
+    Route::get('/admin/fincas/{id}', [AdminController::class, 'getFinca']);
+    Route::get('/admin/reportes', [AdminController::class, 'getReportes']);
+    Route::get('/admin/auditorias', [AdminController::class, 'getAuditLogs']);
+});
 Route::get('/dashboard-stats', [GanadoController::class, 'getDashboardStats']);
 Route::get('/analisis-pesajes', [GanadoController::class, 'getAnalisisPesajes']);
 Route::get('/obtener-imagen-base64', [GanadoController::class, 'obtenerImagenBase64']);

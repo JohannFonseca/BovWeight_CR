@@ -593,4 +593,55 @@ class AdminController extends Controller
             return false;
         }
     }
+
+    public function getAuditLogs(Request $request)
+    {
+        $query = \App\Models\Auditoria::with('usuario');
+
+        // Filter by action
+        if ($request->filled('accion')) {
+            $query->where('accion', $request->input('accion'));
+        }
+
+        // Filter by general search (correo, ip_address, tabla)
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('correo', 'like', '%' . $search . '%')
+                  ->orWhere('ip_address', 'like', '%' . $search . '%')
+                  ->orWhere('tabla', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Filter by date range
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('created_at', '>=', $request->input('fecha_inicio'));
+        }
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('created_at', '<=', $request->input('fecha_fin'));
+        }
+
+        $audits = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        return response()->json([
+            'data' => collect($audits->items())->map(function ($audit) {
+                return [
+                    'id' => $audit->id,
+                    'usuario_id' => $audit->usuario_id,
+                    'usuario_nombre' => $audit->usuario ? $audit->usuario->nombre_completo : null,
+                    'correo' => $audit->correo,
+                    'accion' => $audit->accion,
+                    'tabla' => $audit->tabla,
+                    'registro_id' => $audit->registro_id,
+                    'detalles' => $audit->detalles,
+                    'ip_address' => $audit->ip_address,
+                    'user_agent' => $audit->user_agent,
+                    'creado_en' => $audit->created_at->format('d/m/Y H:i:s'),
+                ];
+            }),
+            'current_page' => $audits->currentPage(),
+            'last_page' => $audits->lastPage(),
+            'total' => $audits->total(),
+        ]);
+    }
 }

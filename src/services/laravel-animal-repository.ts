@@ -668,5 +668,44 @@ export class LaravelAnimalRepository implements IAnimalRepository {
       throw new Error(err.response?.data?.message || 'Error al ejecutar verificación de recordatorios');
     }
   }
+
+  async getAyudantes(): Promise<any[]> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.get(`${apiUrl}/ganadero/ayudantes`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en getAyudantes con Laravel:', err.message);
+      throw new Error('Error al obtener la lista de ayudantes');
+    }
+  }
+
+  async crearAyudante(ayudante: { correo: string; nombre_completo: string; contrasena: string }): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.post(`${apiUrl}/ganadero/ayudantes`, ayudante, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en crearAyudante con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al registrar el ayudante');
+    }
+  }
+
+  async eliminarAyudante(id: number): Promise<any> {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    try {
+      const response = await axios.delete(`${apiUrl}/ganadero/ayudantes/${id}`, {
+        headers: this.getHeaders(),
+      });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error en eliminarAyudante con Laravel:', err.message);
+      throw new Error(err.response?.data?.message || 'Error al eliminar el ayudante');
+    }
+  }
 }
 

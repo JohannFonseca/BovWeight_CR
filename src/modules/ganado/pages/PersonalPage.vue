@@ -37,6 +37,14 @@
           >
             Reportes Clínicos
           </button>
+          <button 
+            v-if="usuarioSesion?.rol === 'ganadero'"
+            class="segment-btn" 
+            :class="{ active: activeTab === 'ayudantes' }"
+            @click="activeTab = 'ayudantes'"
+          >
+            Ayudantes
+          </button>
         </div>
 
         <!-- TAB 1: VETERINARIOS -->
@@ -310,6 +318,56 @@
               <div class="report-card-footer">
                 <button class="view-report-btn" @click="openReporteDetail(r)">
                   Ver Ficha Clínica
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: AYUDANTES -->
+        <div v-if="activeTab === 'ayudantes'" class="tab-content animate-fade-in">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Ayudantes y Asistentes</h1>
+              <p class="page-subtitle">Gestiona las cuentas de tus ayudantes de finca</p>
+            </div>
+            <button class="primary-btn" @click="openAddAyudanteModal">
+              <ion-icon :icon="addOutline"></ion-icon>
+              NUEVO AYUDANTE
+            </button>
+          </div>
+
+          <!-- LOADING STATE -->
+          <div v-if="loadingAyudantes" class="loading-state">
+            <ion-spinner name="crescent"></ion-spinner>
+            <p>Cargando ayudantes...</p>
+          </div>
+
+          <!-- EMPTY STATE FOR AYUDANTES -->
+          <div v-else-if="ayudantes.length === 0" class="empty-state animate-fade-in">
+            <span class="empty-icon">👥</span>
+            <h3>No tienes ayudantes registrados</h3>
+            <p>Crea cuentas secundarias para que tus ayudantes registren datos de pesaje.</p>
+          </div>
+
+          <!-- AYUDANTES LIST -->
+          <div v-else class="ayudante-list-container animate-fade-in">
+            <div 
+              v-for="a in ayudantes" 
+              :key="a.id" 
+              class="ayudante-mobile-card"
+            >
+              <div class="ayudante-card-header">
+                <div class="ayudante-avatar">
+                  {{ a.nombre_completo ? a.nombre_completo.charAt(0).toUpperCase() : 'A' }}
+                </div>
+                <div class="ayudante-meta">
+                  <h3>{{ a.nombre_completo }}</h3>
+                  <span class="ayudante-email">{{ a.correo }}</span>
+                  <span class="ayudante-date">Registrado: {{ a.creado_en }}</span>
+                </div>
+                <button class="delete-ayudante-btn" @click="deleteAyudante(a.id)">
+                  <ion-icon :icon="trashOutline"></ion-icon>
                 </button>
               </div>
             </div>
@@ -773,6 +831,57 @@
       </div>
     </div>
 
+    <!-- MODAL 7: REGISTRAR AYUDANTE -->
+    <div v-if="showAddAyudanteModal" class="modal-overlay animate-fade-in">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>👥 Registrar Ayudante</h3>
+          <button class="close-btn" @click="closeAddAyudanteModal">×</button>
+        </div>
+        <form @submit.prevent="saveAyudante">
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Nombre Completo *</label>
+              <input 
+                type="text" 
+                v-model="ayudanteForm.nombre_completo" 
+                required 
+                placeholder="Ej. Juan Gómez" 
+                class="form-input" 
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Correo Electrónico *</label>
+              <input 
+                type="email" 
+                v-model="ayudanteForm.correo" 
+                required 
+                placeholder="Ej. juan@correo.com" 
+                class="form-input" 
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contraseña de Acceso *</label>
+              <input 
+                type="password" 
+                v-model="ayudanteForm.contrasena" 
+                required 
+                placeholder="Mínimo 4 caracteres" 
+                class="form-input" 
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="cancel-btn" @click="closeAddAyudanteModal">Cancelar</button>
+            <button type="submit" class="submit-btn" :disabled="savingAyudante">
+              <span v-if="savingAyudante">Creando...</span>
+              <span v-else>Crear Cuenta</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- TOAST NOTIFICATIONS -->
     <ion-toast
       :is-open="toast.show"
@@ -802,7 +911,7 @@ import type { ReporteVeterinario } from '@/services/interfaces';
 import { useAutoRefresh } from '@/composables/useAutoRefresh';
 
 // Control de Pestañas
-const activeTab = ref<'veterinarios' | 'citas' | 'reportes'>('veterinarios');
+const activeTab = ref<'veterinarios' | 'citas' | 'reportes' | 'ayudantes'>('veterinarios');
 const activeStatusFilter = ref<string>('todos');
 
 // Reportes Clínicos
@@ -867,6 +976,17 @@ const rescheduleForm = ref({
   citaId: 0,
   fecha: '',
   hora: ''
+});
+
+// Ayudantes
+const ayudantes = ref<any[]>([]);
+const loadingAyudantes = ref(false);
+const showAddAyudanteModal = ref(false);
+const savingAyudante = ref(false);
+const ayudanteForm = ref({
+  nombre_completo: '',
+  correo: '',
+  contrasena: ''
 });
 
 // Veterinario seleccionado
@@ -974,7 +1094,7 @@ const checkRouteQueryParams = () => {
   // Manejo de pestaña activa desde query param
   if (route.query.tab) {
     const tab = String(route.query.tab);
-    if (tab === 'citas' || tab === 'reportes' || tab === 'veterinarios') {
+    if (tab === 'citas' || tab === 'reportes' || tab === 'veterinarios' || tab === 'ayudantes') {
       activeTab.value = tab as any;
     }
   }
@@ -1010,8 +1130,15 @@ const checkRouteQueryParams = () => {
 
 // Watch route query tab and filter changes
 watch(() => route.query.tab, (newTab) => {
-  if (newTab === 'citas' || newTab === 'reportes' || newTab === 'veterinarios') {
+  if (newTab === 'citas' || newTab === 'reportes' || newTab === 'veterinarios' || newTab === 'ayudantes') {
     activeTab.value = newTab as any;
+  }
+});
+
+// Volver a cargar si se selecciona la pestaña ayudantes
+watch(activeTab, (newTab) => {
+  if (newTab === 'ayudantes') {
+    loadAyudantes();
   }
 });
 
@@ -1023,12 +1150,16 @@ watch(() => route.query.filter, (newFilter) => {
 
 // Inicialización
 onMounted(async () => {
-  await Promise.all([
+  const promises: Promise<any>[] = [
     loadVeterinarios(),
     loadFincasAndAnimals(),
     loadCitas(),
     loadReportes()
-  ]);
+  ];
+  if (usuarioSesion.value?.rol === 'ganadero') {
+    promises.push(loadAyudantes());
+  }
+  await Promise.all(promises);
   checkRouteQueryParams();
 });
 
@@ -1474,6 +1605,70 @@ const formatDate = (dateStr: string): string => {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
   return dateStr;
+};
+
+// ACCIONES: Ayudantes
+const openAddAyudanteModal = () => {
+  ayudanteForm.value = {
+    nombre_completo: '',
+    correo: '',
+    contrasena: ''
+  };
+  showAddAyudanteModal.value = true;
+};
+
+const closeAddAyudanteModal = () => {
+  showAddAyudanteModal.value = false;
+};
+
+const loadAyudantes = async () => {
+  if (usuarioSesion.value?.rol !== 'ganadero') return;
+  loadingAyudantes.value = true;
+  try {
+    const data = await animalRepository.getAyudantes();
+    ayudantes.value = data;
+  } catch (e: any) {
+    console.error('Error al cargar ayudantes:', e);
+    showToast(e.message || 'Error al cargar ayudantes.', 'danger');
+  } finally {
+    loadingAyudantes.value = false;
+  }
+};
+
+const saveAyudante = async () => {
+  if (!ayudanteForm.value.nombre_completo || !ayudanteForm.value.correo || !ayudanteForm.value.contrasena) {
+    showToast('Por favor completa todos los campos requeridos.', 'danger');
+    return;
+  }
+
+  savingAyudante.value = true;
+  try {
+    await animalRepository.crearAyudante({
+      nombre_completo: ayudanteForm.value.nombre_completo,
+      correo: ayudanteForm.value.correo,
+      contrasena: ayudanteForm.value.contrasena
+    });
+    showToast('Ayudante registrado con éxito.');
+    closeAddAyudanteModal();
+    await loadAyudantes();
+  } catch (e: any) {
+    showToast(e.message || 'Error al registrar ayudante.', 'danger');
+  } finally {
+    savingAyudante.value = false;
+  }
+};
+
+const deleteAyudante = async (id: number) => {
+  const confirm = window.confirm('¿Está seguro de que desea eliminar este ayudante? Perderá el acceso al sistema.');
+  if (!confirm) return;
+
+  try {
+    await animalRepository.eliminarAyudante(id);
+    showToast('Ayudante eliminado correctamente.');
+    await loadAyudantes();
+  } catch (e: any) {
+    showToast(e.message || 'Error al eliminar ayudante.', 'danger');
+  }
 };
 </script>
 
@@ -2993,5 +3188,84 @@ const formatDate = (dateStr: string): string => {
 .assoc-body p:last-child {
   margin: 0;
   color: #5c6e58;
+}
+
+/* AYUDANTES */
+.ayudante-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ayudante-mobile-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(46, 125, 50, 0.06);
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.ayudante-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.ayudante-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #a5d6a7, #81c784);
+  color: #1B5E20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.ayudante-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.ayudante-meta h3 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #2c3e2d;
+  margin: 0 0 2px;
+}
+
+.ayudante-email {
+  font-size: 11px;
+  color: #5c6e58;
+  margin-bottom: 2px;
+}
+
+.ayudante-date {
+  font-size: 10px;
+  color: #8c9c89;
+}
+
+.delete-ayudante-btn {
+  background: rgba(211, 47, 47, 0.05);
+  color: #d32f2f;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-ayudante-btn:active {
+  background: rgba(211, 47, 47, 0.15);
+  transform: scale(0.95);
 }
 </style>

@@ -1074,5 +1074,103 @@ class GanadoController extends Controller
 
         return response()->json(['message' => 'Imagen no encontrada.'], 404);
     }
+
+    public function getAyudantes(Request $request)
+    {
+        $originalRole = $request->header('X-Original-User-Id') ? 'ayudante' : strtolower($request->header('X-User-Role') ?? '');
+        if ($originalRole !== 'ganadero') {
+            return response()->json(['message' => 'Acceso denegado. Solo los ganaderos principales pueden gestionar ayudantes.'], 403);
+        }
+
+        $ganaderoId = $request->header('X-User-Id');
+
+        $ayudantes = Usuario::where('ganadero_id', $ganaderoId)
+            ->whereHas('rol', function ($q) {
+                $q->where('nombre', 'ayudante');
+            })
+            ->orderBy('nombre_completo')
+            ->get()
+            ->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'correo' => $u->correo,
+                    'nombre_completo' => $u->nombre_completo,
+                    'activo' => (bool)$u->activo,
+                    'creado_en' => $u->created_at->format('d/m/Y'),
+                ];
+            });
+
+        return response()->json($ayudantes);
+    }
+
+    public function crearAyudante(Request $request)
+    {
+        $originalRole = $request->header('X-Original-User-Id') ? 'ayudante' : strtolower($request->header('X-User-Role') ?? '');
+        if ($originalRole !== 'ganadero') {
+            return response()->json(['message' => 'Acceso denegado. Solo los ganaderos principales pueden gestionar ayudantes.'], 403);
+        }
+
+        $ganaderoId = $request->header('X-User-Id');
+
+        $validator = Validator::make($request->all(), [
+            'correo' => 'required|email',
+            'nombre_completo' => 'required|string|min:1',
+            'contrasena' => 'required|string|min:4',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        // Check if email already exists
+        $existe = Usuario::where('correo', $request->input('correo'))->first();
+        if ($existe) {
+            return response()->json(['message' => 'Ya existe un usuario con el correo: ' . $request->input('correo')], 409);
+        }
+
+        $rolAyudante = \App\Models\Role::where('nombre', 'ayudante')->first();
+        if (!$rolAyudante) {
+            return response()->json(['message' => 'El rol de ayudante no está configurado.'], 500);
+        }
+
+        $ayudante = Usuario::create([
+            'correo' => $request->input('correo'),
+            'contrasena_hash' => \Illuminate\Support\Facades\Hash::make($request->input('contrasena')),
+            'rol_id' => $rolAyudante->id,
+            'nombre_completo' => $request->input('nombre_completo'),
+            'ganadero_id' => $ganaderoId,
+            'activo' => true,
+            'debe_cambiar_password' => false,
+        ]);
+
+        return response()->json([
+            'message' => 'Ayudante creado exitosamente.',
+            'ayudante' => [
+                'id' => $ayudante->id,
+                'correo' => $ayudante->correo,
+                'nombre_completo' => $ayudante->nombre_completo,
+            ]
+        ], 201);
+    }
+
+    public function eliminarAyudante(Request $request, $id)
+    {
+        $originalRole = $request->header('X-Original-User-Id') ? 'ayudante' : strtolower($request->header('X-User-Role') ?? '');
+        if ($originalRole !== 'ganadero') {
+            return response()->json(['message' => 'Acceso denegado. Solo los ganaderos principales pueden gestionar ayudantes.'], 403);
+        }
+
+        $ganaderoId = $request->header('X-User-Id');
+
+        $ayudante = Usuario::where('ganadero_id', $ganaderoId)->find($id);
+        if (!$ayudante) {
+            return response()->json(['message' => 'Ayudante no encontrado o no pertenece a su cuenta.'], 404);
+        }
+
+        $ayudante->tokens()->delete();
+        $ayudante->delete();
+
+        return response()->json(['message' => 'Ayudante eliminado exitosamente.']);
+    }
 }
 
