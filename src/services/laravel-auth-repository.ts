@@ -32,7 +32,7 @@ export class LaravelAuthRepository implements IAuthRepository {
     }
 
     async login(correo: string, password: string): Promise<AuthenticatedUser> {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
         const correoNormalizado = correo.trim().toLowerCase();
 
         // 1. Si el dispositivo está offline, hacer fallback de validación local inmediatamente.
@@ -135,7 +135,7 @@ export class LaravelAuthRepository implements IAuthRepository {
     }
 
     async recuperarPassword(correo: string): Promise<any> {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
 
         try {
             const response = await axios.post(`${apiUrl}/recuperar-password`, {

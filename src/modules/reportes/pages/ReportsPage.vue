@@ -558,7 +558,7 @@ function toggleSelectAll() {
 
 // Helper para convertir una URL de imagen a base64 usando el proxy de Laravel (evita CORS)
 async function getBase64ImageFromUrl(url: string): Promise<string> {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
   const response = await fetch(`${apiUrl}/obtener-imagen-base64?url=${encodeURIComponent(url)}`);
   if (!response.ok) {
     throw new Error('Error al obtener la imagen del servidor');

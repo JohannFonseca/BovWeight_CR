@@ -190,7 +190,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getAllAnimals(): Promise<Animal[]> {
     return this.handleCachedQuery<Animal[]>('animals_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/animales`, {
         headers: this.getHeaders(),
       });
@@ -200,7 +200,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getAnimalById(id: number): Promise<Animal> {
     return this.handleCachedQuery<Animal>(`animal_detail_${id}`, async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/animales/${id}`, {
         headers: this.getHeaders(),
       });
@@ -210,7 +210,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getWeightHistory(animalId: number): Promise<WeightRecord[]> {
     return this.handleCachedQuery<WeightRecord[]>(`weight_history_${animalId}`, async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/animales/${animalId}/historial-peso`, {
         headers: this.getHeaders(),
       });
@@ -219,7 +219,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async estimateWeight(animalId: number | null, girth: number | null, length: number | null, imageFile?: File | File[]): Promise<{ peso_estimado: number; model: string; largo_detectado?: number; perimetro_detectado?: number; confianza?: number; ruta_imagen?: string | null }> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       let data: any;
       const headers: any = this.getHeaders();
@@ -262,7 +262,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async saveWeightRecord(animalId: number, pesoEstimado: number, pesoCorregido?: number, rutaImagen?: string): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/animales/${animalId}/registrar-peso`, {
         peso_estimado_kg: pesoEstimado,
@@ -284,7 +284,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getFincas(): Promise<any[]> {
     return this.handleCachedQuery<any[]>('fincas_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/fincas`, {
         headers: this.getHeaders(),
       });
@@ -293,7 +293,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async crearFinca(finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/fincas`, finca, {
         headers: this.getHeaders(),
@@ -308,7 +308,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async editarFinca(id: number, finca: { nombre: string; ubicacion: string; propietario_id: number }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/fincas/${id}`, finca, {
         headers: this.getHeaders(),
@@ -323,7 +323,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async crearAnimal(animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; observaciones?: string | null }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/animales`, animal, {
         headers: this.getHeaders(),
@@ -338,7 +338,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async editarAnimal(id: number, animal: { nombre: string; numero_arete: string; finca_id: number; raza_id?: number | null; fecha_nacimiento?: string | null; sexo?: string | null; color?: string | null; estado?: string | null; observaciones?: string | null }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/animales/${id}`, animal, {
         headers: this.getHeaders(),
@@ -355,7 +355,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getRazas(): Promise<any[]> {
     return this.handleCachedQuery<any[]>('razas_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/razas`, {
         headers: this.getHeaders(),
       });
@@ -366,7 +366,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   async getUsuarios(rolNombre?: string): Promise<any[]> {
     const key = rolNombre ? `usuarios_${rolNombre}` : 'usuarios_all';
     return this.handleCachedQuery<any[]>(key, async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const params = rolNombre ? { rol_nombre: rolNombre } : {};
       const response = await axios.get(`${apiUrl}/usuarios`, {
         headers: this.getHeaders(),
@@ -377,7 +377,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async eliminarAnimal(id: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.delete(`${apiUrl}/animales/${id}`, {
         headers: this.getHeaders(),
@@ -394,7 +394,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async eliminarFinca(id: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.delete(`${apiUrl}/fincas/${id}`, {
         headers: this.getHeaders(),
@@ -410,7 +410,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getUsuarioDetalle(id: number): Promise<any> {
     return this.handleCachedQuery<any>(`usuario_detail_${id}`, async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/admin/usuarios/${id}`, {
         headers: this.getHeaders(),
       });
@@ -419,7 +419,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async crearUsuario(usuario: { correo: string; contrasena: string; rol_id: number; nombre_completo: string; ganadero_id?: number | null }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/usuarios`, usuario, {
         headers: this.getHeaders(),
@@ -432,7 +432,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async getRoles(): Promise<any[]> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.get(`${apiUrl}/roles`, {
         headers: this.getHeaders(),
@@ -445,7 +445,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async editarUsuario(id: number, data: { correo: string; nombre_completo: string; contrasena?: string; foto_base64?: string }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/usuarios/${id}`, data, {
         headers: this.getHeaders(),
@@ -458,7 +458,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async reenviarCredenciales(id: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/usuarios/${id}/reenviar-credenciales`, {}, {
         headers: this.getHeaders(),
@@ -471,7 +471,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async cambiarPassword(id: number, passwordActual: string, nuevoPassword: string): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/cambiar-password`, {
         id,
@@ -489,7 +489,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getReportesGanadero(): Promise<any[]> {
     return this.handleCachedQuery<any[]>('reportes_ganadero_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/reportes-ganadero`, {
         headers: this.getHeaders(),
       });
@@ -498,7 +498,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async guardarReporteGanadero(reporte: { titulo: string; descripcion?: string | null; destinatario?: string | null; animal_ids: number[] }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/reportes-ganadero`, reporte, {
         headers: this.getHeaders(),
@@ -513,7 +513,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getReporteDetalleGanadero(id: number): Promise<any> {
     return this.handleCachedQuery<any>(`reporte_ganadero_detail_${id}`, async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/reportes-ganadero/${id}`, {
         headers: this.getHeaders(),
       });
@@ -522,7 +522,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async eliminarReporteGanadero(id: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.delete(`${apiUrl}/reportes-ganadero/${id}`, {
         headers: this.getHeaders(),
@@ -538,7 +538,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getVeterinariosGanadero(): Promise<any[]> {
     return this.handleCachedQuery<any[]>('veterinarios_ganadero_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/ganadero/veterinarios`, {
         headers: this.getHeaders(),
       });
@@ -547,7 +547,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async asignarFincaVeterinario(payload: { veterinario_id: number; finca_id: number }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/ganadero/veterinarios/asignar-finca`, payload, {
         headers: this.getHeaders(),
@@ -562,7 +562,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async guardarPermisosVeterinario(payload: { veterinario_id: number; finca_id: number; animales_ids: number[] }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/ganadero/veterinarios/guardar-permisos`, payload, {
         headers: this.getHeaders(),
@@ -576,7 +576,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async revocarFincaVeterinario(vetId: number, fincaId: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.delete(`${apiUrl}/ganadero/veterinarios/${vetId}/revocar-finca/${fincaId}`, {
         headers: this.getHeaders(),
@@ -591,7 +591,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async toggleEstadoVeterinario(vetId: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/ganadero/veterinarios/${vetId}/toggle-estado`, {}, {
         headers: this.getHeaders(),
@@ -606,7 +606,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getCitas(): Promise<Cita[]> {
     return this.handleCachedQuery<Cita[]>('citas_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/citas`, {
         headers: this.getHeaders(),
       });
@@ -615,7 +615,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async crearCita(cita: { veterinario_id: number; finca_id: number; animal_id?: number | null; fecha: string; hora: string; motivo: string; estado?: string }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/citas`, cita, {
         headers: this.getHeaders(),
@@ -629,7 +629,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async actualizarCita(id: number, payload: { fecha?: string; hora?: string; estado?: string; comentario_rechazo?: string | null }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/citas/${id}`, payload, {
         headers: this.getHeaders(),
@@ -645,7 +645,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   async getReportesVeterinarios(animalId?: number): Promise<ReporteVeterinario[]> {
     const key = animalId ? `reportes_vet_${animalId}` : 'reportes_vet_all';
     return this.handleCachedQuery<ReporteVeterinario[]>(key, async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const params = animalId ? { animal_id: animalId } : {};
       const response = await axios.get(`${apiUrl}/reportes-veterinarios`, {
         headers: this.getHeaders(),
@@ -656,7 +656,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async crearReporteVeterinario(reporte: { animal_id: number; observaciones: string; diagnostico_preliminar: string; recomendaciones: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad: string; estado: string; visita_recomendada?: boolean; cita_id?: number | null }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/reportes-veterinarios`, reporte, {
         headers: this.getHeaders(),
@@ -671,7 +671,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async actualizarReporteVeterinario(id: number, payload: { observaciones?: string; diagnostico_preliminar?: string; recomendaciones?: string; medicamentos_sugeridos?: string | null; proxima_revision?: string | null; prioridad?: string; estado?: string; visita_recomendada?: boolean; cita_id?: number | null }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/reportes-veterinarios/${id}`, payload, {
         headers: this.getHeaders(),
@@ -686,7 +686,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getNotificaciones(): Promise<Notificacion[]> {
     return this.handleCachedQuery<Notificacion[]>('notificaciones_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/notificaciones`, {
         headers: this.getHeaders(),
       });
@@ -695,7 +695,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async marcarNotificacionLeida(id: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/notificaciones/${id}/leer`, {}, {
         headers: this.getHeaders(),
@@ -709,7 +709,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async marcarTodasNotificacionesLeidas(): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/notificaciones/leer-todas`, {}, {
         headers: this.getHeaders(),
@@ -723,7 +723,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async eliminarNotificacion(id: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.delete(`${apiUrl}/notificaciones/${id}`, {
         headers: this.getHeaders(),
@@ -738,7 +738,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getDashboardStats(): Promise<any> {
     return this.handleCachedQuery<any>('dashboard_stats', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/dashboard-stats`, {
         headers: this.getHeaders(),
       });
@@ -748,7 +748,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getRecordatoriosSanitarios(): Promise<any[]> {
     return this.handleCachedQuery<any[]>('recordatorios_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/recordatorios-sanitarios`, {
         headers: this.getHeaders(),
       });
@@ -765,7 +765,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     animal_id?: number | null;
     estado?: 'pendiente' | 'completado';
   }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/recordatorios-sanitarios`, recordatorio, {
         headers: this.getHeaders(),
@@ -787,7 +787,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
     animal_id?: number | null;
     estado?: 'pendiente' | 'completado';
   }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.put(`${apiUrl}/recordatorios-sanitarios/${id}`, payload, {
         headers: this.getHeaders(),
@@ -801,7 +801,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async eliminarRecordatorioSanitario(id: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.delete(`${apiUrl}/recordatorios-sanitarios/${id}`, {
         headers: this.getHeaders(),
@@ -815,7 +815,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async runRecordatoriosCheck(): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/recordatorios-sanitarios/run-check`, {}, {
         headers: this.getHeaders(),
@@ -829,7 +829,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getAyudantes(): Promise<any[]> {
     return this.handleCachedQuery<any[]>('ayudantes_list', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/ganadero/ayudantes`, {
         headers: this.getHeaders(),
       });
@@ -838,7 +838,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async crearAyudante(ayudante: { correo: string; nombre_completo: string; contrasena: string }): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.post(`${apiUrl}/ganadero/ayudantes`, ayudante, {
         headers: this.getHeaders(),
@@ -852,7 +852,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
   }
 
   async eliminarAyudante(id: number): Promise<any> {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
     try {
       const response = await axios.delete(`${apiUrl}/ganadero/ayudantes/${id}`, {
         headers: this.getHeaders(),
@@ -867,7 +867,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getVeterinarioDashboard(): Promise<any> {
     return this.handleCachedQuery<any>('veterinario_dashboard', async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/veterinario/dashboard`, {
         headers: this.getHeaders(),
       });
@@ -877,7 +877,7 @@ export class LaravelAnimalRepository implements IAnimalRepository {
 
   async getVeterinarioAnimalDetail(id: number): Promise<any> {
     return this.handleCachedQuery<any>(`veterinario_animal_detail_${id}`, async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
       const response = await axios.get(`${apiUrl}/veterinario/animal/${id}`, {
         headers: this.getHeaders(),
       });

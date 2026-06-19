@@ -6,7 +6,7 @@
 import axios from 'axios';
 import type { Rol, UsuarioInfo, Finca, AnimalInfo, AnalisisPesos } from './admin.service';
 
-const getApiUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const getApiUrl = () => import.meta.env.VITE_API_URL || 'https://bovweightcr-production.up.railway.app/api';
 
 const getHeaders = () => {
   const sessionStr = localStorage.getItem('usuario_sesion');
