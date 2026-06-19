@@ -202,6 +202,12 @@ export interface IAnimalRepository {
 
   /** Elimina un ayudante por ID. */
   eliminarAyudante(id: number): Promise<any>;
+
+  /** Obtiene las estadísticas del dashboard para el veterinario. */
+  getVeterinarioDashboard(): Promise<any>;
+
+  /** Obtiene el expediente clínico completo de un animal para el veterinario. */
+  getVeterinarioAnimalDetail(id: number): Promise<any>;
 }
 
 /**

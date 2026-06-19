@@ -2,9 +2,6 @@
 
 Este documento consolida únicamente las funcionalidades faltantes, riesgos de seguridad y mejoras técnicas pendientes de implementación en el sistema **BovWeight CR** tras la última auditoría.
 
----
-
-
 
 ## 5. INFRAESTRUCTURA Y OPTIMIZACIÓN (Prioridad: Baja)
 

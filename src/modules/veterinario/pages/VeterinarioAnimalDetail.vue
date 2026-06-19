@@ -492,12 +492,10 @@ const fetchAnimalDetail = async () => {
   try {
     const sessionStr = localStorage.getItem('usuario_sesion');
     let userId = '';
-    let userRole = '';
     if (sessionStr) {
       try {
         const parsedSession = JSON.parse(sessionStr);
         userId = parsedSession.id;
-        userRole = parsedSession.rol || 'veterinario';
         currentUserId.value = Number(parsedSession.id);
       } catch(e) {}
     }
@@ -508,17 +506,10 @@ const fetchAnimalDetail = async () => {
       return;
     }
     
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-    const response = await axios.get(`${apiUrl}/veterinario/animal/${animalId}`, {
-      headers: {
-        'X-User-Id': userId,
-        'X-User-Role': userRole,
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await animalRepository.getVeterinarioAnimalDetail(Number(animalId));
 
-    if (response.data && response.data.success) {
-      animal.value = response.data.data;
+    if (response && response.success) {
+      animal.value = response.data;
       prepareChartData();
       await fetchReportes();
     }
@@ -526,7 +517,7 @@ const fetchAnimalDetail = async () => {
     if (err.response && err.response.status === 403) {
       error.value = 'Acceso denegado. Este animal pertenece a una finca no autorizada para tu perfil.';
     } else {
-      error.value = err.response?.data?.message || 'Error al cargar los detalles del animal.';
+      error.value = err.message || 'Error al cargar los detalles del animal.';
     }
   } finally {
     isLoading.value = false;

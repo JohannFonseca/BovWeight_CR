@@ -1,6 +1,6 @@
 /**
  * @file laravel-auth-repository.ts
- * @description Repositorio de autenticación para Laravel usando token seguro de Sanctum.
+ * @description Repositorio de autenticación para Laravel usando token seguro de Sanctum con fallback offline.
  */
 
 import axios from 'axios';
@@ -9,23 +9,87 @@ import type { IAuthRepository, User } from './interfaces';
 type AuthenticatedUser = User & {
     token?: string;
     token_type?: string;
+    correo?: string;
 };
 
-export class LaravelAuthRepository implements IAuthRepository {
-    async login(correo: string, password: string): Promise<AuthenticatedUser> {
-        // URL base del backend Laravel.
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+type CachedUserEntry = {
+    correo: string;
+    passwordHash: string;
+    user: AuthenticatedUser;
+};
 
-        // Limpia el correo antes de enviarlo.
+// Función auxiliar nativa para hashear contraseñas usando SHA-256 (seguro para almacenamiento local)
+async function sha256(message: string): Promise<string> {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export class LaravelAuthRepository implements IAuthRepository {
+    constructor() {
+        this.seedDemoCredentials();
+    }
+
+    /**
+     * Pre-carga las tres cuentas demo en el almacenamiento local para facilitar las pruebas offline
+     */
+    private seedDemoCredentials() {
+        const cachedListStr = localStorage.getItem('cached_credentials_list');
+        if (!cachedListStr) {
+            const demoUsers: CachedUserEntry[] = [
+                {
+                    correo: 'ganadero@test.com',
+                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // 1234
+                    user: {
+                        id: 2,
+                        usuario: 'Pedro Ganadero',
+                        correo: 'ganadero@test.com',
+                        rol: 'ganadero',
+                        debe_cambiar_password: false,
+                        token: 'demo-token-ganadero-offline'
+                    }
+                },
+                {
+                    correo: 'admin@test.com',
+                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // 1234
+                    user: {
+                        id: 1,
+                        usuario: 'Administrador',
+                        correo: 'admin@test.com',
+                        rol: 'admin',
+                        debe_cambiar_password: false,
+                        token: 'demo-token-admin-offline'
+                    }
+                },
+                {
+                    correo: 'vet@test.com',
+                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // 1234
+                    user: {
+                        id: 3,
+                        usuario: 'Carlos Veterinario',
+                        correo: 'vet@test.com',
+                        rol: 'veterinario',
+                        debe_cambiar_password: false,
+                        token: 'demo-token-vet-offline'
+                    }
+                }
+            ];
+            localStorage.setItem('cached_credentials_list', JSON.stringify(demoUsers));
+        }
+    }
+
+    async login(correo: string, password: string): Promise<AuthenticatedUser> {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         const correoNormalizado = correo.trim().toLowerCase();
 
-        // Limpia sesiones anteriores antes de iniciar sesión.
-        localStorage.removeItem('usuario_sesion');
-        localStorage.removeItem('token');
-        localStorage.removeItem('access_token');
+        // 1. Si el dispositivo está offline, hacer fallback de validación local inmediatamente.
+        if (!navigator.onLine) {
+            return this.intentarLoginOffline(correoNormalizado, password);
+        }
 
         try {
-            // Envía credenciales al backend.
+            // Envía credenciales al backend de forma online.
             const response = await axios.post(`${apiUrl}/login`, {
                 correo: correoNormalizado,
                 password: password,
@@ -33,9 +97,30 @@ export class LaravelAuthRepository implements IAuthRepository {
 
             const loggedUser = response.data as AuthenticatedUser;
 
-            // Verifica que Laravel haya devuelto token.
             if (!loggedUser.token) {
                 throw new Error('El backend no devolvió token de autenticación.');
+            }
+
+            // Guardar credenciales hasheadas localmente de forma segura en la lista de caché.
+            try {
+                const passHash = await sha256(password);
+                const listStr = localStorage.getItem('cached_credentials_list') || '[]';
+                let list: CachedUserEntry[] = [];
+                try {
+                    list = JSON.parse(listStr);
+                } catch {
+                    list = [];
+                }
+                // Filtrar duplicados
+                list = list.filter(item => item.correo !== correoNormalizado);
+                list.push({
+                    correo: correoNormalizado,
+                    passwordHash: passHash,
+                    user: loggedUser
+                });
+                localStorage.setItem('cached_credentials_list', JSON.stringify(list));
+            } catch (hashErr) {
+                console.error('Error al guardar credenciales para offline:', hashErr);
             }
 
             // Registra actividad de login si el servicio está disponible.
@@ -51,22 +136,56 @@ export class LaravelAuthRepository implements IAuthRepository {
 
             return loggedUser;
         } catch (err: any) {
-            // Limpia sesión si falla el login.
+            const backendMessage = err.response?.data?.message || err.message || '';
+            console.error('Error al iniciar sesión con Laravel:', backendMessage);
+
+            // 2. Si falló por error de red o base de datos offline (aunque el servidor local esté vivo en desarrollo),
+            // intentar inicio de sesión offline como fallback si las credenciales coinciden.
+            if (
+                backendMessage.includes('SQLSTATE') ||
+                backendMessage.includes('could not translate') ||
+                backendMessage.includes('connection') ||
+                backendMessage.includes('Network Error') ||
+                err.code === 'ERR_NETWORK'
+            ) {
+                console.warn('Fallo de conexión detectado. Intentando validar credenciales localmente...');
+                return this.intentarLoginOffline(correoNormalizado, password);
+            }
+
+            // Si es un error de credenciales incorrectas devuelto por el servidor, limpiar sesiones y lanzar error.
             localStorage.removeItem('usuario_sesion');
             localStorage.removeItem('token');
             localStorage.removeItem('access_token');
+            throw new Error(backendMessage || 'Correo o contraseña incorrectos');
+        }
+    }
 
-            console.error('Error al iniciar sesión con Laravel:', err.response?.data?.message || err.message);
-            throw new Error(err.response?.data?.message || err.message || 'Correo o contraseña incorrectos');
+    private async intentarLoginOffline(correo: string, password: string): Promise<AuthenticatedUser> {
+        const cachedListStr = localStorage.getItem('cached_credentials_list');
+        if (!cachedListStr) {
+            throw new Error('No hay conexión a internet y no se encontraron credenciales guardadas en este dispositivo para inicio de sesión offline.');
+        }
+
+        try {
+            const list: CachedUserEntry[] = JSON.parse(cachedListStr);
+            const inputHash = await sha256(password);
+
+            const match = list.find(item => item.correo === correo && item.passwordHash === inputHash);
+            if (match) {
+                console.log('Inicio de sesión offline exitoso utilizando credenciales cacheadas.');
+                return match.user;
+            } else {
+                throw new Error('Correo o contraseña incorrectos.');
+            }
+        } catch (e: any) {
+            throw new Error(e.message || 'Error al validar credenciales locales de forma offline.');
         }
     }
 
     async recuperarPassword(correo: string): Promise<any> {
-        // URL base del backend Laravel.
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
         try {
-            // Solicita recuperación al backend.
             const response = await axios.post(`${apiUrl}/recuperar-password`, {
                 correo: correo.trim().toLowerCase(),
             });

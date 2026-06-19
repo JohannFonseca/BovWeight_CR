@@ -135,6 +135,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { animalRepository } from '@/services';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonButton, IonIcon, IonButtons
@@ -185,12 +186,10 @@ const fetchAnimales = async () => {
   try {
     const sessionStr = localStorage.getItem('usuario_sesion');
     let userId = '';
-    let userRole = '';
     if (sessionStr) {
       try {
         const parsedSession = JSON.parse(sessionStr);
         userId = parsedSession.id;
-        userRole = parsedSession.rol || 'veterinario';
       } catch(e) {}
     }
 
@@ -200,18 +199,8 @@ const fetchAnimales = async () => {
       return;
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-    const response = await axios.get(`${apiUrl}/animales`, {
-      headers: {
-        'X-User-Id': userId,
-        'X-User-Role': userRole,
-        'Accept': 'application/json'
-      }
-    });
-
-    if (response.data) {
-      animales.value = response.data;
-    }
+    const data = await animalRepository.getAllAnimals();
+    animales.value = data;
   } catch (err: any) {
     error.value = 'Error al cargar la lista de animales.';
   } finally {

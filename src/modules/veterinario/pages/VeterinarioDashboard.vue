@@ -241,6 +241,7 @@
     import { onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import axios from 'axios';
+    import { animalRepository } from '@/services';
     import {
         IonPage,
         IonHeader,
@@ -343,22 +344,11 @@
             return;
         }
 
-        const userId = session.id;
-        const userRole = session.rol || 'veterinario';
-
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+            const response = await animalRepository.getVeterinarioDashboard();
 
-            const response = await axios.get(`${apiUrl}/veterinario/dashboard`, {
-                headers: {
-                    'X-User-Id': userId,
-                    'X-User-Role': userRole,
-                    Accept: 'application/json'
-                }
-            });
-
-            if (response.data && response.data.success) {
-                const data = response.data.data;
+            if (response && response.success) {
+                const data = response.data;
 
                 totalFincas.value = data.total_fincas || 0;
                 totalAnimales.value = data.total_animales || 0;
@@ -373,7 +363,7 @@
             }
         } catch (err: any) {
             console.error('Error cargando dashboard veterinario:', err);
-            error.value = err.response?.data?.message || 'Error cargando datos del panel clínico.';
+            error.value = err.message || 'Error cargando datos del panel clínico.';
         } finally {
             isLoading.value = false;
         }
