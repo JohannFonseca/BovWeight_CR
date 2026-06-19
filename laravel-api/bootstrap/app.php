@@ -14,8 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Middleware global agregado por el equipo.
-        $middleware->append(\App\Http\Middleware\HandleAyudanteRole::class);
+        // Se registra en el grupo api para evitar interferir con peticiones globales u OPTIONS.
+        $middleware->api(append: [
+            \App\Http\Middleware\HandleAyudanteRole::class,
+        ]);
 
         // Registra alias de middlewares.
         $middleware->alias([
