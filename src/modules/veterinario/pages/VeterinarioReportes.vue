@@ -305,6 +305,9 @@
     import jsPDF from 'jspdf';
     import autoTable from 'jspdf-autotable';
     import { animalRepository } from '@/services';
+    import { Capacitor } from '@capacitor/core';
+    import { Filesystem, Directory } from '@capacitor/filesystem';
+    import { Share } from '@capacitor/share';
 
     const router = useRouter();
 
@@ -642,7 +645,7 @@
         return doc;
     };
 
-    const downloadReporteClinicoPdf = (reporte: any) => {
+    const downloadReporteClinicoPdf = async (reporte: any) => {
         try {
             const doc = generateReporteClinicoPdf(reporte);
 
@@ -651,12 +654,30 @@
             );
 
             const reporteId = sanitizeFileName(String(reporte.id || 'reporte'));
+            const fileName = `reporte_clinico_${animal}_${reporteId}.pdf`;
 
-            doc.save(`reporte_clinico_${animal}_${reporteId}.pdf`);
-            showToast('Reporte clínico PDF descargado correctamente.');
-        } catch (error) {
+            if (Capacitor.isNativePlatform()) {
+                const pdfBase64 = doc.output('datauristring').split(',')[1];
+                const writeResult = await Filesystem.writeFile({
+                    path: fileName,
+                    data: pdfBase64,
+                    directory: Directory.Cache
+                });
+
+                await Share.share({
+                    title: `Reporte Clínico - ${animal}`,
+                    text: `Reporte clínico de veterinario para el animal ${animal} - BovWeight CR`,
+                    url: writeResult.uri,
+                    dialogTitle: 'Exportar PDF Clínico'
+                });
+                showToast('Reporte clínico generado para compartir o guardar.');
+            } else {
+                doc.save(fileName);
+                showToast('Reporte clínico PDF descargado correctamente.');
+            }
+        } catch (error: any) {
             console.error('Error al generar PDF clínico:', error);
-            showToast('No se pudo generar el PDF clínico.', 'danger');
+            showToast('No se pudo generar el PDF clínico: ' + error.message, 'danger');
         }
     };
 

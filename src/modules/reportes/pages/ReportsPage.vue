@@ -379,6 +379,9 @@ import BottomNav from '@/components/BottomNav.vue';
 import { animalRepository, type Animal } from '@/services';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 // Estado de navegación y vistas
 const activeTab = ref<'generate' | 'saved'>('generate');
@@ -822,8 +825,34 @@ async function doGeneratePdf(title: string, description: string, destinatario: s
   const doc = await generatePdfObject(title, description, destinatario, reportAnimals);
   if (!doc) return;
   const safeTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  doc.save(`reporte_${safeTitle || 'ganado'}.pdf`);
-  showToast('Reporte PDF descargado exitosamente.');
+  
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      const fileName = `reporte_${safeTitle || 'ganado'}.pdf`;
+      
+      const writeResult = await Filesystem.writeFile({
+        path: fileName,
+        data: pdfBase64,
+        directory: Directory.Cache
+      });
+      
+      await Share.share({
+        title: title || 'Reporte de Pesaje',
+        text: 'Reporte de Pesaje PDF - BovWeight CR',
+        url: writeResult.uri,
+        dialogTitle: 'Exportar PDF'
+      });
+      
+      showToast('Reporte generado para compartir o guardar.');
+    } catch (err: any) {
+      console.error('Error al exportar PDF nativo:', err);
+      showToast('Error al exportar PDF: ' + err.message, 'danger');
+    }
+  } else {
+    doc.save(`reporte_${safeTitle || 'ganado'}.pdf`);
+    showToast('Reporte PDF descargado exitosamente.');
+  }
 }
 
 // Acción: Descargar PDF sin persistir en BD
@@ -924,20 +953,40 @@ async function shareReportPdfFile(report: any) {
     if (!doc) return;
 
     const safeTitle = report.titulo.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'reporte';
-    const pdfBlob = doc.output('blob');
-    const file = new File([pdfBlob], `reporte_${safeTitle}.pdf`, { type: 'application/pdf' });
 
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: report.titulo || 'Reporte de Pesaje',
-        text: 'Te comparto el reporte de pesaje en PDF desde BovWeight CR.'
+    if (Capacitor.isNativePlatform()) {
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      const fileName = `reporte_${safeTitle}.pdf`;
+      
+      const writeResult = await Filesystem.writeFile({
+        path: fileName,
+        data: pdfBase64,
+        directory: Directory.Cache
       });
-      showToast('¡Reporte compartido exitosamente!');
+      
+      await Share.share({
+        title: report.titulo || 'Reporte de Pesaje',
+        text: 'Te comparto el reporte de pesaje en PDF desde BovWeight CR.',
+        url: writeResult.uri,
+        dialogTitle: 'Compartir Reporte'
+      });
+      showToast('¡Reporte listo para compartir!');
     } else {
-      // Fallback: descargar el PDF
-      doc.save(`reporte_${safeTitle}.pdf`);
-      showToast('La API de compartir no está soportada en este navegador. Se ha descargado el PDF.', 'warning');
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], `reporte_${safeTitle}.pdf`, { type: 'application/pdf' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: report.titulo || 'Reporte de Pesaje',
+          text: 'Te comparto el reporte de pesaje en PDF desde BovWeight CR.'
+        });
+        showToast('¡Reporte compartido exitosamente!');
+      } else {
+        // Fallback: descargar el PDF
+        doc.save(`reporte_${safeTitle}.pdf`);
+        showToast('La API de compartir no está soportada en este navegador. Se ha descargado el PDF.', 'warning');
+      }
     }
   } catch (err: any) {
     if (err.name !== 'AbortError') {
