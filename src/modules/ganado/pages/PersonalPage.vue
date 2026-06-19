@@ -56,7 +56,7 @@
               <p class="page-subtitle">Administra accesos de personal y agenda consultas</p>
             </div>
             <button 
-              v-if="usuarioSesion?.rol === 'ganadero' || usuarioSesion?.rol === 'admin'" 
+              v-if="usuarioSesion?.rol === 'admin'" 
               class="primary-btn" 
               @click="openAddVetModal"
             >
@@ -331,7 +331,7 @@
               <h1 class="page-title">Ayudantes y Asistentes</h1>
               <p class="page-subtitle">Gestiona las cuentas de tus ayudantes de finca</p>
             </div>
-            <button class="primary-btn" @click="openAddAyudanteModal">
+            <button v-if="usuarioSesion?.rol === 'admin'" class="primary-btn" @click="openAddAyudanteModal">
               <ion-icon :icon="addOutline"></ion-icon>
               NUEVO AYUDANTE
             </button>
@@ -347,7 +347,7 @@
           <div v-else-if="ayudantes.length === 0" class="empty-state animate-fade-in">
             <span class="empty-icon">👥</span>
             <h3>No tienes ayudantes registrados</h3>
-            <p>Crea cuentas secundarias para que tus ayudantes registren datos de pesaje.</p>
+            <p>Póngase en contacto con un administrador para registrar una cuenta de ayudante.</p>
           </div>
 
           <!-- AYUDANTES LIST -->
@@ -366,7 +366,7 @@
                   <span class="ayudante-email">{{ a.correo }}</span>
                   <span class="ayudante-date">Registrado: {{ a.creado_en }}</span>
                 </div>
-                <button class="delete-ayudante-btn" @click="deleteAyudante(a.id)">
+                <button v-if="usuarioSesion?.rol === 'admin'" class="delete-ayudante-btn" @click="deleteAyudante(a.id)">
                   <ion-icon :icon="trashOutline"></ion-icon>
                 </button>
               </div>

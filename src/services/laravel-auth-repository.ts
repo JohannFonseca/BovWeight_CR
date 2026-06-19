@@ -28,55 +28,7 @@ async function sha256(message: string): Promise<string> {
 
 export class LaravelAuthRepository implements IAuthRepository {
     constructor() {
-        this.seedDemoCredentials();
-    }
-
-    /**
-     * Pre-carga las tres cuentas demo en el almacenamiento local para facilitar las pruebas offline
-     */
-    private seedDemoCredentials() {
-        const cachedListStr = localStorage.getItem('cached_credentials_list');
-        if (!cachedListStr) {
-            const demoUsers: CachedUserEntry[] = [
-                {
-                    correo: 'ganadero@test.com',
-                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // 1234
-                    user: {
-                        id: 2,
-                        usuario: 'Pedro Ganadero',
-                        correo: 'ganadero@test.com',
-                        rol: 'ganadero',
-                        debe_cambiar_password: false,
-                        token: 'demo-token-ganadero-offline'
-                    }
-                },
-                {
-                    correo: 'admin@test.com',
-                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // 1234
-                    user: {
-                        id: 1,
-                        usuario: 'Administrador',
-                        correo: 'admin@test.com',
-                        rol: 'admin',
-                        debe_cambiar_password: false,
-                        token: 'demo-token-admin-offline'
-                    }
-                },
-                {
-                    correo: 'vet@test.com',
-                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // 1234
-                    user: {
-                        id: 3,
-                        usuario: 'Carlos Veterinario',
-                        correo: 'vet@test.com',
-                        rol: 'veterinario',
-                        debe_cambiar_password: false,
-                        token: 'demo-token-vet-offline'
-                    }
-                }
-            ];
-            localStorage.setItem('cached_credentials_list', JSON.stringify(demoUsers));
-        }
+        // No pre-cargar credenciales de demostración.
     }
 
     async login(correo: string, password: string): Promise<AuthenticatedUser> {

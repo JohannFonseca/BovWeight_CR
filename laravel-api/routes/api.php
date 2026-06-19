@@ -55,8 +55,13 @@ Route::middleware(['auth:sanctum', 'auth.user.headers'])->group(function () {
     Route::get('/razas', [AdminController::class, 'getRazas']);
     Route::post('/razas', [AdminController::class, 'crearRaza'])->middleware('role:admin');
 
-    // Usuarios: admin y ganadero.
+    // Usuarios: editar perfil (propio).
     Route::middleware(['role:admin,ganadero'])->group(function () {
+        Route::put('/usuarios/{id}', [AdminController::class, 'editarUsuario']);
+    });
+
+    // Gestión completa de usuarios: solo admin.
+    Route::middleware(['role:admin'])->group(function () {
         Route::get('/usuarios', [AdminController::class, 'getUsuarios']);
         Route::post('/usuarios', [AdminController::class, 'crearUsuario']);
         Route::put('/usuarios/{id}', [AdminController::class, 'editarUsuario']);
@@ -65,9 +70,11 @@ Route::middleware(['auth:sanctum', 'auth.user.headers'])->group(function () {
         Route::post('/usuarios/{id}/reenviar-credenciales', [AdminController::class, 'reenviarCredenciales']);
     });
 
-    // Ayudantes: espacio de ganadero/admin.
+    // Ayudantes: ver para ganadero/admin, crear/eliminar solo admin.
     Route::middleware(['role:admin,ganadero'])->group(function () {
         Route::get('/ganadero/ayudantes', [GanadoController::class, 'getAyudantes']);
+    });
+    Route::middleware(['role:admin'])->group(function () {
         Route::post('/ganadero/ayudantes', [GanadoController::class, 'crearAyudante']);
         Route::delete('/ganadero/ayudantes/{id}', [GanadoController::class, 'eliminarAyudante']);
     });
