@@ -1,4 +1,5 @@
 <?php
+// bootstrap/app.php
 
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -13,14 +14,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Middleware global agregado por el equipo.
         $middleware->append(\App\Http\Middleware\HandleAyudanteRole::class);
+
+        // Registra alias de middlewares.
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'veterinario' => \App\Http\Middleware\EnsureVeterinarioAccess::class,
             'audit.login' => \App\Http\Middleware\AuditLoginAttempts::class,
+            'role' => \App\Http\Middleware\EnsureRole::class,
+            'auth.user.headers' => \App\Http\Middleware\AttachAuthenticatedUserHeaders::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Fuerza JSON en errores de API.
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );

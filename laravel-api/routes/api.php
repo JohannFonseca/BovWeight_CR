@@ -1,110 +1,137 @@
 <?php
 // routes/api.php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CitaController;
 use App\Http\Controllers\GanadoController;
+use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\RecordatorioSanitarioController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ReporteVeterinarioController;
+use App\Http\Controllers\VeterinarioAnimalController;
+use App\Http\Controllers\VeterinarioDashboardController;
+use Illuminate\Support\Facades\Route;
 
-// Auth Routes
+// Rutas públicas: no requieren token.
 Route::post('/login', [AuthController::class, 'login'])->middleware('audit.login');
-Route::post('/cambiar-password', [AuthController::class, 'cambiarPassword']);
 Route::post('/recuperar-password', [AuthController::class, 'recuperarPassword']);
 
-// Roles and Razas Routes
-Route::get('/roles', [AdminController::class, 'getRoles']);
-Route::get('/razas', [AdminController::class, 'getRazas']);
-Route::post('/razas', [AdminController::class, 'crearRaza']);
+// Rutas protegidas: requieren Authorization: Bearer <token>.
+Route::middleware(['auth:sanctum', 'auth.user.headers'])->group(function () {
+    // Sesión autenticada.
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/cambiar-password', [AuthController::class, 'cambiarPassword']);
 
-// Users CRUD Routes
-Route::get('/usuarios', [AdminController::class, 'getUsuarios']);
-Route::post('/usuarios', [AdminController::class, 'crearUsuario']);
-Route::put('/usuarios/{id}', [AdminController::class, 'editarUsuario']);
-Route::delete('/usuarios/{id}', [AdminController::class, 'eliminarUsuario']);
-Route::put('/usuarios/{id}/toggle-activo', [AdminController::class, 'toggleEstadoUsuario']);
-Route::post('/usuarios/{id}/reenviar-credenciales', [AdminController::class, 'reenviarCredenciales']);
+    // Catálogos utilizados por módulos autenticados.
+    Route::get('/roles', [AdminController::class, 'getRoles']);
+    Route::get('/razas', [AdminController::class, 'getRazas']);
+    Route::post('/razas', [AdminController::class, 'crearRaza'])->middleware('role:admin');
 
-// Veterinarians & Permissions Routes (within Ganadero space)
-Route::get('/ganadero/veterinarios', [GanadoController::class, 'getVeterinariosGanadero']);
-Route::post('/ganadero/veterinarios/asignar-finca', [GanadoController::class, 'asignarFincaVeterinario']);
-Route::post('/ganadero/veterinarios/guardar-permisos', [GanadoController::class, 'guardarPermisosVeterinario']);
-Route::delete('/ganadero/veterinarios/{vetId}/revocar-finca/{fincaId}', [GanadoController::class, 'revocarFincaVeterinario']);
-Route::put('/ganadero/veterinarios/{vetId}/toggle-estado', [GanadoController::class, 'toggleEstadoVeterinario']);
+    // Usuarios: admin y ganadero.
+    Route::middleware(['role:admin,ganadero'])->group(function () {
+        Route::get('/usuarios', [AdminController::class, 'getUsuarios']);
+        Route::post('/usuarios', [AdminController::class, 'crearUsuario']);
+        Route::put('/usuarios/{id}', [AdminController::class, 'editarUsuario']);
+        Route::delete('/usuarios/{id}', [AdminController::class, 'eliminarUsuario']);
+        Route::put('/usuarios/{id}/toggle-activo', [AdminController::class, 'toggleEstadoUsuario']);
+        Route::post('/usuarios/{id}/reenviar-credenciales', [AdminController::class, 'reenviarCredenciales']);
+    });
 
-// Ayudantes Routes (within Ganadero space)
-Route::get('/ganadero/ayudantes', [GanadoController::class, 'getAyudantes']);
-Route::post('/ganadero/ayudantes', [GanadoController::class, 'crearAyudante']);
-Route::delete('/ganadero/ayudantes/{id}', [GanadoController::class, 'eliminarAyudante']);
+    // Ayudantes: espacio de ganadero/admin.
+    Route::middleware(['role:admin,ganadero'])->group(function () {
+        Route::get('/ganadero/ayudantes', [GanadoController::class, 'getAyudantes']);
+        Route::post('/ganadero/ayudantes', [GanadoController::class, 'crearAyudante']);
+        Route::delete('/ganadero/ayudantes/{id}', [GanadoController::class, 'eliminarAyudante']);
+    });
 
-// Fincas CRUD Routes
-Route::get('/fincas', [GanadoController::class, 'getFincas']);
-Route::post('/fincas', [GanadoController::class, 'crearFinca']);
-Route::put('/fincas/{id}', [GanadoController::class, 'editarFinca']);
-Route::delete('/fincas/{id}', [GanadoController::class, 'eliminarFinca']);
+    // Gestión de veterinarios desde ganadero/admin.
+    Route::middleware(['role:admin,ganadero'])->group(function () {
+        Route::get('/ganadero/veterinarios', [GanadoController::class, 'getVeterinariosGanadero']);
+        Route::post('/ganadero/veterinarios/asignar-finca', [GanadoController::class, 'asignarFincaVeterinario']);
+        Route::post('/ganadero/veterinarios/guardar-permisos', [GanadoController::class, 'guardarPermisosVeterinario']);
+        Route::delete('/ganadero/veterinarios/{vetId}/revocar-finca/{fincaId}', [GanadoController::class, 'revocarFincaVeterinario']);
+        Route::put('/ganadero/veterinarios/{vetId}/toggle-estado', [GanadoController::class, 'toggleEstadoVeterinario']);
+    });
 
-// Animales CRUD Routes
-Route::get('/ganado-completo', [GanadoController::class, 'getGanadoCompleto']);
-Route::get('/animales', [GanadoController::class, 'getAllAnimals']);
-Route::get('/animales/{id}', [GanadoController::class, 'getAnimalById']);
-Route::get('/animales/{id}/historial-peso', [GanadoController::class, 'getWeightHistory']);
-Route::post('/animales', [GanadoController::class, 'crearAnimal']);
-Route::put('/animales/{id}', [GanadoController::class, 'editarAnimal']);
-Route::delete('/animales/{id}', [GanadoController::class, 'eliminarAnimal']);
-Route::post('/estimar-peso', [GanadoController::class, 'estimarPeso']);
-Route::post('/animales/{id}/registrar-peso', [GanadoController::class, 'registrarPeso']);
+    // Fincas y animales.
+    Route::middleware(['role:admin,ganadero,veterinario'])->group(function () {
+        Route::get('/fincas', [GanadoController::class, 'getFincas']);
+        Route::post('/fincas', [GanadoController::class, 'crearFinca']);
+        Route::put('/fincas/{id}', [GanadoController::class, 'editarFinca']);
+        Route::delete('/fincas/{id}', [GanadoController::class, 'eliminarFinca']);
 
-// Reportes Ganadero Routes
-Route::get('/reportes-ganadero', [ReporteController::class, 'getReportes']);
-Route::post('/reportes-ganadero', [ReporteController::class, 'guardarReporte']);
-Route::get('/reportes-ganadero/{id}', [ReporteController::class, 'getReporteDetalle']);
-Route::delete('/reportes-ganadero/{id}', [ReporteController::class, 'eliminarReporte']);
+        Route::get('/ganado-completo', [GanadoController::class, 'getGanadoCompleto']);
+        Route::get('/animales', [GanadoController::class, 'getAllAnimals']);
+        Route::get('/animales/{id}', [GanadoController::class, 'getAnimalById']);
+        Route::get('/animales/{id}/historial-peso', [GanadoController::class, 'getWeightHistory']);
+        Route::post('/animales', [GanadoController::class, 'crearAnimal']);
+        Route::put('/animales/{id}', [GanadoController::class, 'editarAnimal']);
+        Route::delete('/animales/{id}', [GanadoController::class, 'eliminarAnimal']);
+        Route::post('/estimar-peso', [GanadoController::class, 'estimarPeso']);
+        Route::post('/animales/{id}/registrar-peso', [GanadoController::class, 'registrarPeso']);
 
-// Citas Routes
-Route::get('/citas', [\App\Http\Controllers\CitaController::class, 'index']);
-Route::post('/citas', [\App\Http\Controllers\CitaController::class, 'store']);
-Route::put('/citas/{id}', [\App\Http\Controllers\CitaController::class, 'update']);
+        Route::get('/dashboard-stats', [GanadoController::class, 'getDashboardStats']);
+        Route::get('/analisis-pesajes', [GanadoController::class, 'getAnalisisPesajes']);
+        Route::get('/obtener-imagen-base64', [GanadoController::class, 'obtenerImagenBase64']);
+    });
 
-// Reportes Veterinarios Routes
-Route::get('/reportes-veterinarios', [\App\Http\Controllers\ReporteVeterinarioController::class, 'index']);
-Route::post('/reportes-veterinarios', [\App\Http\Controllers\ReporteVeterinarioController::class, 'store']);
-Route::put('/reportes-veterinarios/{id}', [\App\Http\Controllers\ReporteVeterinarioController::class, 'update']);
+    // Reportes del ganadero.
+    Route::middleware(['role:admin,ganadero'])->group(function () {
+        Route::get('/reportes-ganadero', [ReporteController::class, 'getReportes']);
+        Route::post('/reportes-ganadero', [ReporteController::class, 'guardarReporte']);
+        Route::get('/reportes-ganadero/{id}', [ReporteController::class, 'getReporteDetalle']);
+        Route::delete('/reportes-ganadero/{id}', [ReporteController::class, 'eliminarReporte']);
+    });
 
+    // Citas.
+    Route::middleware(['role:admin,ganadero,veterinario'])->group(function () {
+        Route::get('/citas', [CitaController::class, 'index']);
+        Route::post('/citas', [CitaController::class, 'store']);
+        Route::put('/citas/{id}', [CitaController::class, 'update']);
+    });
 
+    // Reportes veterinarios.
+    Route::middleware(['role:admin,ganadero,veterinario'])->group(function () {
+        Route::get('/reportes-veterinarios', [ReporteVeterinarioController::class, 'index']);
+        Route::post('/reportes-veterinarios', [ReporteVeterinarioController::class, 'store']);
+        Route::put('/reportes-veterinarios/{id}', [ReporteVeterinarioController::class, 'update']);
+    });
 
+    // Notificaciones.
+    Route::middleware(['role:admin,ganadero,veterinario'])->group(function () {
+        Route::get('/notificaciones', [NotificacionController::class, 'index']);
+        Route::put('/notificaciones/leer-todas', [NotificacionController::class, 'readAll']);
+        Route::put('/notificaciones/{id}/leer', [NotificacionController::class, 'read']);
+        Route::delete('/notificaciones/{id}', [NotificacionController::class, 'destroy']);
+    });
 
+    // Recordatorios sanitarios.
+    Route::middleware(['role:admin,ganadero,veterinario'])->group(function () {
+        Route::get('/recordatorios-sanitarios', [RecordatorioSanitarioController::class, 'index']);
+        Route::post('/recordatorios-sanitarios', [RecordatorioSanitarioController::class, 'store']);
+        Route::put('/recordatorios-sanitarios/{id}', [RecordatorioSanitarioController::class, 'update']);
+        Route::delete('/recordatorios-sanitarios/{id}', [RecordatorioSanitarioController::class, 'destroy']);
+        Route::post('/recordatorios-sanitarios/run-check', [RecordatorioSanitarioController::class, 'runCheck']);
+    });
 
-// Dashboard & Weight Analysis Routes
-Route::middleware(['admin'])->group(function () {
-    Route::get('/admin/dashboard', [AdminController::class, 'getDashboardStats']);
-    Route::get('/admin/usuarios', [AdminController::class, 'getUsuarios']);
-    Route::post('/admin/usuarios', [AdminController::class, 'crearUsuario']);
-    Route::get('/admin/usuarios/{id}', [AdminController::class, 'getUsuario']);
-    Route::patch('/admin/usuarios/{id}/status', [AdminController::class, 'toggleUsuarioStatus']);
-    Route::get('/admin/fincas', [AdminController::class, 'getFincas']);
-    Route::get('/admin/fincas/{id}', [AdminController::class, 'getFinca']);
-    Route::get('/admin/reportes', [AdminController::class, 'getReportes']);
-    Route::get('/admin/auditorias', [AdminController::class, 'getAuditLogs']);
-});
-Route::get('/dashboard-stats', [GanadoController::class, 'getDashboardStats']);
-Route::get('/analisis-pesajes', [GanadoController::class, 'getAnalisisPesajes']);
-Route::get('/obtener-imagen-base64', [GanadoController::class, 'obtenerImagenBase64']);
+    // Panel administrativo API.
+    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'getDashboardStats']);
+        Route::get('/usuarios', [AdminController::class, 'getUsuarios']);
+        Route::post('/usuarios', [AdminController::class, 'crearUsuario']);
+        Route::get('/usuarios/{id}', [AdminController::class, 'getUsuario']);
+        Route::patch('/usuarios/{id}/status', [AdminController::class, 'toggleUsuarioStatus']);
+        Route::get('/fincas', [AdminController::class, 'getFincas']);
+        Route::get('/fincas/{id}', [AdminController::class, 'getFinca']);
+        Route::get('/reportes', [AdminController::class, 'getReportes']);
+        Route::get('/auditorias', [AdminController::class, 'getAuditLogs']);
+    });
 
-// Notificaciones Routes
-Route::get('/notificaciones', [\App\Http\Controllers\NotificacionController::class, 'index']);
-Route::put('/notificaciones/leer-todas', [\App\Http\Controllers\NotificacionController::class, 'readAll']);
-Route::put('/notificaciones/{id}/leer', [\App\Http\Controllers\NotificacionController::class, 'read']);
-Route::delete('/notificaciones/{id}', [\App\Http\Controllers\NotificacionController::class, 'destroy']);
-
-// Recordatorios Sanitarios Routes
-Route::get('/recordatorios-sanitarios', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'index']);
-Route::post('/recordatorios-sanitarios', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'store']);
-Route::put('/recordatorios-sanitarios/{id}', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'update']);
-Route::delete('/recordatorios-sanitarios/{id}', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'destroy']);
-Route::post('/recordatorios-sanitarios/run-check', [\App\Http\Controllers\RecordatorioSanitarioController::class, 'runCheck']);
-
-// Veterinarian Dashboard Routes
-Route::middleware(['veterinario'])->prefix('veterinario')->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\VeterinarioDashboardController::class, 'getDashboardData']);
-    Route::get('/animal/{id}', [\App\Http\Controllers\VeterinarioAnimalController::class, 'show']);
+    // Panel veterinario con permisos por finca / animal.
+    Route::middleware(['veterinario'])->prefix('veterinario')->group(function () {
+        Route::get('/dashboard', [VeterinarioDashboardController::class, 'getDashboardData']);
+        Route::get('/animal/{id}', [VeterinarioAnimalController::class, 'show']);
+    });
 });
