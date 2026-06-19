@@ -276,9 +276,10 @@ const fetchUsuarios = async (reset = false) => {
   if (apiError) {
     error.value = apiError;
   } else if (data) {
-    const newUsers = (data.data || []).map((u: any) => ({ ...u, toggling: false }));
+    const rawList = Array.isArray(data) ? data : (data.data || []);
+    const newUsers = rawList.map((u: any) => ({ ...u, toggling: false }));
     usuarios.value = reset ? newUsers : [...usuarios.value, ...newUsers];
-    hasMore.value = data.current_page < data.last_page;
+    hasMore.value = Array.isArray(data) ? false : (data.current_page < data.last_page);
   }
   loading.value = false;
   loadingMore.value = false;
@@ -354,7 +355,7 @@ const abrirModalCreacion = async () => {
   // Cargar ganaderos si no se han cargado o refrescar para tener la lista actualizada
   const { data, error: apiError } = await adminApi.getUsuarios(undefined, { rol_nombre: 'ganadero' });
   if (data) {
-    ganaderosDisponibles.value = data;
+    ganaderosDisponibles.value = Array.isArray(data) ? data : (data.data || []);
   } else {
     console.error('Error al cargar ganaderos:', apiError);
   }

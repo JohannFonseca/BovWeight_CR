@@ -144,9 +144,9 @@ const fetchFincas = async (reset = false) => {
   if (apiError) {
     error.value = apiError;
   } else if (data) {
-    const newFincas = data.data || [];
+    const newFincas = Array.isArray(data) ? data : (data.data || []);
     fincas.value = reset ? newFincas : [...fincas.value, ...newFincas];
-    hasMore.value = data.current_page < data.last_page;
+    hasMore.value = Array.isArray(data) ? false : (data.current_page < data.last_page);
   }
   loading.value = false;
   loadingMore.value = false;

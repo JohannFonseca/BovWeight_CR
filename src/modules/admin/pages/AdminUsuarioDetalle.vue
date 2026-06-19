@@ -403,7 +403,7 @@ const abrirModalEdicion = async () => {
   if (ganaderosDisponibles.value.length === 0) {
     const { data, error: apiError } = await adminApi.getUsuarios(undefined, { rol_nombre: 'ganadero' });
     if (data) {
-      ganaderosDisponibles.value = data;
+      ganaderosDisponibles.value = Array.isArray(data) ? data : (data.data || []);
     }
   }
 

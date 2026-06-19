@@ -259,9 +259,9 @@ const fetchLogs = async (reset = false) => {
   if (apiError) {
     error.value = apiError;
   } else if (data) {
-    const newLogs = data.data || [];
+    const newLogs = Array.isArray(data) ? data : (data.data || []);
     logs.value = reset ? newLogs : [...logs.value, ...newLogs];
-    hasMore.value = data.current_page < data.last_page;
+    hasMore.value = Array.isArray(data) ? false : (data.current_page < data.last_page);
   }
   loading.value = false;
   loadingMore.value = false;
