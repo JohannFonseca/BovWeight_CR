@@ -25,6 +25,7 @@ class OfflineSyncService {
   public queue = ref<OfflineEstimation[]>([]);
   public isSyncing = ref(false);
   private syncTimer: any = null;
+  private db: IDBDatabase | null = null;
 
   constructor() {
     this.loadQueue();
@@ -36,30 +37,100 @@ class OfflineSyncService {
   }
 
   /**
-   * Carga la cola desde LocalStorage
+   * Inicializa la base de datos IndexedDB
    */
-  private loadQueue() {
+  private initDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('BovWeightOfflineDB', 1);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('estimaciones')) {
+          db.createObjectStore('estimaciones', { keyPath: 'id' });
+        }
+      };
+
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  /**
+   * Guarda una estimación en IndexedDB
+   */
+  private async saveToDB(item: OfflineEstimation) {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        this.queue.value = JSON.parse(stored);
-      } else {
-        this.queue.value = [];
-      }
+      if (!this.db) this.db = await this.initDB();
+      const transaction = this.db.transaction('estimaciones', 'readwrite');
+      const store = transaction.objectStore('estimaciones');
+      store.put(item);
     } catch (e) {
-      console.error('Error al cargar la cola offline:', e);
-      this.queue.value = [];
+      console.error('Error al guardar estimación en IndexedDB:', e);
     }
   }
 
   /**
-   * Guarda la cola en LocalStorage
+   * Remueve una estimación de IndexedDB por id
    */
-  private saveQueue() {
+  private async removeFromDB(id: string) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.queue.value));
+      if (!this.db) this.db = await this.initDB();
+      const transaction = this.db.transaction('estimaciones', 'readwrite');
+      const store = transaction.objectStore('estimaciones');
+      store.delete(id);
     } catch (e) {
-      console.error('Error al guardar la cola offline:', e);
+      console.error('Error al remover estimación de IndexedDB:', e);
+    }
+  }
+
+  /**
+   * Carga la cola desde IndexedDB. Migra datos previos de LocalStorage si existen.
+   */
+  private async loadQueue() {
+    try {
+      const db = await this.initDB();
+      this.db = db;
+
+      // Migrar datos de LocalStorage si existen
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const oldItems: OfflineEstimation[] = JSON.parse(stored);
+          if (oldItems && oldItems.length > 0) {
+            console.log(`[OfflineSync] Migrando ${oldItems.length} registros de LocalStorage a IndexedDB...`);
+            const transaction = db.transaction('estimaciones', 'readwrite');
+            const store = transaction.objectStore('estimaciones');
+            for (const item of oldItems) {
+              store.put(item);
+            }
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        } catch (parseErr) {
+          console.error('[OfflineSync] Error migrando datos de LocalStorage:', parseErr);
+        }
+      }
+
+      // Cargar todos los registros desde IndexedDB
+      const transaction = db.transaction('estimaciones', 'readonly');
+      const store = transaction.objectStore('estimaciones');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        this.queue.value = request.result || [];
+      };
+
+      request.onerror = () => {
+        console.error('[OfflineSync] Error leyendo IndexedDB:', request.error);
+        this.queue.value = [];
+      };
+    } catch (e) {
+      console.error('[OfflineSync] Error al inicializar IndexedDB:', e);
+      this.queue.value = [];
     }
   }
 
@@ -101,7 +172,7 @@ class OfflineSyncService {
 
     // 3. Añadir a la cola y persistir
     this.queue.value.push(estimation);
-    this.saveQueue();
+    this.saveToDB(estimation);
 
     // 4. Intentar sincronizar inmediatamente si estamos online
     if (navigator.onLine) {
@@ -116,15 +187,18 @@ class OfflineSyncService {
    */
   public removeEstimation(id: string) {
     this.queue.value = this.queue.value.filter(item => item.id !== id);
-    this.saveQueue();
+    this.removeFromDB(id);
   }
 
   /**
    * Limpia todos los completados de la cola
    */
   public clearCompleted() {
+    const completedItems = this.queue.value.filter(item => item.estado === 'completado');
     this.queue.value = this.queue.value.filter(item => item.estado !== 'completado');
-    this.saveQueue();
+    completedItems.forEach(item => {
+      this.removeFromDB(item.id);
+    });
   }
 
   /**
@@ -214,7 +288,7 @@ class OfflineSyncService {
       item.progreso = progreso;
       if (mensajeError !== undefined) item.mensajeError = mensajeError;
       if (pesoEstimado !== undefined) item.pesoEstimado = pesoEstimado;
-      this.saveQueue();
+      this.saveToDB(item);
     }
   }
 
@@ -308,3 +382,160 @@ class OfflineSyncService {
 }
 
 export const offlineSyncService = new OfflineSyncService();
+
+// Exponer función de diagnóstico en el objeto window para pruebas manuales/automatizadas
+if (typeof window !== 'undefined') {
+  (window as any).testOfflineSyncIndexedDB = async () => {
+    console.log('%c--- INICIANDO DIAGNÓSTICO DE PERSISTENCIA OFFLINE (IndexedDB) ---', 'color: #2E7D32; font-weight: bold; font-size: 14px;');
+    
+    const dbName = 'BovWeightOfflineDB';
+    const storeName = 'estimaciones';
+    const legacyKey = 'bovweight_offline_estimations';
+    
+    // Helper para verificar registros directamente en IndexedDB
+    const getIndexedDBRecords = (): Promise<any[]> => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onsuccess = () => {
+          const db = request.result;
+          try {
+            const transaction = db.transaction(storeName, 'readonly');
+            const store = transaction.objectStore(storeName);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(req.error);
+          } catch (e) {
+            resolve([]);
+          }
+        };
+        request.onerror = () => reject(request.error);
+      });
+    };
+
+    // Helper para limpiar IndexedDB de prueba
+    const clearIndexedDB = (): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onsuccess = () => {
+          const db = request.result;
+          try {
+            const transaction = db.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const req = store.clear();
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+          } catch (e) {
+            resolve();
+          }
+        };
+        request.onerror = () => reject(request.error);
+      });
+    };
+
+    try {
+      // 1. Limpieza inicial para comenzar limpios
+      console.log('1. Preparando entorno de prueba...');
+      localStorage.removeItem(legacyKey);
+      await clearIndexedDB();
+      console.log('   Enviando cola reactiva a vacío para la prueba.');
+      offlineSyncService.queue.value = [];
+      
+      // 2. Probar compatibilidad de IndexedDB
+      console.log('2. Comprobando compatibilidad de IndexedDB...');
+      if (!window.indexedDB) {
+        throw new Error('IndexedDB no está soportado en este navegador.');
+      }
+      console.log('   %c✓ IndexedDB soportado.', 'color: green;');
+
+      // 3. Simular e inyectar datos antiguos en LocalStorage para validar migración
+      console.log('3. Creando escenario de migración (simulación de datos antiguos en LocalStorage)...');
+      const mockLegacyData = [
+        {
+          id: 'mock_legacy_1',
+          animalId: 99,
+          animalNombre: 'Vaca Vieja',
+          animalArete: 'CR-999',
+          fecha: '19/06/2026',
+          fotoBase64: 'data:image/jpeg;base64,MOCK_LEGACY_IMAGE_DATA_1111111111111111111111111',
+          estado: 'pendiente_local' as const,
+          progreso: 0
+        },
+        {
+          id: 'mock_legacy_2',
+          animalId: 100,
+          animalNombre: 'Toro Viejo',
+          animalArete: 'CR-1000',
+          fecha: '19/06/2026',
+          fotoBase64: 'data:image/jpeg;base64,MOCK_LEGACY_IMAGE_DATA_2222222222222222222222222',
+          estado: 'error' as const,
+          progreso: 0,
+          mensajeError: 'Error de prueba'
+        }
+      ];
+      localStorage.setItem(legacyKey, JSON.stringify(mockLegacyData));
+      console.log('   Inyectados 2 registros legacy en LocalStorage.');
+
+      // 4. Ejecutar migración llamando a loadQueue()
+      console.log('4. Ejecutando proceso de migración y carga...');
+      await (offlineSyncService as any).loadQueue();
+      
+      // 5. Verificar que los datos de LocalStorage se pasaron a IndexedDB
+      console.log('5. Validando resultados de la migración...');
+      const localDataAfter = localStorage.getItem(legacyKey);
+      if (localDataAfter !== null) {
+        throw new Error('La migración falló: La clave de LocalStorage no fue eliminada.');
+      }
+      console.log('   %c✓ LocalStorage clave removida correctamente.', 'color: green;');
+
+      const dbRecords = await getIndexedDBRecords();
+      if (dbRecords.length !== 2) {
+        throw new Error(`La migración falló: Se esperaban 2 registros en IndexedDB, se encontraron ${dbRecords.length}`);
+      }
+      console.log('   %c✓ Registros guardados correctamente en IndexedDB.', 'color: green;');
+      console.log('   Cola reactiva cargada con:');
+      console.table(offlineSyncService.queue.value.map(item => ({ id: item.id, nombre: item.animalNombre, estado: item.estado })));
+
+      // 6. Probar inyección de un registro de GRAN tamaño (Simulación de foto pesada de 6MB)
+      console.log('6. Probando almacenamiento de gran tamaño (simulación de foto de alta resolución)...');
+      console.log('   Generando Base64 simulado de 6.5 MB...');
+      const bigString = 'A'.repeat(6.5 * 1024 * 1024);
+      const bigEstimation = {
+        id: 'mock_heavy_3',
+        animalId: 101,
+        animalNombre: 'Novillo Pesado',
+        animalArete: 'CR-1010',
+        fecha: '19/06/2026',
+        fotoBase64: 'data:image/jpeg;base64,' + bigString,
+        estado: 'pendiente_local' as const,
+        progreso: 0
+      };
+
+      console.log('   Guardando registro pesado en IndexedDB...');
+      await (offlineSyncService as any).saveToDB(bigEstimation);
+      console.log('   %c✓ Registro pesado de 6.5 MB guardado exitosamente sin error de cuota!', 'color: green;');
+      
+      offlineSyncService.queue.value.push(bigEstimation);
+
+      const finalRecords = await getIndexedDBRecords();
+      if (finalRecords.length !== 3) {
+        throw new Error('No se pudo leer el registro pesado de IndexedDB.');
+      }
+      console.log('   %c✓ Verificación de lectura de base de datos exitosa.', 'color: green;');
+
+      // 7. Prueba de Limpieza y reactividad de borrado
+      console.log('7. Probando borrado individual y limpieza...');
+      offlineSyncService.removeEstimation('mock_heavy_3');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const postDeleteRecords = await getIndexedDBRecords();
+      if (postDeleteRecords.length !== 2) {
+        throw new Error('El registro borrado aún permanece en la base de datos.');
+      }
+      console.log('   %c✓ Registro removido correctamente de IndexedDB y estado reactivo.', 'color: green;');
+
+      console.log('%c--- DIAGNÓSTICO FINALIZADO CON ÉXITO: TODO FUNCIONA EXCELENTE ---', 'color: #2E7D32; font-weight: bold; font-size: 14px;');
+    } catch (err: any) {
+      console.error('%c--- DIAGNÓSTICO FALLIDO ---', 'color: red; font-weight: bold;');
+      console.error(err);
+    }
+  };
+}
