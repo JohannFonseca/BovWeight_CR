@@ -1,68 +1,86 @@
 <?php
+// app/Http/Middleware/EnsureVeterinarioAccess.php
 
 namespace App\Http\Middleware;
 
+use App\Models\Animal;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureVeterinarioAccess
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        $userId = $request->header('X-User-Id');
-        
-        if (!$userId) {
+        // Usa el usuario autenticado por token.
+        $user = $request->user();
+
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Acceso denegado. No se proporcionó ID de usuario.'
+                'message' => 'Acceso denegado. Token ausente o inválido.'
             ], 401);
         }
 
-        $user = \App\Models\Usuario::with('rol')->find($userId);
+        // Carga el rol real.
+        $user->loadMissing('rol');
 
-        // 1. Validar que el usuario exista y tenga el rol de Veterinario
-        if (!$user || !$user->isVeterinario()) {
+        // Verifica que el usuario sea veterinario.
+        if (!$user->isVeterinario()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Acceso denegado. Se requiere perfil de Veterinario.'
             ], 403);
         }
 
-        // 2. Interceptar peticiones que involucren un ID de finca
-        $fincaId = $request->route('finca') ?? $request->input('finca_id');
+        // Obtiene finca desde ruta, body o query.
+        $fincaId = $request->route('finca')
+            ?? $request->input('finca_id')
+            ?? $request->query('finca_id');
 
-        if ($fincaId) {
-            $tieneAccesoFinca = $user->fincasAsignadas()->where('fincas.id', $fincaId)->exists();
-            
-            if (!$tieneAccesoFinca) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Acceso denegado. No tienes permisos para consultar esta finca.'
-                ], 403);
-            }
+        // Valida permiso sobre la finca.
+        if ($fincaId && !$this->veterinarioTieneAccesoAFinca($user, (int) $fincaId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Acceso denegado. No tienes permisos para consultar esta finca.'
+            ], 403);
         }
 
-        // 3. Interceptar peticiones directas a un animal
-        $animalId = $request->route('animal');
-        
-        if ($animalId) {
-            $tieneAccesoAnimal = $user->fincasAsignadas()
-                ->whereHas('animales', function ($query) use ($animalId) {
-                    $query->where('animales.id', $animalId);
-                })->exists();
+        // Obtiene animal desde ruta, body o query.
+        $animalId = $request->route('animal')
+            ?? $request->route('id')
+            ?? $request->input('animal_id')
+            ?? $request->query('animal_id');
 
-            if (!$tieneAccesoAnimal) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Acceso denegado. Este animal pertenece a una finca no autorizada para tu perfil.'
-                ], 403);
-            }
+        // Valida permiso sobre el animal.
+        if ($animalId && !$this->veterinarioTieneAccesoAAnimal($user, (int) $animalId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Acceso denegado. Este animal pertenece a una finca no autorizada para tu perfil.'
+            ], 403);
         }
 
         return $next($request);
+    }
+
+    private function veterinarioTieneAccesoAFinca($user, int $fincaId): bool
+    {
+        // Verifica si la finca está asignada al veterinario.
+        return $user->fincasAsignadas()
+            ->wherePivot('activo', true)
+            ->where('fincas.id', $fincaId)
+            ->exists();
+    }
+
+    private function veterinarioTieneAccesoAAnimal($user, int $animalId): bool
+    {
+        // Busca el animal y valida su finca.
+        $animal = Animal::find($animalId);
+
+        if (!$animal) {
+            return false;
+        }
+
+        return $this->veterinarioTieneAccesoAFinca($user, (int) $animal->finca_id);
     }
 }
