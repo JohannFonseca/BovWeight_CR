@@ -2,6 +2,7 @@
 
 namespace Illuminate\Foundation\Cloud;
 
+use Illuminate\Foundation\Cloud;
 use RuntimeException;
 use Throwable;
 
@@ -54,6 +55,8 @@ class Events
 
     /**
      * Write the payload to the socket.
+     *
+     * @param  list<array<string, mixed>>  $payloads
      */
     protected function write(string $payload): void
     {
