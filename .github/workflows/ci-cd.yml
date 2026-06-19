@@ -1,0 +1,70 @@
+name: BovWeight CR CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, mysql, pgsql, sqlite
+        coverage: none
+
+    - name: Copy env file
+      run: php -r "file_exists('laravel-api/.env') || copy('laravel-api/.env.example', 'laravel-api/.env');"
+
+    - name: Install Composer Dependencies
+      run: |
+        cd laravel-api
+        composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+    - name: Generate App Key
+      run: |
+        cd laravel-api
+        php artisan key:generate
+
+    - name: Run Backend Tests
+      run: |
+        cd laravel-api
+        php artisan test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Frontend Dependencies
+      run: npm install
+
+    - name: Build Frontend Application
+      run: npm run build
+
+  deploy:
+    needs: [backend-tests, frontend-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+
+    - name: Deploy API Backend to Railway
+      run: railway up --service laravel-api --detach
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

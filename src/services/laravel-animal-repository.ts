@@ -12,6 +12,26 @@ class CacheManager {
   private readonly STORE_NAME = 'cache_lecturas';
   private readonly TTL = 1000 * 60 * 60 * 2; // 2 horas de vida útil para las copias locales en caché
 
+  private getUserId(): string {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return 'guest';
+    }
+    const sessionStr = localStorage.getItem('usuario_sesion');
+    if (sessionStr) {
+      try {
+        const user = JSON.parse(sessionStr);
+        return user.id ? String(user.id) : 'guest';
+      } catch {
+        return 'guest';
+      }
+    }
+    return 'guest';
+  }
+
+  private getScopedKey(key: string): string {
+    return `user_${this.getUserId()}_${key}`;
+  }
+
   private initDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.DB_NAME, 1);
@@ -29,10 +49,11 @@ class CacheManager {
   public async get(key: string): Promise<any | null> {
     try {
       if (!this.db) this.db = await this.initDB();
+      const scopedKey = this.getScopedKey(key);
       return new Promise((resolve) => {
         const transaction = this.db!.transaction(this.STORE_NAME, 'readonly');
         const store = transaction.objectStore(this.STORE_NAME);
-        const request = store.get(key);
+        const request = store.get(scopedKey);
         request.onsuccess = () => {
           const result = request.result;
           resolve(result ? result.data : null);
@@ -49,8 +70,9 @@ class CacheManager {
       if (!this.db) this.db = await this.initDB();
       const transaction = this.db.transaction(this.STORE_NAME, 'readwrite');
       const store = transaction.objectStore(this.STORE_NAME);
+      const scopedKey = this.getScopedKey(key);
       store.put({
-        id: key,
+        id: scopedKey,
         data,
         updatedAt: Date.now()
       });
@@ -64,7 +86,8 @@ class CacheManager {
       if (!this.db) this.db = await this.initDB();
       const transaction = this.db.transaction(this.STORE_NAME, 'readwrite');
       const store = transaction.objectStore(this.STORE_NAME);
-      store.delete(key);
+      const scopedKey = this.getScopedKey(key);
+      store.delete(scopedKey);
     } catch (e) {
       console.error('[CacheManager] Error invalidando cache:', e);
     }
@@ -73,10 +96,11 @@ class CacheManager {
   public async isExpired(key: string): Promise<boolean> {
     try {
       if (!this.db) this.db = await this.initDB();
+      const scopedKey = this.getScopedKey(key);
       return new Promise((resolve) => {
         const transaction = this.db!.transaction(this.STORE_NAME, 'readonly');
         const store = transaction.objectStore(this.STORE_NAME);
-        const request = store.get(key);
+        const request = store.get(scopedKey);
         request.onsuccess = () => {
           const result = request.result;
           if (!result) {

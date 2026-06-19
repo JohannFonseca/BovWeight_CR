@@ -189,6 +189,8 @@ const submitPasswordChange = async () => {
 
 const logout = () => {
   localStorage.removeItem('usuario_sesion');
+  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
   router.push('/login');
 };
 </script>

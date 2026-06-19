@@ -231,6 +231,8 @@ const updateProfile = async () => {
 // Cerrar sesión del usuario
 const handleLogout = () => {
   localStorage.removeItem('usuario_sesion');
+  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
   router.push('/login');
 };
 

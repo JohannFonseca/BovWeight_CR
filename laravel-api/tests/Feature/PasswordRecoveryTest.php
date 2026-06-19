@@ -99,7 +99,7 @@ class PasswordRecoveryTest extends TestCase
         ]);
 
         // 2. Post password change (without confirmar_password field)
-        $response = $this->postJson('/api/cambiar-password', [
+        $response = $this->actingAs($usuario, 'sanctum')->postJson('/api/cambiar-password', [
             'id' => $usuario->id,
             'password_actual' => 'tempPass123',
             'nuevo_password' => 'newSecurePass456',
@@ -133,7 +133,7 @@ class PasswordRecoveryTest extends TestCase
             'activo' => true,
         ]);
 
-        $response = $this->postJson('/api/cambiar-password', [
+        $response = $this->actingAs($usuario, 'sanctum')->postJson('/api/cambiar-password', [
             'id' => $usuario->id,
             'password_actual' => 'wrongTempPass',
             'nuevo_password' => 'newSecurePass456',

@@ -36,7 +36,7 @@ class UserProfilePhotoTest extends TestCase
 
         $file = UploadedFile::fake()->image('avatar.jpg');
 
-        $response = $this->putJson("/api/usuarios/{$user->id}", [
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/usuarios/{$user->id}", [
             'correo' => 'test@bovweight.com',
             'nombre_completo' => 'Juan Perez',
             'foto' => $file,
@@ -69,7 +69,7 @@ class UserProfilePhotoTest extends TestCase
         // Standard 1x1 pixel base64 GIF
         $base64Image = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
-        $response = $this->putJson("/api/usuarios/{$user->id}", [
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/usuarios/{$user->id}", [
             'correo' => 'test@bovweight.com',
             'nombre_completo' => 'Juan Perez',
             'foto_base64' => $base64Image,

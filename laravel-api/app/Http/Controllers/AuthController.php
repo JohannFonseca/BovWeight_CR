@@ -146,7 +146,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Se ha enviado una contraseña temporal a su correo electrónico.' . ($enviado ? '' : ' (Advertencia: No se pudo enviar el correo, contacte al administrador).'),
-            'password_temporal_debug' => app()->environment('local') ? $passwordTemporal : null,
+            'password_temporal_debug' => app()->environment('local', 'testing') ? $passwordTemporal : null,
         ]);
     }
 

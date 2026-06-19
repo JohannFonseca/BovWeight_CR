@@ -64,7 +64,6 @@ Route::middleware(['auth:sanctum', 'auth.user.headers'])->group(function () {
     Route::middleware(['role:admin'])->group(function () {
         Route::get('/usuarios', [AdminController::class, 'getUsuarios']);
         Route::post('/usuarios', [AdminController::class, 'crearUsuario']);
-        Route::put('/usuarios/{id}', [AdminController::class, 'editarUsuario']);
         Route::delete('/usuarios/{id}', [AdminController::class, 'eliminarUsuario']);
         Route::put('/usuarios/{id}/toggle-activo', [AdminController::class, 'toggleEstadoUsuario']);
         Route::post('/usuarios/{id}/reenviar-credenciales', [AdminController::class, 'reenviarCredenciales']);

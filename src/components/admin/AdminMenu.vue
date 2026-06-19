@@ -109,6 +109,8 @@ const navegar = async (path: string) => {
 const cerrarSesion = async () => {
   await menuController.close('admin-menu');
   localStorage.removeItem('usuario_sesion');
+  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
   router.push('/login');
 };
 </script>
