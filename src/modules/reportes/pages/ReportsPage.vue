@@ -732,10 +732,18 @@ async function generatePdfObject(title: string, description: string, destinatari
     doc.setDrawColor(210, 215, 205);
     doc.setLineWidth(0.5);
     
-    if (a.imagen) {
+    if (a.imagen && !a.imagen.includes('cow-placeholder') && !a.imagen.includes('placeholder')) {
       try {
         const base64 = await getBase64ImageFromUrl(a.imagen);
-        doc.addImage(base64, 'JPEG', imgX, imgY, imgW, imgH);
+        
+        let format = 'JPEG';
+        if (base64.startsWith('data:image/png') || base64.toLowerCase().includes('image/png')) {
+          format = 'PNG';
+        } else if (base64.startsWith('data:image/webp') || base64.toLowerCase().includes('image/webp')) {
+          format = 'WEBP';
+        }
+        
+        doc.addImage(base64, format, imgX, imgY, imgW, imgH);
       } catch (err) {
         console.error('Error al cargar imagen del bovino para PDF:', err);
         doc.rect(imgX, imgY, imgW, imgH);
