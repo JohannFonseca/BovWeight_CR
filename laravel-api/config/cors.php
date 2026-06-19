@@ -27,10 +27,17 @@ return [
         'capacitor://localhost',
         'ionic://localhost',
         'http://localhost',
+        'https://localhost',
         'https://bovweightcr-production.up.railway.app',
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https?://localhost(:\d+)?$#',
+        '#^https?://10\.0\.2\.2(:\d+)?$#',
+        '#^https?://192\.168\.\d+\.\d+(:\d+)?$#',
+        '#^capacitor://localhost$#',
+        '#^ionic://localhost$#',
+    ],
 
     'allowed_headers' => ['*'],
 
