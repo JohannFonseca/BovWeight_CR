@@ -108,3 +108,30 @@ Route::middleware(['veterinario'])->prefix('veterinario')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\VeterinarioDashboardController::class, 'getDashboardData']);
     Route::get('/animal/{id}', [\App\Http\Controllers\VeterinarioAnimalController::class, 'show']);
 });
+
+// Test CORS Route
+Route::get('/test-cors', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'CORS funcionando'
+    ]);
+});
+
+// Run Migrations Route (Web Fallback)
+Route::get('/run-migrations', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response()->json([
+            'success' => true,
+            'message' => 'Migraciones ejecutadas con éxito',
+            'output' => $output
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al ejecutar migraciones: ' . $e->getMessage()
+        ], 500);
+    }
+});
+

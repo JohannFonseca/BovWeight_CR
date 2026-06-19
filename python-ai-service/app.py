@@ -9,6 +9,11 @@ from PIL import Image
 
 app = Flask(__name__)
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
+
 # YOLOv8 loading helper
 yolo_model = None
 try:
