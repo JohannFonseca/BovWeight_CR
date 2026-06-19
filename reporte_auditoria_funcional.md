@@ -4,12 +4,7 @@ Este documento consolida únicamente las funcionalidades faltantes, riesgos de s
 
 ---
 
-## 1. SINCRONIZACIÓN Y MODO OFFLINE (Prioridad: Alta)
 
-### 🔴 Riesgo de Desbordamiento de Cuota en LocalStorage
-*   **Estado:** No implementada / Pendiente
-*   **Descripción:** El sistema utiliza `LocalStorage` para almacenar temporalmente imágenes de pesajes en Base64 cuando no hay conexión. Debido a que el límite de almacenamiento de LocalStorage en navegadores y WebView es de ~5MB, acumular más de 40-50 fotos causará un colapso del almacenamiento y pérdida de datos.
-*   **Solución recomendada:** Migrar la cola de sincronización offline a **IndexedDB**, que permite capacidades de almacenamiento prácticamente ilimitadas en el dispositivo móvil.
 
 ## 5. INFRAESTRUCTURA Y OPTIMIZACIÓN (Prioridad: Baja)
 
